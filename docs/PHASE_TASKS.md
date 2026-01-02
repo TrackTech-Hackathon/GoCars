@@ -90,13 +90,13 @@ Check off items as they are completed.
   - [x] Trigger failure UI
 
 ### Level Manager (P0)
-- [ ] Create `scripts/core/level_manager.gd`
-  - [ ] Load level configurations from JSON
-  - [ ] Spawn vehicles at designated positions
-  - [ ] Spawn traffic elements
-  - [ ] Track win/lose states
-  - [ ] Calculate star ratings
-  - [ ] Handle level transitions
+- [x] Create `scripts/core/level_manager.gd`
+  - [x] Load level configurations from JSON
+  - [x] Spawn vehicles at designated positions
+  - [x] Spawn traffic elements
+  - [x] Track win/lose states
+  - [x] Calculate star ratings
+  - [x] Handle level transitions
 
 **Phase 2 Milestone:** Full gameplay loop functional with all basic mechanics
 
@@ -422,7 +422,7 @@ Check off items as they are completed.
 | Phase | Status | Completion |
 |-------|--------|------------|
 | Phase 1: Foundation | Complete | 100% |
-| Phase 2: Core Mechanics | In Progress | 40% |
+| Phase 2: Core Mechanics | Complete | 100% |
 | Phase 3: Content Creation | Not Started | 0% |
 | Phase 4: Polish & UI | Not Started | 0% |
 | Phase 5: Testing & Submission | Not Started | 0% |

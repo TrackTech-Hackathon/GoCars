@@ -1,0 +1,34 @@
+{
+	"id": "T1",
+	"name": "First Drive",
+	"description": "Learn to make your car go! Just type car.go() to start moving.",
+	"available_functions": ["car.go"],
+	"time_limit": 0,
+	"entities": {
+		"cars": [
+			{
+				"id": "car1",
+				"position": [100, 300],
+				"destination": [700, 300],
+				"direction": "right"
+			}
+		],
+		"stoplights": [],
+		"intersections": []
+	},
+	"bounds": {
+		"x": -50,
+		"y": -50,
+		"width": 900,
+		"height": 700
+	},
+	"win_condition": "all_cars_at_destination",
+	"star_criteria": {
+		"one_star": "complete",
+		"two_stars": "no_crashes",
+		"three_stars": "lines_of_code <= 1"
+	},
+	"hints": [
+		"Type car.go() in the code editor to make the car move forward."
+	]
+}
