@@ -54,4 +54,50 @@ offset_bottom = 160.0
 text = "Instructions:
 - car.go() / car.stop() / car.turn_left() / car.turn_right() / car.wait(N)
 - stoplight.set_green() / stoplight.set_red() / stoplight.set_yellow()
-- Press Space to pause/resume, R to reset"
+- Space: pause/resume | R: reset | +/-: speed | S: step"
+
+[node name="SpeedLabel" type="Label" parent="UI"]
+offset_left = 420.0
+offset_top = 500.0
+offset_right = 600.0
+offset_bottom = 530.0
+text = "Speed: 1.0x"
+
+[node name="ResultPopup" type="Panel" parent="UI"]
+visible = false
+offset_left = 200.0
+offset_top = 150.0
+offset_right = 600.0
+offset_bottom = 350.0
+
+[node name="ResultTitle" type="Label" parent="UI/ResultPopup"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 380.0
+offset_bottom = 60.0
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "LEVEL COMPLETE!"
+
+[node name="ResultMessage" type="Label" parent="UI/ResultPopup"]
+offset_left = 20.0
+offset_top = 70.0
+offset_right = 380.0
+offset_bottom = 110.0
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "Stars: 3/3"
+
+[node name="RetryButton" type="Button" parent="UI/ResultPopup"]
+offset_left = 50.0
+offset_top = 130.0
+offset_right = 180.0
+offset_bottom = 170.0
+text = "Retry"
+
+[node name="NextButton" type="Button" parent="UI/ResultPopup"]
+offset_left = 220.0
+offset_top = 130.0
+offset_right = 350.0
+offset_bottom = 170.0
+text = "Next Level"

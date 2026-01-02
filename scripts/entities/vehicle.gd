@@ -32,6 +32,14 @@ var _nearby_stoplights: Array = []  # Array of Stoplight nodes in range
 var _stopped_at_stoplight: Stoplight = null  # Currently stopped at this stoplight
 var _wants_to_move: bool = false  # True if go() was called (intention to move)
 
+# Intersection/turn tracking
+var _intersections: Array = []  # Array of intersection positions (Vector2)
+var _is_turning: bool = false
+var _turn_progress: float = 0.0
+var _turn_start_rotation: float = 0.0
+var _turn_target_rotation: float = 0.0
+var _turn_start_direction: Vector2 = Vector2.ZERO
+
 # Distance threshold for reaching destination
 const DESTINATION_THRESHOLD: float = 10.0
 
@@ -40,6 +48,12 @@ const STOPLIGHT_DETECTION_RANGE: float = 100.0
 
 # Distance at which vehicle must stop for red light (in pixels)
 const STOPLIGHT_STOP_DISTANCE: float = 50.0
+
+# Distance at which vehicle detects intersections (in pixels)
+const INTERSECTION_DETECTION_RANGE: float = 30.0
+
+# Turn animation duration in seconds
+const TURN_DURATION: float = 0.3
 
 
 func _ready() -> void:
@@ -57,12 +71,20 @@ func _physics_process(delta: float) -> void:
 			wait_timer = 0.0
 		return
 
+	# Handle smooth turning animation
+	if _is_turning:
+		_process_turn(delta)
+		return
+
 	# Check stoplight state if we want to move
 	if _wants_to_move:
 		_check_stoplights()
 
 	# Handle movement
 	if is_moving:
+		# Check for queued turn at intersection
+		if queued_turn != "":
+			_check_intersection_for_turn()
 		_move(delta)
 		_check_destination()
 
@@ -115,16 +137,18 @@ func stop() -> void:
 
 ## Queue a 90-degree left turn at next intersection
 func turn_left() -> void:
-	# Immediately rotate 90 degrees counter-clockwise
-	direction = direction.rotated(-PI / 2)
-	rotation -= PI / 2
+	queued_turn = "left"
+	# If not moving or no intersections registered, turn immediately
+	if not is_moving or _intersections.is_empty():
+		_execute_turn("left")
 
 
 ## Queue a 90-degree right turn at next intersection
 func turn_right() -> void:
-	# Immediately rotate 90 degrees clockwise
-	direction = direction.rotated(PI / 2)
-	rotation += PI / 2
+	queued_turn = "right"
+	# If not moving or no intersections registered, turn immediately
+	if not is_moving or _intersections.is_empty():
+		_execute_turn("right")
 
 
 ## Pause movement for specified seconds
@@ -174,6 +198,9 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	velocity = Vector2.ZERO
 	_wants_to_move = false
 	_stopped_at_stoplight = null
+	# Reset turn state
+	_is_turning = false
+	_turn_progress = 0.0
 
 
 # ============================================
@@ -246,3 +273,94 @@ func is_blocked_by_light() -> bool:
 			if distance < STOPLIGHT_DETECTION_RANGE:
 				return true
 	return false
+
+
+# ============================================
+# Intersection Detection & Turn Mechanics
+# ============================================
+
+## Register an intersection position that this vehicle should be aware of
+func add_intersection(intersection_pos: Vector2) -> void:
+	if not intersection_pos in _intersections:
+		_intersections.append(intersection_pos)
+
+
+## Remove an intersection from awareness
+func remove_intersection(intersection_pos: Vector2) -> void:
+	_intersections.erase(intersection_pos)
+
+
+## Clear all registered intersections
+func clear_intersections() -> void:
+	_intersections.clear()
+
+
+## Check if vehicle is at an intersection and should execute queued turn
+func _check_intersection_for_turn() -> void:
+	for intersection_pos in _intersections:
+		var distance = global_position.distance_to(intersection_pos)
+		if distance < INTERSECTION_DETECTION_RANGE:
+			# At intersection, execute the queued turn
+			_execute_turn(queued_turn)
+			return
+
+
+## Execute a turn (starts smooth rotation animation)
+func _execute_turn(turn_direction: String) -> void:
+	if turn_direction == "":
+		return
+
+	# Start the turn animation
+	_is_turning = true
+	_turn_progress = 0.0
+	_turn_start_rotation = rotation
+	_turn_start_direction = direction
+
+	if turn_direction == "left":
+		_turn_target_rotation = rotation - PI / 2
+	elif turn_direction == "right":
+		_turn_target_rotation = rotation + PI / 2
+
+	# Clear the queued turn
+	queued_turn = ""
+
+
+## Process smooth turn animation
+func _process_turn(delta: float) -> void:
+	_turn_progress += delta / TURN_DURATION
+
+	if _turn_progress >= 1.0:
+		# Turn complete
+		_turn_progress = 1.0
+		_is_turning = false
+
+		# Snap to exact target rotation
+		rotation = _turn_target_rotation
+		direction = Vector2.RIGHT.rotated(rotation)
+	else:
+		# Interpolate rotation smoothly (ease in-out)
+		var t = _ease_in_out(_turn_progress)
+		rotation = lerp(_turn_start_rotation, _turn_target_rotation, t)
+		direction = Vector2.RIGHT.rotated(rotation)
+
+
+## Ease in-out function for smooth animation
+func _ease_in_out(t: float) -> float:
+	if t < 0.5:
+		return 2.0 * t * t
+	else:
+		return 1.0 - pow(-2.0 * t + 2.0, 2.0) / 2.0
+
+
+## Check if vehicle is currently at an intersection
+func at_intersection() -> bool:
+	for intersection_pos in _intersections:
+		var distance = global_position.distance_to(intersection_pos)
+		if distance < INTERSECTION_DETECTION_RANGE:
+			return true
+	return false
+
+
+## Check if vehicle is currently turning
+func is_turning() -> bool:
+	return _is_turning

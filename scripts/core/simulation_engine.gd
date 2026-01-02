@@ -14,7 +14,7 @@ signal level_completed(stars: int)
 signal level_failed(reason: String)
 
 # Simulation state
-enum State { IDLE, RUNNING, PAUSED }
+enum State { IDLE, RUNNING, PAUSED, STEP }
 var current_state: State = State.IDLE
 
 # Playback speed
@@ -23,6 +23,11 @@ const SPEED_NORMAL: float = 1.0
 const SPEED_FAST: float = 2.0
 const SPEED_FASTER: float = 4.0
 const SPEED_SLOW: float = 0.5
+
+# Step-by-step mode
+var _step_mode: bool = false
+var _step_timer: float = 0.0
+const STEP_DURATION: float = 0.5  # Time per step in seconds
 
 # References
 var _parser: CodeParser
@@ -34,6 +39,14 @@ var _current_command_index: int = 0
 # Level tracking
 var _vehicles_at_destination: int = 0
 var _total_vehicles: int = 0
+
+# Timer for time-limited levels
+var _level_timer: float = 0.0
+var _level_time_limit: float = 0.0  # 0 = no limit
+var _timer_active: bool = false
+
+# Map boundaries for out-of-bounds detection
+var _map_bounds: Rect2 = Rect2(-100, -100, 2000, 2000)  # Default large bounds
 
 
 func _ready() -> void:
@@ -79,9 +92,23 @@ func _on_stoplight_state_changed(stoplight_id: String, new_state: String) -> voi
 
 
 func _process(delta: float) -> void:
-	if current_state == State.RUNNING:
-		# Engine.time_scale handles speed, no additional logic needed here
-		pass
+	if current_state == State.RUNNING or current_state == State.STEP:
+		# Update level timer
+		if _timer_active and _level_time_limit > 0:
+			_level_timer += delta
+			if _level_timer >= _level_time_limit:
+				_on_level_failed("Time expired!")
+				return
+
+		# Check for out-of-bounds vehicles
+		_check_vehicle_boundaries()
+
+		# Handle step mode
+		if current_state == State.STEP:
+			_step_timer += delta
+			if _step_timer >= STEP_DURATION:
+				pause()
+				_step_timer = 0.0
 
 
 # ============================================
@@ -251,11 +278,14 @@ func stop() -> void:
 	_command_queue.clear()
 	_current_command_index = 0
 	_vehicles_at_destination = 0
+	_step_timer = 0.0
+	_level_timer = 0.0
 
 
 ## Reset all vehicles to starting positions
 func reset() -> void:
 	stop()
+	_step_mode = false
 	# Note: Level manager should handle resetting vehicle positions
 
 
@@ -280,6 +310,65 @@ func slow_down() -> void:
 		set_speed(SPEED_NORMAL)
 	else:
 		set_speed(SPEED_SLOW)
+
+
+## Step forward one frame/action
+func step() -> void:
+	if current_state == State.PAUSED or current_state == State.IDLE:
+		current_state = State.STEP
+		_step_timer = 0.0
+		Engine.time_scale = 1.0
+		get_tree().paused = false
+
+
+## Toggle step-by-step mode
+func toggle_step_mode() -> void:
+	_step_mode = not _step_mode
+	if _step_mode and current_state == State.RUNNING:
+		current_state = State.STEP
+		_step_timer = 0.0
+
+
+## Check if step mode is active
+func is_step_mode() -> bool:
+	return _step_mode
+
+
+# ============================================
+# Level Configuration
+# ============================================
+
+## Set time limit for the level (0 = no limit)
+func set_time_limit(seconds: float) -> void:
+	_level_time_limit = seconds
+	_level_timer = 0.0
+	_timer_active = seconds > 0
+
+
+## Get remaining time
+func get_remaining_time() -> float:
+	if _level_time_limit <= 0:
+		return -1.0
+	return max(0.0, _level_time_limit - _level_timer)
+
+
+## Get elapsed time
+func get_elapsed_time() -> float:
+	return _level_timer
+
+
+## Set map boundaries for out-of-bounds detection
+func set_map_bounds(bounds: Rect2) -> void:
+	_map_bounds = bounds
+
+
+## Check if any vehicle is out of bounds
+func _check_vehicle_boundaries() -> void:
+	for vehicle_id in _vehicles:
+		var vehicle = _vehicles[vehicle_id]
+		if not _map_bounds.has_point(vehicle.global_position):
+			_on_level_failed("Car '%s' left the map!" % vehicle_id)
+			return
 
 
 # ============================================
@@ -327,3 +416,5 @@ func _unhandled_input(event: InputEvent) -> void:
 				speed_up()
 			KEY_MINUS, KEY_KP_SUBTRACT:  # - key
 				slow_down()
+			KEY_S:  # Step mode
+				step()

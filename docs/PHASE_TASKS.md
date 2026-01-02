@@ -65,29 +65,29 @@ Check off items as they are completed.
 - [x] Implement car stopping at red lights
 
 ### Turn Mechanics
-- [ ] Implement intersection detection
-- [ ] Implement turn queuing at intersections
-- [ ] Handle 90-degree rotations smoothly
+- [x] Implement intersection detection
+- [x] Implement turn queuing at intersections
+- [x] Handle 90-degree rotations smoothly
 
 ### Simulation Controls (P0)
-- [ ] **CORE-003** Create playback control system
-  - [ ] Play button (execute code) - Space key
-  - [ ] Pause button (freeze simulation) - Space toggle
-  - [ ] Fast-Forward 2x - `+` or `=` key
-  - [ ] Fast-Forward 4x - hold `++`
-  - [ ] Slow-Motion 0.5x - `-` key
-  - [ ] Fast Retry (instant restart) - `R` key
-  - [ ] Step-by-Step mode (optional) - `S` key
+- [x] **CORE-003** Create playback control system
+  - [x] Play button (execute code) - Space key
+  - [x] Pause button (freeze simulation) - Space toggle
+  - [x] Fast-Forward 2x - `+` or `=` key
+  - [x] Fast-Forward 4x - hold `++`
+  - [x] Slow-Motion 0.5x - `-` key
+  - [x] Fast Retry (instant restart) - `R` key
+  - [x] Step-by-Step mode (optional) - `S` key
 
 ### Win/Lose Conditions (P0)
-- [ ] **MODE-001** Implement win condition detection
-  - [ ] All cars reached destination
-  - [ ] Trigger victory UI
-- [ ] Implement fail condition detection
-  - [ ] Car crash (collision)
-  - [ ] Timer expired
-  - [ ] Car exits map boundary
-  - [ ] Trigger failure UI
+- [x] **MODE-001** Implement win condition detection
+  - [x] All cars reached destination
+  - [x] Trigger victory UI
+- [x] Implement fail condition detection
+  - [x] Car crash (collision)
+  - [x] Timer expired
+  - [x] Car exits map boundary
+  - [x] Trigger failure UI
 
 ### Level Manager (P0)
 - [ ] Create `scripts/core/level_manager.gd`
