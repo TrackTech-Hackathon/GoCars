@@ -11,11 +11,15 @@ signal reached_destination(vehicle_id: String)
 signal crashed(vehicle_id: String)
 signal stopped_at_light(vehicle_id: String, stoplight_id: String)
 signal resumed_from_light(vehicle_id: String, stoplight_id: String)
+signal off_road_crash(vehicle_id: String)
 
 # Vehicle properties
 @export var vehicle_id: String = "car1"
 @export var speed: float = 200.0  # Pixels per second
 @export var destination: Vector2 = Vector2.ZERO
+
+# Vehicle state (0 = crashed, 1 = normal/active)
+var vehicle_state: int = 1
 
 # Movement state
 var is_moving: bool = false
@@ -55,14 +59,30 @@ const INTERSECTION_DETECTION_RANGE: float = 30.0
 # Turn animation duration in seconds
 const TURN_DURATION: float = 0.3
 
+# TileMap reference for road checking
+var _tile_map_layer: TileMapLayer = null
+const ROAD_TILE_COLUMN_START: int = 1  # Columns 1-16 are road tiles
+
+# Tile-based movement
+var _tiles_to_move: int = 0
+var _moving_to_tile: bool = false
+var _target_tile_position: Vector2 = Vector2.ZERO
+
 
 func _ready() -> void:
+	# Add to vehicles group for detection
+	add_to_group("vehicles")
+
 	# Set up collision
 	set_collision_layer_value(1, true)  # Layer 1 for vehicles
 	set_collision_mask_value(1, true)   # Detect other vehicles
 
 
 func _physics_process(delta: float) -> void:
+	# Don't process if crashed
+	if vehicle_state == 0:
+		return
+
 	# Handle waiting (from wait() command)
 	if is_waiting:
 		wait_timer -= delta
@@ -90,16 +110,32 @@ func _physics_process(delta: float) -> void:
 
 
 func _move(delta: float) -> void:
+	# Check if car is on a road tile
+	if _tile_map_layer != null:
+		if not _is_on_road():
+			_on_off_road_crash()
+			return
+
 	var actual_speed = speed * speed_multiplier
 	velocity = direction * actual_speed
 	move_and_slide()
 
-	# Check for collisions
+	# Check for collisions with other vehicles
 	for i in range(get_slide_collision_count()):
 		var collision = get_slide_collision(i)
 		if collision.get_collider() is Vehicle:
-			_on_crash()
-			return
+			var other_vehicle = collision.get_collider() as Vehicle
+
+			# If we hit a crashed car, just this car crashes
+			if other_vehicle.vehicle_state == 0:
+				_on_crash()
+				return
+
+			# If both cars are active, both crash
+			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
+				_on_crash()
+				other_vehicle._on_crash()
+				return
 
 
 func _check_destination() -> void:
@@ -112,7 +148,18 @@ func _check_destination() -> void:
 
 func _on_crash() -> void:
 	stop()
+	vehicle_state = 0  # Mark as crashed
+	modulate = Color(0.5, 0.5, 0.5, 1.0)  # Darken the sprite to show it's crashed
 	crashed.emit(vehicle_id)
+	# TODO: Change sprite to crashed sprite when available
+
+
+func _on_off_road_crash() -> void:
+	stop()
+	vehicle_state = 0  # Mark as crashed
+	modulate = Color(0.5, 0.5, 0.5, 1.0)  # Darken the sprite to show it's crashed
+	off_road_crash.emit(vehicle_id)
+	# TODO: Change sprite to crashed sprite when available
 
 
 # ============================================
@@ -160,6 +207,69 @@ func wait(seconds: int) -> void:
 ## Set speed multiplier (0.5 to 2.0)
 func set_speed(value: float) -> void:
 	speed_multiplier = clamp(value, 0.5, 2.0)
+
+
+## Turn left or right (simplified - no intersection required)
+func turn(turn_direction: String) -> void:
+	if turn_direction == "left":
+		_execute_turn("left")
+	elif turn_direction == "right":
+		_execute_turn("right")
+
+
+## Move a specific number of tiles
+func move(tiles: int) -> void:
+	_tiles_to_move = tiles
+	# Movement will be handled in physics process
+
+
+## Check if there's a road in front of the car
+func is_front_road() -> bool:
+	if _tile_map_layer == null:
+		return false
+
+	# Get the tile in front based on current direction
+	var front_offset = direction.normalized() * 64  # One tile size ahead
+	var front_pos = global_position + front_offset
+	return _is_road_at_position(front_pos)
+
+
+## Check if there's a road to the left of the car
+func is_left_road() -> bool:
+	if _tile_map_layer == null:
+		return false
+
+	# Get the tile to the left based on current direction
+	var left_direction = direction.rotated(-PI / 2)  # 90 degrees counter-clockwise
+	var left_offset = left_direction.normalized() * 64
+	var left_pos = global_position + left_offset
+	return _is_road_at_position(left_pos)
+
+
+## Check if there's a road to the right of the car
+func is_right_road() -> bool:
+	if _tile_map_layer == null:
+		return false
+
+	# Get the tile to the right based on current direction
+	var right_direction = direction.rotated(PI / 2)  # 90 degrees clockwise
+	var right_offset = right_direction.normalized() * 64
+	var right_pos = global_position + right_offset
+	return _is_road_at_position(right_pos)
+
+
+## Check if there's ANY car (crashed or active) in front
+func is_front_car() -> bool:
+	var front_offset = direction.normalized() * 64  # One tile size ahead
+	var front_pos = global_position + front_offset
+	return _is_vehicle_at_position(front_pos)
+
+
+## Check if there's a CRASHED car in front
+func is_front_crashed_car() -> bool:
+	var front_offset = direction.normalized() * 64  # One tile size ahead
+	var front_pos = global_position + front_offset
+	return _is_crashed_vehicle_at_position(front_pos)
 
 
 # ============================================
@@ -364,3 +474,62 @@ func at_intersection() -> bool:
 ## Check if vehicle is currently turning
 func is_turning() -> bool:
 	return _is_turning
+
+
+# ============================================
+# Road Detection
+# ============================================
+
+## Set the TileMapLayer reference for road checking
+func set_tile_map_layer(tilemap: TileMapLayer) -> void:
+	_tile_map_layer = tilemap
+
+
+## Check if vehicle is currently on a road tile
+func _is_on_road() -> bool:
+	if _tile_map_layer == null:
+		return true  # If no tilemap, assume roads everywhere
+
+	return _is_road_at_position(global_position)
+
+
+## Check if there's a road at a specific world position
+func _is_road_at_position(world_pos: Vector2) -> bool:
+	if _tile_map_layer == null:
+		return true
+
+	var tile_pos = _tile_map_layer.local_to_map(_tile_map_layer.to_local(world_pos))
+	var atlas_coords = _tile_map_layer.get_cell_atlas_coords(tile_pos)
+
+	# Check if tile exists and is a road (columns 1-16 are roads)
+	if atlas_coords == Vector2i(-1, -1):
+		return false  # No tile
+
+	return atlas_coords.x >= ROAD_TILE_COLUMN_START
+
+
+## Check if there's ANY vehicle at a specific world position
+func _is_vehicle_at_position(world_pos: Vector2) -> bool:
+	# Get all vehicles in the scene
+	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	for vehicle in vehicles:
+		if vehicle == self:
+			continue  # Skip self
+		var distance = vehicle.global_position.distance_to(world_pos)
+		if distance < 32:  # Within half a tile (64/2)
+			return true
+	return false
+
+
+## Check if there's a CRASHED vehicle at a specific world position
+func _is_crashed_vehicle_at_position(world_pos: Vector2) -> bool:
+	# Get all vehicles in the scene
+	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	for vehicle in vehicles:
+		if vehicle == self:
+			continue  # Skip self
+		if vehicle.vehicle_state == 0:  # Check if crashed
+			var distance = vehicle.global_position.distance_to(world_pos)
+			if distance < 32:  # Within half a tile (64/2)
+				return true
+	return false

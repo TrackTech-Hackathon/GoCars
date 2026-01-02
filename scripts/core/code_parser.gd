@@ -6,15 +6,17 @@ class_name CodeParser
 
 # Supported objects and their available functions
 var _available_objects: Dictionary = {
-	"car": ["go", "stop", "turn_left", "turn_right", "wait"],
+	"car": ["go", "stop", "turn_left", "turn_right", "wait", "turn", "move", "is_front_road", "is_left_road", "is_right_road", "is_front_car", "is_front_crashed_car"],
 	"stoplight": ["set_red", "set_green", "set_yellow", "get_state"],
 	"boat": ["depart", "get_capacity"]
 }
 
-# Functions that require parameters: function_name -> [param_type, min, max] or null
+# Functions that require parameters: function_name -> [param_type, min, max] or ["string", allowed_values]
 var _function_params: Dictionary = {
 	"wait": ["int", 1, 60],
-	"speed": ["float", 0.5, 2.0]
+	"speed": ["float", 0.5, 2.0],
+	"turn": ["string", ["left", "right"]],
+	"move": ["int", 1, 100]
 }
 
 # Result structure for parsing
@@ -127,11 +129,11 @@ func _parse_params(func_name: String, params_str: String, _line_num: int) -> Dic
 
 	var param_spec = _function_params[func_name]
 	var param_type = param_spec[0]
-	var param_min = param_spec[1]
-	var param_max = param_spec[2]
 
 	# Parse based on expected type
 	if param_type == "int":
+		var param_min = param_spec[1]
+		var param_max = param_spec[2]
 		if not params_str.is_valid_int():
 			return {"error": "%s() requires an integer parameter" % func_name}
 		var value = params_str.to_int()
@@ -139,11 +141,26 @@ func _parse_params(func_name: String, params_str: String, _line_num: int) -> Dic
 			return {"error": "%s(%s) - value must be between %s and %s" % [func_name, value, param_min, param_max]}
 		params.append(value)
 	elif param_type == "float":
+		var param_min = param_spec[1]
+		var param_max = param_spec[2]
 		if not params_str.is_valid_float():
 			return {"error": "%s() requires a number parameter" % func_name}
 		var value = params_str.to_float()
 		if value < param_min or value > param_max:
 			return {"error": "%s(%s) - value must be between %s and %s" % [func_name, value, param_min, param_max]}
+		params.append(value)
+	elif param_type == "string":
+		var allowed_values = param_spec[1]
+		# Remove quotes if present
+		var value = params_str.strip_edges()
+		if value.begins_with('"') and value.ends_with('"'):
+			value = value.substr(1, value.length() - 2)
+		elif value.begins_with("'") and value.ends_with("'"):
+			value = value.substr(1, value.length() - 2)
+
+		# Check if value is in allowed list
+		if not value in allowed_values:
+			return {"error": "%s('%s') - value must be one of: %s" % [func_name, value, ", ".join(allowed_values)]}
 		params.append(value)
 
 	return {"params": params}

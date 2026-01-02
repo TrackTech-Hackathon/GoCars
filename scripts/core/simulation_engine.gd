@@ -218,12 +218,29 @@ func _call_vehicle_function(vehicle: Vehicle, func_name: String, params: Array) 
 			vehicle.turn_left()
 		"turn_right":
 			vehicle.turn_right()
+		"turn":
+			if params.size() > 0:
+				vehicle.turn(params[0])
+		"move":
+			if params.size() > 0:
+				vehicle.move(params[0])
 		"wait":
 			if params.size() > 0:
 				vehicle.wait(params[0])
 		"speed":
 			if params.size() > 0:
 				vehicle.set_speed(params[0])
+		"is_front_road":
+			# Query functions - return value but don't need to do anything here
+			var _result = vehicle.is_front_road()
+		"is_left_road":
+			var _result = vehicle.is_left_road()
+		"is_right_road":
+			var _result = vehicle.is_right_road()
+		"is_front_car":
+			var _result = vehicle.is_front_car()
+		"is_front_crashed_car":
+			var _result = vehicle.is_front_crashed_car()
 
 
 ## Call a function on a stoplight
@@ -364,8 +381,16 @@ func set_map_bounds(bounds: Rect2) -> void:
 
 ## Check if any vehicle is out of bounds
 func _check_vehicle_boundaries() -> void:
-	for vehicle_id in _vehicles:
+	# Create a list of vehicle IDs to check (to avoid modifying dict during iteration)
+	var vehicle_ids = _vehicles.keys()
+	for vehicle_id in vehicle_ids:
+		if not vehicle_id in _vehicles:
+			continue  # Vehicle was removed
 		var vehicle = _vehicles[vehicle_id]
+		# Check if vehicle is still valid (not freed)
+		if not is_instance_valid(vehicle):
+			_vehicles.erase(vehicle_id)
+			continue
 		if not _map_bounds.has_point(vehicle.global_position):
 			_on_level_failed("Car '%s' left the map!" % vehicle_id)
 			return

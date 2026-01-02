@@ -15,35 +15,35 @@ Check off items as they are completed.
 ### Core Systems - Python Parser (P0)
 - [ ] **TECH-003** Create `scripts/core/python_parser.gd`
   - [ ] **Tokenizer** - Convert source to tokens
-    - [ ] Keywords: if, elif, else, while, for, in, range, and, or, not, True, False, break
-    - [ ] Identifiers: car, stoplight, boat, user variables
-    - [ ] Numbers: integers and floats (0, 42, 3.14, 0.5)
-    - [ ] Strings: "text" and 'text'
-    - [ ] Operators: +, -, *, /, ==, !=, <, >, <=, >=, =
-    - [ ] Delimiters: (, ), :, ,
-    - [ ] NEWLINE, INDENT, DEDENT tokens
-    - [ ] Comments: # single-line comments
+	- [ ] Keywords: if, elif, else, while, for, in, range, and, or, not, True, False, break
+	- [ ] Identifiers: car, stoplight, boat, user variables
+	- [ ] Numbers: integers and floats (0, 42, 3.14, 0.5)
+	- [ ] Strings: "text" and 'text'
+	- [ ] Operators: +, -, *, /, ==, !=, <, >, <=, >=, =
+	- [ ] Delimiters: (, ), :, ,
+	- [ ] NEWLINE, INDENT, DEDENT tokens
+	- [ ] Comments: # single-line comments
   - [ ] **AST Builder** - Parse tokens into Abstract Syntax Tree
-    - [ ] Expression statements (function calls)
-    - [ ] Assignment statements (variable = value)
-    - [ ] If/elif/else statements with indented blocks
-    - [ ] While loop statements
-    - [ ] For loop statements with range()
-    - [ ] Break statement
-    - [ ] Binary expressions (arithmetic, comparison, logical)
-    - [ ] Unary expressions (not, -)
-    - [ ] Method calls (object.method(args))
+	- [ ] Expression statements (function calls)
+	- [ ] Assignment statements (variable = value)
+	- [ ] If/elif/else statements with indented blocks
+	- [ ] While loop statements
+	- [ ] For loop statements with range()
+	- [ ] Break statement
+	- [ ] Binary expressions (arithmetic, comparison, logical)
+	- [ ] Unary expressions (not, -)
+	- [ ] Method calls (object.method(args))
   - [ ] **Indentation Handler**
-    - [ ] Track indentation levels (4 spaces or 1 tab = 1 level)
-    - [ ] Emit INDENT tokens when level increases
-    - [ ] Emit DEDENT tokens when level decreases
-    - [ ] Detect mismatched indentation errors
+	- [ ] Track indentation levels (4 spaces or 1 tab = 1 level)
+	- [ ] Emit INDENT tokens when level increases
+	- [ ] Emit DEDENT tokens when level decreases
+	- [ ] Detect mismatched indentation errors
   - [ ] **Error System** - Python-style error messages
-    - [ ] SyntaxError with line numbers
-    - [ ] IndentationError for block issues
-    - [ ] NameError for undefined variables
-    - [ ] TypeError for wrong argument types
-    - [ ] AttributeError for invalid methods
+	- [ ] SyntaxError with line numbers
+	- [ ] IndentationError for block issues
+	- [ ] NameError for undefined variables
+	- [ ] TypeError for wrong argument types
+	- [ ] AttributeError for invalid methods
 - [ ] Write tests for Python parser (`tests/python_parser.test.gd`)
 
 ### Core Systems - Python Interpreter (P0)
@@ -86,64 +86,64 @@ Check off items as they are completed.
 ### Python Language Features (P0)
 - [ ] **CORE-003** Implement Python language constructs
   - [ ] **Variables**
-    - [ ] Variable assignment (x = value)
-    - [ ] Number, boolean, string storage
-    - [ ] Variable usage in expressions
-    - [ ] Undefined variable detection (NameError)
+	- [ ] Variable assignment (x = value)
+	- [ ] Number, boolean, string storage
+	- [ ] Variable usage in expressions
+	- [ ] Undefined variable detection (NameError)
   - [ ] **Conditionals**
-    - [ ] `if condition:` with indented block
-    - [ ] `elif condition:` clauses
-    - [ ] `else:` clause
-    - [ ] Nested conditionals
+	- [ ] `if condition:` with indented block
+	- [ ] `elif condition:` clauses
+	- [ ] `else:` clause
+	- [ ] Nested conditionals
   - [ ] **Comparison Operators**
-    - [ ] == (equal), != (not equal)
-    - [ ] < (less than), > (greater than)
-    - [ ] <= (less than or equal), >= (greater than or equal)
+	- [ ] == (equal), != (not equal)
+	- [ ] < (less than), > (greater than)
+	- [ ] <= (less than or equal), >= (greater than or equal)
   - [ ] **Logical Operators**
-    - [ ] `and` - both conditions True
-    - [ ] `or` - at least one condition True
-    - [ ] `not` - invert condition
+	- [ ] `and` - both conditions True
+	- [ ] `or` - at least one condition True
+	- [ ] `not` - invert condition
   - [ ] **While Loops**
-    - [ ] `while condition:` with indented block
-    - [ ] Break statement support
-    - [ ] Infinite loop protection (10s timeout)
+	- [ ] `while condition:` with indented block
+	- [ ] Break statement support
+	- [ ] Infinite loop protection (10s timeout)
   - [ ] **For Loops**
-    - [ ] `for i in range(n):` syntax
-    - [ ] Loop variable access
-    - [ ] Nested loop support
+	- [ ] `for i in range(n):` syntax
+	- [ ] Loop variable access
+	- [ ] Nested loop support
 
 ### Vehicle Control Functions (P0)
 - [ ] **CORE-002** Complete Python Vehicle API
   - [ ] **Basic Movement**
-    - [ ] `car.go()` - continuous forward movement
-    - [ ] `car.stop()` - immediate stop
-    - [ ] `car.turn_left()` - 90° left turn at intersection
-    - [ ] `car.turn_right()` - 90° right turn at intersection
-    - [ ] `car.wait(seconds)` - pause for N seconds (float)
+	- [ ] `car.go()` - continuous forward movement
+	- [ ] `car.stop()` - immediate stop
+	- [ ] `car.turn_left()` - 90° left turn at intersection
+	- [ ] `car.turn_right()` - 90° right turn at intersection
+	- [ ] `car.wait(seconds)` - pause for N seconds (float)
   - [ ] **Speed Control**
-    - [ ] `car.set_speed(value)` - speed multiplier 0.5 to 2.0
-    - [ ] `car.get_speed()` - returns current speed multiplier
+	- [ ] `car.set_speed(value)` - speed multiplier 0.5 to 2.0
+	- [ ] `car.get_speed()` - returns current speed multiplier
   - [ ] **State Queries (return bool)**
-    - [ ] `car.is_moving()` - is car currently moving?
-    - [ ] `car.is_blocked()` - is path obstructed?
-    - [ ] `car.is_at_intersection()` - is car at intersection?
-    - [ ] `car.is_at_destination()` - has car reached destination?
+	- [ ] `car.is_moving()` - is car currently moving?
+	- [ ] `car.is_blocked()` - is path obstructed?
+	- [ ] `car.is_at_intersection()` - is car at intersection?
+	- [ ] `car.is_at_destination()` - has car reached destination?
   - [ ] **Distance Queries (return float)**
-    - [ ] `car.distance_to_destination()` - distance to destination
-    - [ ] `car.distance_to_intersection()` - distance to next intersection
+	- [ ] `car.distance_to_destination()` - distance to destination
+	- [ ] `car.distance_to_intersection()` - distance to next intersection
 
 ### Traffic Light System (P0)
 - [ ] Create `scripts/entities/stoplight.gd`
   - [ ] **Control Methods**
-    - [ ] `stoplight.set_red()` - change to red
-    - [ ] `stoplight.set_yellow()` - change to yellow
-    - [ ] `stoplight.set_green()` - change to green
+	- [ ] `stoplight.set_red()` - change to red
+	- [ ] `stoplight.set_yellow()` - change to yellow
+	- [ ] `stoplight.set_green()` - change to green
   - [ ] **State Queries (return bool)**
-    - [ ] `stoplight.is_red()` - is light red?
-    - [ ] `stoplight.is_yellow()` - is light yellow?
-    - [ ] `stoplight.is_green()` - is light green?
+	- [ ] `stoplight.is_red()` - is light red?
+	- [ ] `stoplight.is_yellow()` - is light yellow?
+	- [ ] `stoplight.is_green()` - is light green?
   - [ ] **State Getter (return string)**
-    - [ ] `stoplight.get_state()` - returns "red", "yellow", or "green"
+	- [ ] `stoplight.get_state()` - returns "red", "yellow", or "green"
   - [ ] Implement state machine transitions
   - [ ] Car stopping at red lights behavior
 - [ ] Create traffic light sprite (2-way and 4-way variants)
@@ -196,63 +196,63 @@ Check off items as they are completed.
 ### Tutorial Levels - Functions (P0)
 - [ ] **LVL-001** Create Tutorial Map Set (T1-T5)
   - [ ] **T1: "First Drive"** - teaches `car.go()`, function calls
-    - [ ] Layout: Straight road, single car, one destination
-    - [ ] Solution: `car.go()`
+	- [ ] Layout: Straight road, single car, one destination
+	- [ ] Solution: `car.go()`
   - [ ] **T2: "Stop Sign"** - teaches `car.stop()`, sequencing
-    - [ ] Layout: Road with marked stop point before destination
-    - [ ] Solution: `car.go()`, `car.wait(2)`, `car.stop()`, etc.
+	- [ ] Layout: Road with marked stop point before destination
+	- [ ] Solution: `car.go()`, `car.wait(2)`, `car.stop()`, etc.
   - [ ] **T3: "Turn Ahead"** - teaches `car.turn_left()`, `car.turn_right()`
-    - [ ] Layout: L-shaped or T-intersection road
-    - [ ] Solution: Movement + turn combination
+	- [ ] Layout: L-shaped or T-intersection road
+	- [ ] Solution: Movement + turn combination
   - [ ] **T4: "Red Light, Green Light"** - teaches traffic light control
-    - [ ] Layout: Intersection with controllable stoplight
-    - [ ] Solution: `stoplight.set_green()`, `car.go()`, timing
+	- [ ] Layout: Intersection with controllable stoplight
+	- [ ] Solution: `stoplight.set_green()`, `car.go()`, timing
   - [ ] **T5: "Traffic Jam"** (Tutorial Finale) - combines all concepts
-    - [ ] Layout: Multiple cars, intersection with stoplight
-    - [ ] Solution: Multi-entity coordination
+	- [ ] Layout: Multiple cars, intersection with stoplight
+	- [ ] Solution: Multi-entity coordination
 
 ### Iloilo City Levels - Variables & Conditionals (P0)
 - [ ] **LVL-002** Create Iloilo City Map Set (C1-C5)
   - [ ] **C1: "Jaro Cathedral Run"** - teaches variables
-    - [ ] Location: Jaro Cathedral & Plaza
-    - [ ] Challenge: Use variables for timing
-    - [ ] Example: `wait_time = 2`, `car.wait(wait_time)`
+	- [ ] Location: Jaro Cathedral & Plaza
+	- [ ] Challenge: Use variables for timing
+	- [ ] Example: `wait_time = 2`, `car.wait(wait_time)`
   - [ ] **C2: "Esplanade Evening"** - teaches `if` statements
-    - [ ] Location: Iloilo Esplanade
-    - [ ] Challenge: React to traffic light state
-    - [ ] Example: `if stoplight.is_green(): car.go()`
+	- [ ] Location: Iloilo Esplanade
+	- [ ] Challenge: React to traffic light state
+	- [ ] Example: `if stoplight.is_green(): car.go()`
   - [ ] **C3: "SM Roundabout"** - teaches `if-elif-else`
-    - [ ] Location: SM City Iloilo Area
-    - [ ] Challenge: Roundabout with multiple exits
-    - [ ] Example: Full if-elif-else chain
+	- [ ] Location: SM City Iloilo Area
+	- [ ] Challenge: Roundabout with multiple exits
+	- [ ] Example: Full if-elif-else chain
   - [ ] **C4: "Calle Real Rush Hour"** - teaches logical operators
-    - [ ] Location: Calle Real Heritage District
-    - [ ] Challenge: Multiple conditions with `and`, `or`, `not`
+	- [ ] Location: Calle Real Heritage District
+	- [ ] Challenge: Multiple conditions with `and`, `or`, `not`
   - [ ] **C5: "Molo Church Challenge"** - teaches comparison operators
-    - [ ] Location: Molo Church & Plaza
-    - [ ] Challenge: Distance-based decisions
-    - [ ] Example: `if car.distance_to_destination() > 10:`
+	- [ ] Location: Molo Church & Plaza
+	- [ ] Challenge: Distance-based decisions
+	- [ ] Example: `if car.distance_to_destination() > 10:`
 
 ### Water/Port Levels - Loops (P1)
 - [ ] **LVL-003** Create Water/Port Map Set (W1-W5)
   - [ ] **W1: "River Crossing 101"** - teaches `while` loops
-    - [ ] Location: Iloilo River Wharf
-    - [ ] Challenge: Wait for boat using loop
-    - [ ] Example: `while not boat.is_ready(): car.wait(1)`
+	- [ ] Location: Iloilo River Wharf
+	- [ ] Challenge: Wait for boat using loop
+	- [ ] Example: `while not boat.is_ready(): car.wait(1)`
   - [ ] **W2: "Ferry Queue"** - teaches `while` with conditions
-    - [ ] Location: Fort San Pedro Area
-    - [ ] Challenge: Multiple cars, queue management
-    - [ ] Example: `while not car.is_at_destination():`
+	- [ ] Location: Fort San Pedro Area
+	- [ ] Challenge: Multiple cars, queue management
+	- [ ] Example: `while not car.is_at_destination():`
   - [ ] **W3: "Two-Way Traffic"** - teaches `for` loops with `range()`
-    - [ ] Location: Iloilo Fishing Port
-    - [ ] Challenge: Repeat actions N times
-    - [ ] Example: `for i in range(3):`
+	- [ ] Location: Iloilo Fishing Port
+	- [ ] Challenge: Repeat actions N times
+	- [ ] Example: `for i in range(3):`
   - [ ] **W4: "Land and Sea"** - teaches nested loops
-    - [ ] Location: Parola Lighthouse Area
-    - [ ] Challenge: Mixed land and water routes
+	- [ ] Location: Parola Lighthouse Area
+	- [ ] Challenge: Mixed land and water routes
   - [ ] **W5: "Port Master"** - teaches complex algorithms
-    - [ ] Location: Combined River & Port
-    - [ ] Challenge: Full port simulation combining all concepts
+	- [ ] Location: Combined River & Port
+	- [ ] Challenge: Full port simulation combining all concepts
 
 ### Boat Mechanics (P1)
 - [ ] Create `scripts/entities/boat.gd`
@@ -261,10 +261,10 @@ Check off items as they are completed.
   - [ ] Boat respawn (15 seconds after departure)
   - [ ] Queue system (FIFO)
   - [ ] **Python API:**
-    - [ ] `boat.depart()` - force immediate departure
-    - [ ] `boat.is_ready()` - is boat docked and ready?
-    - [ ] `boat.is_full()` - is boat at capacity?
-    - [ ] `boat.get_passenger_count()` - number of cars on board
+	- [ ] `boat.depart()` - force immediate departure
+	- [ ] `boat.is_ready()` - is boat docked and ready?
+	- [ ] `boat.is_full()` - is boat at capacity?
+	- [ ] `boat.get_passenger_count()` - number of cars on board
 
 ### Vehicle Variety (P1)
 - [ ] **VEH-001** Implement vehicle types
@@ -302,65 +302,65 @@ Check off items as they are completed.
 ### Gameplay Interface (P0)
 - [ ] **UI-002** Create VS Code-Style HUD
   - [ ] **Left Panel: File Explorer** (120px fixed)
-    - [ ] Display entities as .py files (car.py, stoplight.py, boat.py)
-    - [ ] Click to select entity
-    - [ ] Visual indicators for active/inactive
-    - [ ] Hierarchical display for multiple entities
+	- [ ] Display entities as .py files (car.py, stoplight.py, boat.py)
+	- [ ] Click to select entity
+	- [ ] Visual indicators for active/inactive
+	- [ ] Hierarchical display for multiple entities
   - [ ] **Main View: Game World** (flexible width)
-    - [ ] 2D map visualization
-    - [ ] Real-time code execution visualization
-    - [ ] Entity labels showing file names
-    - [ ] Hover highlighting for interactive elements
+	- [ ] 2D map visualization
+	- [ ] Real-time code execution visualization
+	- [ ] Entity labels showing file names
+	- [ ] Hover highlighting for interactive elements
   - [ ] **Bottom Panel: Python Code Editor** (200px, collapsible)
-    - [ ] Text input area for Python code
-    - [ ] Line numbers
-    - [ ] **Python Syntax Highlighting:**
-      - [ ] Keywords (purple #C586C0): if, else, while, for, and, or, not
-      - [ ] Built-in Constants (blue #569CD6): True, False
-      - [ ] Functions/Methods (yellow #DCDCAA): go(), stop(), is_red()
-      - [ ] Strings (orange #CE9178): "red", 'green'
-      - [ ] Numbers (light green #B5CEA8): 1, 2.5, 0.5
-      - [ ] Comments (green #6A9955): # comment
-      - [ ] Variables (light blue #9CDCFE): speed, wait_time
-      - [ ] Operators (white #D4D4D4): =, ==, +, -
-    - [ ] Indentation guides for blocks
-    - [ ] Real-time Python error feedback
-    - [ ] Current executing line highlighting
+	- [ ] Text input area for Python code
+	- [ ] Line numbers
+	- [ ] **Python Syntax Highlighting:**
+	  - [ ] Keywords (purple #C586C0): if, else, while, for, and, or, not
+	  - [ ] Built-in Constants (blue #569CD6): True, False
+	  - [ ] Functions/Methods (yellow #DCDCAA): go(), stop(), is_red()
+	  - [ ] Strings (orange #CE9178): "red", 'green'
+	  - [ ] Numbers (light green #B5CEA8): 1, 2.5, 0.5
+	  - [ ] Comments (green #6A9955): # comment
+	  - [ ] Variables (light blue #9CDCFE): speed, wait_time
+	  - [ ] Operators (white #D4D4D4): =, ==, +, -
+	- [ ] Indentation guides for blocks
+	- [ ] Real-time Python error feedback
+	- [ ] Current executing line highlighting
   - [ ] **Top Bar:** Level info, lives, timer
   - [ ] **Playback Controls Toolbar:**
-    - [ ] Run (F5), Pause (Space), 2x (+), 4x (Ctrl++), 0.5x (-), Retry (R), Step (F10)
+	- [ ] Run (F5), Pause (Space), 2x (+), 4x (Ctrl++), 0.5x (-), Retry (R), Step (F10)
 
 ### Level Select Screen (P0)
 - [ ] **UI-003** Create Level Select
   - [ ] Back button
   - [ ] **Tutorial section (T1-T5)** - "Learn Python Basics"
-    - [ ] Concept labels: func, seq, turn, light, combo
+	- [ ] Concept labels: func, seq, turn, light, combo
   - [ ] **Iloilo City section (C1-C5)** - "Variables & Conditionals"
-    - [ ] Concept labels: vars, if, elif, logic, comp
+	- [ ] Concept labels: vars, if, elif, logic, comp
   - [ ] **Water/Port section (W1-W5)** - "Loops & Advanced"
-    - [ ] Concept labels: while, cond, for, nest, algo
+	- [ ] Concept labels: while, cond, for, nest, algo
   - [ ] Level tiles showing:
-    - [ ] Star ratings for completed
-    - [ ] Lock icon for locked
-    - [ ] Python concept taught
+	- [ ] Star ratings for completed
+	- [ ] Lock icon for locked
+	- [ ] Python concept taught
   - [ ] Total stars counter
   - [ ] Python Concepts progress (X/8)
 
 ### Victory/Defeat Screens (P0)
 - [ ] **UI-004** Create Result Screens
   - [ ] Victory screen
-    - [ ] Star rating display (1-3 stars)
-    - [ ] Time and lines of code stats
-    - [ ] Code efficiency bonus indicator
-    - [ ] Retry button
-    - [ ] Next level button
-    - [ ] Level select button
+	- [ ] Star rating display (1-3 stars)
+	- [ ] Time and lines of code stats
+	- [ ] Code efficiency bonus indicator
+	- [ ] Retry button
+	- [ ] Next level button
+	- [ ] Level select button
   - [ ] Defeat screen
-    - [ ] Python-style error display (RuntimeError, etc.)
-    - [ ] Failure reason display
-    - [ ] Retry button
-    - [ ] Skip button (optional)
-    - [ ] Level select button
+	- [ ] Python-style error display (RuntimeError, etc.)
+	- [ ] Failure reason display
+	- [ ] Retry button
+	- [ ] Skip button (optional)
+	- [ ] Level select button
 
 ### Color Scheme Implementation (VS Code Dark Theme)
 - [ ] Background: Dark gray (#1E1E1E)
@@ -371,20 +371,20 @@ Check off items as they are completed.
 ### Infinite/Survival Mode (P1)
 - [ ] **MODE-002** Implement Infinite Mode
   - [ ] Lives system (3 starting lives)
-    - [ ] Car crash: -1 life
-    - [ ] Timer expired: -1 life
-    - [ ] Code error/exception: -1 life
+	- [ ] Car crash: -1 life
+	- [ ] Timer expired: -1 life
+	- [ ] Code error/exception: -1 life
   - [ ] Scoring system
-    - [ ] +100 base per successful delivery
-    - [ ] +10 per consecutive streak
-    - [ ] +50 max speed bonus
-    - [ ] +25 code efficiency bonus (fewer lines)
-    - [ ] +15 loop usage bonus
+	- [ ] +100 base per successful delivery
+	- [ ] +10 per consecutive streak
+	- [ ] +50 max speed bonus
+	- [ ] +25 code efficiency bonus (fewer lines)
+	- [ ] +15 loop usage bonus
   - [ ] Difficulty scaling per wave
-    - [ ] Waves 1-3: 1-2 vehicles, generous timers, basic functions only
-    - [ ] Waves 4-6: 2-3 vehicles, moderate timers, conditionals helpful
-    - [ ] Waves 7-10: 3-4 vehicles, tight timers, loops recommended
-    - [ ] Waves 11+: 4+ vehicles, shortest timers, complex logic required
+	- [ ] Waves 1-3: 1-2 vehicles, generous timers, basic functions only
+	- [ ] Waves 4-6: 2-3 vehicles, moderate timers, conditionals helpful
+	- [ ] Waves 7-10: 3-4 vehicles, tight timers, loops recommended
+	- [ ] Waves 11+: 4+ vehicles, shortest timers, complex logic required
   - [ ] Game Over screen with final score
   - [ ] High score persistence
 
