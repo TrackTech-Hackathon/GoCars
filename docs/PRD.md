@@ -299,28 +299,28 @@ car.wait(wait_time)
 ```python
 # Basic if statement
 if stoplight.is_red():
-    car.stop()
+	car.stop()
 
 # If-else
 if car.is_at_intersection():
-    car.turn_left()
+	car.turn_left()
 else:
-    car.go()
+	car.go()
 
 # If-elif-else
 if stoplight.is_red():
-    car.stop()
+	car.stop()
 elif stoplight.is_yellow():
-    car.stop()
+	car.stop()
 else:
-    car.go()
+	car.go()
 
 # Nested conditions
 if car.is_at_intersection():
-    if stoplight.is_green():
-        car.go()
-    else:
-        car.stop()
+	if stoplight.is_green():
+		car.go()
+	else:
+		car.stop()
 ```
 
 **Comparison Operators:**
@@ -336,10 +336,10 @@ if car.is_at_intersection():
 
 # Examples
 if car.distance_to_destination() < 5:
-    car.stop()
+	car.stop()
 
 if car.get_speed() >= 1.5:
-    car.set_speed(1.0)
+	car.set_speed(1.0)
 ```
 
 **Logical Operators:**
@@ -352,10 +352,10 @@ not   # Inverts the condition
 
 # Examples
 if stoplight.is_green() and not car.is_blocked():
-    car.go()
+	car.go()
 
 if car.is_at_destination() or car.is_blocked():
-    car.stop()
+	car.stop()
 ```
 
 **While Loops:**
@@ -363,18 +363,18 @@ if car.is_at_destination() or car.is_blocked():
 ```python
 # Basic while loop
 while not car.is_at_destination():
-    car.go()
+	car.go()
 
 # While with condition
 while car.distance_to_destination() > 10:
-    car.go()
-    car.wait(0.5)
+	car.go()
+	car.wait(0.5)
 
 # While with break
 while True:
-    car.go()
-    if car.is_at_intersection():
-        break
+	car.go()
+	if car.is_at_intersection():
+		break
 car.turn_left()
 ```
 
@@ -383,19 +383,19 @@ car.turn_left()
 ```python
 # Repeat action N times
 for i in range(3):
-    car.go()
-    car.wait(1)
-    car.stop()
+	car.go()
+	car.wait(1)
+	car.stop()
 
 # Using loop variable
 for i in range(5):
-    car.wait(i)  # Waits 0, 1, 2, 3, 4 seconds
+	car.wait(i)  # Waits 0, 1, 2, 3, 4 seconds
 
 # Nested loops
 for i in range(2):
-    for j in range(3):
-        car.go()
-        car.wait(1)
+	for j in range(3):
+		car.go()
+		car.wait(1)
 ```
 
 **Comments:**
@@ -649,11 +649,11 @@ car.go()
 - **Example Solution:**
 ```python
 if stoplight.is_green():
-    car.go()
+	car.go()
 else:
-    car.stop()
-    stoplight.set_green()
-    car.go()
+	car.stop()
+	stoplight.set_green()
+	car.go()
 ```
 
 **Level C3: "SM Roundabout"**
@@ -664,13 +664,13 @@ else:
 ```python
 car.go()
 if car.is_at_intersection():
-    if stoplight.is_red():
-        car.stop()
-    elif stoplight.is_yellow():
-        car.stop()
-    else:
-        car.turn_right()
-        car.go()
+	if stoplight.is_red():
+		car.stop()
+	elif stoplight.is_yellow():
+		car.stop()
+	else:
+		car.turn_right()
+		car.go()
 ```
 
 **Level C4: "Calle Real Rush Hour"**
@@ -680,9 +680,9 @@ if car.is_at_intersection():
 - **Example Solution:**
 ```python
 if stoplight1.is_green() and not car.is_blocked():
-    car.go()
+	car.go()
 elif stoplight2.is_green() or car.is_at_destination():
-    car.stop()
+	car.stop()
 ```
 
 **Level C5: "Molo Church Challenge"**
@@ -692,13 +692,13 @@ elif stoplight2.is_green() or car.is_at_destination():
 - **Example Solution:**
 ```python
 if car.distance_to_destination() > 10:
-    car.set_speed(1.5)
-    car.go()
+	car.set_speed(1.5)
+	car.go()
 elif car.distance_to_destination() > 5:
-    car.set_speed(1.0)
-    car.go()
+	car.set_speed(1.0)
+	car.go()
 else:
-    car.stop()
+	car.stop()
 ```
 
 ---
@@ -726,7 +726,7 @@ else:
 - **Example Solution:**
 ```python
 while not boat.is_ready():
-    car.wait(1)
+	car.wait(1)
 car.go()
 ```
 
@@ -737,10 +737,10 @@ car.go()
 - **Example Solution:**
 ```python
 while not car.is_at_destination():
-    if boat.is_ready():
-        car.go()
-    else:
-        car.wait(1)
+	if boat.is_ready():
+		car.go()
+	else:
+		car.wait(1)
 ```
 
 **Level W3: "Two-Way Traffic"**
@@ -750,10 +750,10 @@ while not car.is_at_destination():
 - **Example Solution:**
 ```python
 for i in range(3):
-    car.go()
-    car.wait(2)
-    car.stop()
-    car.wait(1)
+	car.go()
+	car.wait(2)
+	car.stop()
+	car.wait(1)
 ```
 
 **Level W4: "Land and Sea"**
@@ -763,12 +763,12 @@ for i in range(3):
 - **Example Solution:**
 ```python
 for i in range(2):
-    while not car.is_at_intersection():
-        car.go()
-    if i == 0:
-        car.turn_left()
-    else:
-        car.turn_right()
+	while not car.is_at_intersection():
+		car.go()
+	if i == 0:
+		car.turn_left()
+	else:
+		car.turn_right()
 ```
 
 **Level W5: "Port Master"**
@@ -779,16 +779,16 @@ for i in range(2):
 ```python
 destination_reached = False
 while not destination_reached:
-    if car.is_blocked():
-        car.wait(1)
-    elif car.is_at_intersection():
-        if stoplight.is_green():
-            car.turn_right()
-        else:
-            car.stop()
-    else:
-        car.go()
-    destination_reached = car.is_at_destination()
+	if car.is_blocked():
+		car.wait(1)
+	elif car.is_at_intersection():
+		if stoplight.is_green():
+			car.turn_right()
+		else:
+			car.stop()
+	else:
+		car.go()
+	destination_reached = car.is_at_destination()
 ```
 
 ---
@@ -932,12 +932,12 @@ expression_stmt → expression NEWLINE
 assignment      → IDENTIFIER '=' expression NEWLINE
 
 if_stmt    → 'if' expression ':' NEWLINE INDENT statement+ DEDENT
-             ('elif' expression ':' NEWLINE INDENT statement+ DEDENT)*
-             ('else' ':' NEWLINE INDENT statement+ DEDENT)?
+			 ('elif' expression ':' NEWLINE INDENT statement+ DEDENT)*
+			 ('else' ':' NEWLINE INDENT statement+ DEDENT)?
 
 while_stmt → 'while' expression ':' NEWLINE INDENT statement+ DEDENT
 for_stmt   → 'for' IDENTIFIER 'in' 'range' '(' expression ')' ':' 
-             NEWLINE INDENT statement+ DEDENT
+			 NEWLINE INDENT statement+ DEDENT
 
 expression → or_expr
 or_expr    → and_expr ('or' and_expr)*
@@ -995,24 +995,24 @@ car.go()
 
 # Conditionals
 if stoplight.is_red():
-    car.stop()
+	car.stop()
 elif stoplight.is_yellow():
-    car.stop()
+	car.stop()
 else:
-    car.go()
+	car.go()
 
 # While loop
 while not car.is_at_destination():
-    if car.is_blocked():
-        car.wait(1)
-    else:
-        car.go()
+	if car.is_blocked():
+		car.wait(1)
+	else:
+		car.go()
 
 # For loop
 for i in range(3):
-    car.go()
-    car.wait(1)
-    car.turn_left()
+	car.go()
+	car.wait(1)
+	car.turn_left()
 ```
 
 ---

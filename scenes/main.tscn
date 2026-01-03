@@ -1,10 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://dpu0r01g08cg3"]
+[gd_scene load_steps=8 format=3 uid="uid://dpu0r01g08cg3"]
 
 [ext_resource type="Script" uid="uid://df74itlomy7yj" path="res://scripts/core/simulation_engine.gd" id="1_sim"]
 [ext_resource type="Script" uid="uid://dqoc4rfbl715i" path="res://scenes/main.gd" id="3_main"]
 [ext_resource type="PackedScene" uid="uid://baalr12vqcr16" path="res://objects/test_vehicle.tscn" id="4_tbgi4"]
 [ext_resource type="PackedScene" uid="uid://ctf1l2qvnhxgs" path="res://scenes/entities/stoplight.tscn" id="5_stoplight"]
-[ext_resource type="Texture2D" path="res://assets/tiles/RoadTilesDebug64x64.png" id="6_tileset"]
+[ext_resource type="Texture2D" uid="uid://b8858r8ugj4mq" path="res://assets/tiles/RoadTilesDebug64x64.png" id="6_tileset"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1"]
 texture = ExtResource("6_tileset")
@@ -95,7 +95,7 @@ offset_top = 100.0
 offset_right = 600.0
 offset_bottom = 200.0
 text = "Instructions:
-- car.go() / car.stop() / car.turn(left) / car.turn(right) / car.move(N) / car.wait(N)
+- car.go() / car.stop() / car.turn_left() / car.turn_right() / car.move(N) / car.wait(N)
 - if car.is_front_road(): / if car.is_left_road(): / if car.is_right_road():
 - Click tiles to place/remove roads (costs road cards)
 - Space: pause/resume | R: reset | +/-: speed | S: step"
@@ -107,6 +107,7 @@ offset_right = 1100.0
 offset_bottom = 250.0
 
 [node name="PanelLabel" type="Label" parent="UI/StoplightPanel"]
+layout_mode = 0
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 280.0
@@ -114,6 +115,7 @@ offset_bottom = 40.0
 text = "Stoplight Control"
 
 [node name="RedButton" type="Button" parent="UI/StoplightPanel"]
+layout_mode = 0
 offset_left = 20.0
 offset_top = 50.0
 offset_right = 120.0
@@ -121,6 +123,7 @@ offset_bottom = 90.0
 text = "Set Red"
 
 [node name="YellowButton" type="Button" parent="UI/StoplightPanel"]
+layout_mode = 0
 offset_left = 20.0
 offset_top = 100.0
 offset_right = 120.0
@@ -128,6 +131,7 @@ offset_bottom = 140.0
 text = "Set Yellow"
 
 [node name="GreenButton" type="Button" parent="UI/StoplightPanel"]
+layout_mode = 0
 offset_left = 20.0
 offset_top = 150.0
 offset_right = 120.0
@@ -135,6 +139,7 @@ offset_bottom = 190.0
 text = "Set Green"
 
 [node name="StateLabel" type="Label" parent="UI/StoplightPanel"]
+layout_mode = 0
 offset_left = 140.0
 offset_top = 50.0
 offset_right = 280.0
@@ -156,24 +161,27 @@ offset_right = 600.0
 offset_bottom = 350.0
 
 [node name="ResultTitle" type="Label" parent="UI/ResultPopup"]
+layout_mode = 0
 offset_left = 20.0
 offset_top = 20.0
 offset_right = 380.0
 offset_bottom = 60.0
+text = "LEVEL COMPLETE!"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "LEVEL COMPLETE!"
 
 [node name="ResultMessage" type="Label" parent="UI/ResultPopup"]
+layout_mode = 0
 offset_left = 20.0
 offset_top = 70.0
 offset_right = 380.0
 offset_bottom = 110.0
+text = "Stars: 3/3"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "Stars: 3/3"
 
 [node name="RetryButton" type="Button" parent="UI/ResultPopup"]
+layout_mode = 0
 offset_left = 50.0
 offset_top = 130.0
 offset_right = 180.0
@@ -181,6 +189,7 @@ offset_bottom = 170.0
 text = "Retry"
 
 [node name="NextButton" type="Button" parent="UI/ResultPopup"]
+layout_mode = 0
 offset_left = 220.0
 offset_top = 130.0
 offset_right = 350.0

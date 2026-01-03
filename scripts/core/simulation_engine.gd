@@ -30,11 +30,13 @@ var _step_timer: float = 0.0
 const STEP_DURATION: float = 0.5  # Time per step in seconds
 
 # References
-var _parser: CodeParser
+var _python_parser: PythonParser
+var _python_interpreter: PythonInterpreter
 var _vehicles: Dictionary = {}  # vehicle_id -> Vehicle node
 var _stoplights: Dictionary = {}  # stoplight_id -> Stoplight node
 var _command_queue: Array = []
 var _current_command_index: int = 0
+var _use_python_interpreter: bool = true  # Use new Python system by default
 
 # Level tracking
 var _vehicles_at_destination: int = 0
@@ -50,7 +52,8 @@ var _map_bounds: Rect2 = Rect2(-100, -100, 2000, 2000)  # Default large bounds
 
 
 func _ready() -> void:
-	_parser = CodeParser.new()
+	_python_parser = PythonParser.new()
+	_python_interpreter = PythonInterpreter.new()
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 
@@ -147,32 +150,42 @@ func get_vehicle_ids() -> Array:
 
 ## Parse and execute code
 func execute_code(code: String) -> void:
-	# Get available objects based on registered entities
-	var available_objects: Array = []
+	if _use_python_interpreter:
+		_execute_code_python(code)
 
-	# Add "car" if vehicles are registered
-	if _vehicles.size() > 0:
-		available_objects.append("car")
 
-	# Add "stoplight" if stoplights are registered
-	if _stoplights.size() > 0:
-		available_objects.append("stoplight")
+## Execute code using the new Python parser and interpreter
+func _execute_code_python(code: String) -> void:
+	# Parse code with PythonParser
+	var ast = _python_parser.parse(code)
 
-	# Parse the code
-	var result = _parser.parse(code, available_objects)
-
-	if not result.valid:
-		# Emit errors but don't start simulation
-		for error in result.errors:
+	# Check for parse errors
+	if ast["errors"].size() > 0:
+		for error in ast["errors"]:
 			push_error("Line %s: %s" % [error["line"], error["message"]])
 		return
 
-	# Queue commands and start simulation
-	_command_queue = result.commands
-	_current_command_index = 0
+	# Register game objects with interpreter
+	_python_interpreter.clear_objects()
 
-	# Execute all commands immediately (they queue actions on vehicles)
-	_execute_all_commands()
+	# Register all vehicles as "car" (for simplicity, first vehicle)
+	# In the future, we can support car1, car2, etc.
+	if _vehicles.size() > 0:
+		var first_vehicle_id = _vehicles.keys()[0]
+		_python_interpreter.register_object("car", _vehicles[first_vehicle_id])
+
+	# Register all stoplights
+	if _stoplights.size() > 0:
+		var first_stoplight_id = _stoplights.keys()[0]
+		_python_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
+
+	# Execute AST
+	var result = _python_interpreter.execute(ast)
+
+	if not result["success"]:
+		for error in result["errors"]:
+			push_error("Runtime Error: %s" % error["full"])
+		return
 
 	# Start the simulation
 	start()

@@ -83,7 +83,7 @@ GoCars/
 │   └── systems/           # Save manager, score manager
 ├── tests/                 # Test files (.test.gd)
 └── data/
-    └── levels/            # Level configuration files
+	└── levels/            # Level configuration files
 ```
 
 ---
@@ -295,11 +295,11 @@ car.set_speed(speed)
 ### Conditionals (if/elif/else)
 ```python
 if stoplight.is_red():
-    car.stop()
+	car.stop()
 elif stoplight.is_yellow():
-    car.stop()
+	car.stop()
 else:
-    car.go()
+	car.go()
 ```
 
 ### Comparison Operators
@@ -313,7 +313,7 @@ else:
 
 # Example
 if car.distance_to_destination() < 5:
-    car.stop()
+	car.stop()
 ```
 
 ### Logical Operators
@@ -324,27 +324,27 @@ not   # Inverts the condition
 
 # Example
 if stoplight.is_green() and not car.is_blocked():
-    car.go()
+	car.go()
 ```
 
 ### While Loops
 ```python
 while not car.is_at_destination():
-    car.go()
+	car.go()
 
 # With break
 while True:
-    car.go()
-    if car.is_at_intersection():
-        break
+	car.go()
+	if car.is_at_intersection():
+		break
 ```
 
 ### For Loops
 ```python
 for i in range(3):
-    car.go()
-    car.wait(1)
-    car.stop()
+	car.go()
+	car.wait(1)
+	car.stop()
 ```
 
 ### Comments
@@ -480,7 +480,7 @@ Levels are stored as JSON in `data/levels/`:
         "two_stars": "lines_of_code <= 6",
         "three_stars": "lines_of_code <= 4"
     },
-    "hint": "Use 'if stoplight.is_green():' to check the light state"
+	"hint": "Use 'if stoplight.is_green():' to check the light state"
 }
 ```
 
