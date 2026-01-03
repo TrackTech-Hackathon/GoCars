@@ -780,45 +780,45 @@ Cars must stay on road tiles:
 ```python
 # Move forward if road ahead, otherwise turn right
 if car.is_front_road():
-    car.move(3)
+	car.move(3)
 else:
-    car.turn("right")
+	car.turn("right")
 ```
 
 ### Example 2: Intersection Logic
 ```python
 # Navigate through an intersection
 if car.is_front_road():
-    car.go()
+	car.go()
 elif car.is_left_road():
-    car.turn("left")
-    car.go()
+	car.turn("left")
+	car.go()
 elif car.is_right_road():
-    car.turn("right")
-    car.go()
+	car.turn("right")
+	car.go()
 else:
-    car.stop()
+	car.stop()
 ```
 
 ### Example 3: Obstacle Avoidance (Multi-Car Strategy)
 ```python
 # Navigate around crashed cars
 if car.is_front_crashed_car():
-    # Crashed car blocking, find alternate route
-    if car.is_left_road():
-        car.turn("left")
-        car.go()
-    elif car.is_right_road():
-        car.turn("right")
-        car.go()
-    else:
-        car.stop()  # Stuck, need player to build road
+	# Crashed car blocking, find alternate route
+	if car.is_left_road():
+		car.turn("left")
+		car.go()
+	elif car.is_right_road():
+		car.turn("right")
+		car.go()
+	else:
+		car.stop()  # Stuck, need player to build road
 elif car.is_front_car():
-    # Active car ahead, wait
-    car.stop()
+	# Active car ahead, wait
+	car.stop()
 elif car.is_front_road():
-    # Clear path
-    car.go()
+	# Clear path
+	car.go()
 ```
 
 ### Example 4: Multi-Car Code (Runs on Every Spawned Car)
@@ -828,19 +828,19 @@ elif car.is_front_road():
 
 # First priority: Check for obstacles
 if car.is_front_crashed_car():
-    # Route around crashed car
-    if car.is_left_road() and not car.is_front_car():
-        car.turn("left")
-    elif car.is_right_road():
-        car.turn("right")
+	# Route around crashed car
+	if car.is_left_road() and not car.is_front_car():
+		car.turn("left")
+	elif car.is_right_road():
+		car.turn("right")
 
 # Second priority: Check for active cars
 elif car.is_front_car():
-    car.stop()  # Wait for car to move
+	car.stop()  # Wait for car to move
 
 # Third priority: Continue if path clear
 elif car.is_front_road():
-    car.go()
+	car.go()
 ```
 
 ---

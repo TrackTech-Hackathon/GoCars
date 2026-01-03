@@ -243,13 +243,13 @@ car.is_right_road()   # Returns True if road tile to the right
 
 # Example: Navigate maze
 if car.is_front_road():
-    car.go()
+	car.go()
 elif car.is_left_road():
-    car.turn("left")
-    car.go()
+	car.turn("left")
+	car.go()
 elif car.is_right_road():
-    car.turn("right")
-    car.go()
+	car.turn("right")
+	car.go()
 ```
 
 **Car Detection Functions (NEW):**
@@ -261,14 +261,14 @@ car.is_front_crashed_car()  # Returns True if CRASHED car ahead (obstacle)
 
 # Example: Avoid obstacles
 if car.is_front_crashed_car():
-    if car.is_left_road():
-        car.turn("left")
-    elif car.is_right_road():
-        car.turn("right")
+	if car.is_left_road():
+		car.turn("left")
+	elif car.is_right_road():
+		car.turn("right")
 elif car.is_front_car():
-    car.stop()  # Wait for car to move
+	car.stop()  # Wait for car to move
 else:
-    car.go()
+	car.go()
 ```
 
 **Traffic Light Functions:**
