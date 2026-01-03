@@ -63,10 +63,10 @@ const TURN_DURATION: float = 0.3
 var _tile_map_layer: TileMapLayer = null
 const ROAD_TILE_COLUMN_START: int = 1  # Columns 1-16 are road tiles
 
-# Tile-based movement
+# Tile-based movement (reserved for future use)
 var _tiles_to_move: int = 0
-var _moving_to_tile: bool = false
-var _target_tile_position: Vector2 = Vector2.ZERO
+# var _moving_to_tile: bool = false  # Reserved for tile-based movement
+# var _target_tile_position: Vector2 = Vector2.ZERO  # Reserved for tile-based movement
 
 
 func _ready() -> void:
@@ -109,7 +109,7 @@ func _physics_process(delta: float) -> void:
 		_check_destination()
 
 
-func _move(delta: float) -> void:
+func _move(_delta: float) -> void:
 	# Check if car is on a road tile
 	if _tile_map_layer != null:
 		if not _is_on_road():

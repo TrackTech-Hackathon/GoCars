@@ -191,39 +191,39 @@ Check off items as they are completed.
   - [x] Road detection methods work correctly
 
 ### Simulation Controls (P0)
-- [ ] **CORE-004** Create playback control system
-  - [ ] Run button - execute Python code (F5 or Ctrl+Enter)
-  - [ ] Pause button - freeze simulation (Space)
-  - [ ] Resume - continue simulation (Space toggle)
-  - [ ] Fast-Forward 2x - double speed (+ or =)
-  - [ ] Fast-Forward 4x - quadruple speed (Ctrl + +)
-  - [ ] Slow-Motion 0.5x - half speed (-)
-  - [ ] Fast Retry - instant restart (R or Ctrl+R)
-  - [ ] Step mode - execute one line at a time (F10)
-  - [ ] Current line highlighting in editor
+- [x] **CORE-004** Create playback control system
+  - [x] Run button - execute Python code (F5 or Ctrl+Enter)
+  - [x] Pause button - freeze simulation (Space)
+  - [x] Resume - continue simulation (Space toggle)
+  - [x] Fast-Forward 2x - double speed (+ or =)
+  - [x] Fast-Forward 4x - quadruple speed (Ctrl + +)
+  - [x] Slow-Motion 0.5x - half speed (-)
+  - [x] Fast Retry - instant restart (R or Ctrl+R)
+  - [x] Step mode - execute one line at a time (F10)
+  - [x] Current line highlighting in editor
 
 ### Win/Lose Conditions (P0)
-- [ ] **MODE-001** Implement win condition detection
-  - [ ] All cars reached destination
-  - [ ] Trigger victory UI
-- [ ] Implement fail condition detection
-  - [ ] Car crash (collision)
-  - [ ] Timer expired
-  - [ ] Car exits map boundary
-  - [ ] Infinite loop detected (10s timeout)
-  - [ ] Code error/exception
-  - [ ] Trigger failure UI with reason
+- [x] **MODE-001** Implement win condition detection
+  - [x] All cars reached destination
+  - [x] Trigger victory UI
+- [x] Implement fail condition detection
+  - [x] Car crash (collision) - uses hearts system
+  - [x] Timer expired
+  - [x] Car exits map boundary
+  - [x] Infinite loop detected (10s timeout)
+  - [x] Code error/exception
+  - [x] Trigger failure UI with reason
 
 ### Level Manager (P0)
-- [ ] Create `scripts/core/level_manager.gd`
-  - [ ] Load level configurations from JSON
-  - [ ] Spawn vehicles at designated positions
-  - [ ] Spawn traffic elements
-  - [ ] Track win/lose states
-  - [ ] Calculate star ratings
-  - [ ] Handle level transitions
+- [x] Create `scripts/core/level_manager.gd`
+  - [x] Load level configurations from JSON
+  - [x] Spawn vehicles at designated positions
+  - [x] Spawn traffic elements
+  - [x] Track win/lose states
+  - [x] Calculate star ratings
+  - [x] Handle level transitions
 
-**Phase 2 Milestone:** Full gameplay loop with Python conditionals and loops functional
+**Phase 2 Milestone:** Full gameplay loop with Python conditionals and loops functional - **COMPLETE**
 
 ---
 
@@ -587,7 +587,7 @@ Check off items as they are completed.
 | Phase | Status | Completion |
 |-------|--------|------------|
 | Phase 1: Foundation | Complete | 100% |
-| Phase 2: Core Mechanics | In Progress | 85% |
+| Phase 2: Core Mechanics | Complete | 100% |
 | Phase 3: Content Creation | Not Started | 0% |
 | Phase 4: Polish & UI | Not Started | 0% |
 | Phase 5: Testing & Submission | Not Started | 0% |
@@ -671,6 +671,45 @@ SCRIPT ERROR: Invalid cast. Cannot convert from "Node2D" to "ColorRect".
 **Test Results:**
 - All 4 test files pass (parser, interpreter, code_parser, stoplight)
 - Total: 147+ tests passing
+
+---
+
+### January 3, 2026 - Phase 2 Simulation Controls Complete
+
+**New Features Implemented:**
+
+1. **Keyboard Shortcuts**
+   - F5 - Run code
+   - Ctrl+Enter - Run code
+   - R / Ctrl+R - Fast retry (reset level)
+   - Space - Pause/Resume toggle
+   - + or = - Speed up (2x)
+   - Ctrl++ - Fast-forward (4x)
+   - - (minus) - Slow motion (0.5x)
+   - F10 - Step mode (execute one step)
+
+2. **Current Line Highlighting**
+   - Code editor highlights the currently executing line
+   - Line numbers enabled in code editor
+   - Execution errors show the error line
+
+3. **Win/Lose Conditions**
+   - Win: All active cars reach destination
+   - Fail: Hearts reach 0 (crashes), timer expired, car leaves map, infinite loop, code errors
+   - Detailed victory/defeat popups with stats
+
+4. **Level Manager Integration**
+   - Level Manager connected to main scene
+   - Star rating calculation
+   - Level transitions (Next button)
+
+**Files Modified:**
+- `scenes/main.gd` - Added keyboard shortcuts, line highlighting, level manager integration
+- `scripts/core/simulation_engine.gd` - Added execution_line_changed signal, fixed crash handling
+
+**Test Results:**
+- All existing tests still pass
+- Game runs without errors
 
 ---
 

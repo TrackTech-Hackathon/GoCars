@@ -12,6 +12,9 @@ signal car_reached_destination(car_id: String)
 signal car_crashed(car_id: String)
 signal level_completed(stars: int)
 signal level_failed(reason: String)
+signal execution_line_changed(line_number: int)
+signal execution_error_occurred(error: String, line: int)
+signal infinite_loop_detected()
 
 # Simulation state
 enum State { IDLE, RUNNING, PAUSED, STEP }
@@ -54,6 +57,10 @@ func _ready() -> void:
 	_python_parser = PythonParser.new()
 	_python_interpreter = PythonInterpreter.new()
 	process_mode = Node.PROCESS_MODE_ALWAYS
+
+	# Connect interpreter signals
+	_python_interpreter.execution_line.connect(_on_interpreter_execution_line)
+	_python_interpreter.execution_error.connect(_on_interpreter_execution_error)
 
 
 # ============================================
@@ -415,14 +422,29 @@ func _on_vehicle_reached_destination(vehicle_id: String) -> void:
 	_vehicles_at_destination += 1
 	car_reached_destination.emit(vehicle_id)
 
-	# Check win condition
-	if _vehicles_at_destination >= _total_vehicles and _total_vehicles > 0:
+	# Check win condition - count active vehicles that need to reach destination
+	var active_vehicles = _count_active_vehicles()
+	if active_vehicles == 0 and _vehicles_at_destination > 0:
+		# All active vehicles have reached destination
 		_on_level_complete()
+
+
+## Count vehicles that are active (not crashed) and haven't reached destination
+func _count_active_vehicles() -> int:
+	var count = 0
+	for vehicle_id in _vehicles:
+		var vehicle = _vehicles[vehicle_id]
+		if is_instance_valid(vehicle) and vehicle.vehicle_state == 1:  # State 1 = Active
+			if not vehicle.is_at_destination():  # Only count those not yet at destination
+				count += 1
+	return count
 
 
 func _on_vehicle_crashed(vehicle_id: String) -> void:
 	car_crashed.emit(vehicle_id)
-	_on_level_failed("Car crashed: %s" % vehicle_id)
+	# Note: We don't immediately fail the level on crash
+	# Instead, main.gd handles the hearts system
+	# Level only fails when hearts reach 0
 
 
 func _on_level_complete() -> void:
@@ -435,6 +457,18 @@ func _on_level_failed(reason: String) -> void:
 	stop()
 	level_failed.emit(reason)
 	simulation_ended.emit(false)
+
+
+func _on_interpreter_execution_line(line_number: int) -> void:
+	execution_line_changed.emit(line_number)
+
+
+func _on_interpreter_execution_error(error: String, line: int) -> void:
+	execution_error_occurred.emit(error, line)
+	# Check if it's an infinite loop
+	if error.find("infinite loop") >= 0:
+		infinite_loop_detected.emit()
+		_on_level_failed("Infinite loop detected at line %d" % line)
 
 
 # ============================================

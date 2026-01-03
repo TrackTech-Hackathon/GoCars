@@ -280,14 +280,14 @@ func _evaluate_binary_expr(expr: Dictionary) -> Variant:
 	if op == "and":
 		if not _is_truthy(left):
 			return false
-		var right = _evaluate_expression(expr["right"])
-		return _is_truthy(right)
+		var right_and = _evaluate_expression(expr["right"])
+		return _is_truthy(right_and)
 
 	if op == "or":
 		if _is_truthy(left):
 			return true
-		var right = _evaluate_expression(expr["right"])
-		return _is_truthy(right)
+		var right_or = _evaluate_expression(expr["right"])
+		return _is_truthy(right_or)
 
 	var right = _evaluate_expression(expr["right"])
 	if _errors.size() > 0:

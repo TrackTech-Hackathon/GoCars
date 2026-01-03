@@ -575,7 +575,7 @@ func go_to_next_level() -> bool:
 # Event Handlers
 # ============================================
 
-func _on_simulation_level_completed(stars: int) -> void:
+func _on_simulation_level_completed(_stars: int) -> void:
 	_level_completed_flag = true
 	var calculated_stars = calculate_stars()
 	level_completed.emit(current_level_id, calculated_stars)

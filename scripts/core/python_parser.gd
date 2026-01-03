@@ -294,7 +294,7 @@ func _handle_indentation() -> void:
 
 func _tokenize_string(quote: String) -> void:
 	_advance()  # Skip opening quote
-	var start = _pos
+	var _start = _pos  # Track start position (for potential future use)
 	var value = ""
 
 	while _pos < _source.length() and _source[_pos] != quote:

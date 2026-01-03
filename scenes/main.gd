@@ -4,6 +4,7 @@ extends Node2D
 ## Manages hearts, road cards, and tile editing
 
 @onready var simulation_engine: SimulationEngine = $SimulationEngine
+@onready var level_manager: LevelManager = LevelManager.new()
 @onready var code_editor: TextEdit = $UI/CodeEditor
 @onready var run_button: Button = $UI/RunButton
 @onready var status_label: Label = $UI/StatusLabel
@@ -27,6 +28,9 @@ extends Node2D
 @onready var stoplight_yellow_button: Button = $UI/StoplightPanel/YellowButton
 @onready var stoplight_green_button: Button = $UI/StoplightPanel/GreenButton
 @onready var stoplight_state_label: Label = $UI/StoplightPanel/StateLabel
+
+# Current line highlighting
+var _current_executing_line: int = -1
 
 # Game state
 var hearts: int = 10
@@ -56,6 +60,15 @@ func _ready() -> void:
 	# Initialize the tilemap with some grass
 	_create_default_map()
 
+	# Initialize level manager
+	add_child(level_manager)
+	level_manager.set_simulation_engine(simulation_engine)
+	level_manager.set_game_world($GameWorld)
+
+	# Connect level manager signals
+	level_manager.level_completed.connect(_on_level_manager_completed)
+	level_manager.level_failed.connect(_on_level_manager_failed)
+
 	# Register vehicle with simulation engine
 	simulation_engine.register_vehicle(test_vehicle)
 
@@ -77,6 +90,8 @@ func _ready() -> void:
 	simulation_engine.car_crashed.connect(_on_car_crashed)
 	simulation_engine.level_completed.connect(_on_level_completed)
 	simulation_engine.level_failed.connect(_on_level_failed)
+	simulation_engine.execution_line_changed.connect(_on_execution_line_changed)
+	simulation_engine.execution_error_occurred.connect(_on_execution_error)
 
 	# Connect vehicle stoplight signals if vehicle exists
 	if test_vehicle:
@@ -101,7 +116,12 @@ func _ready() -> void:
 	# Set initial code (example showing new features)
 	code_editor.text = "car.go()"
 
-	_update_status("Ready - Enter code and press 'Run Code'")
+	# Enable line numbers in code editor (CodeEdit has this, TextEdit doesn't)
+	# Note: If using CodeEdit, uncomment these:
+	# code_editor.gutters_draw_line_numbers = true
+	# code_editor.highlight_current_line = true
+
+	_update_status("Ready - Enter code and press 'Run Code' (F5)")
 	_update_speed_label()
 	_update_hearts_label()
 	_update_road_cards_label()
@@ -156,6 +176,7 @@ func _on_simulation_ended(success: bool) -> void:
 	run_button.disabled = false
 	is_editing_enabled = true
 	is_spawning_cars = false  # Stop spawning cars
+	_current_executing_line = -1  # Clear line highlighting
 	if success:
 		_update_status("Simulation complete!")
 	else:
@@ -194,6 +215,36 @@ func _on_car_resumed_from_light(car_id: String, stoplight_id: String) -> void:
 	_update_status("Car '%s' resumed (light '%s' turned green)" % [car_id, stoplight_id])
 
 
+func _on_execution_line_changed(line_number: int) -> void:
+	# Update the current executing line (highlight it)
+	_current_executing_line = line_number
+	# TextEdit lines are 0-indexed, but code lines are 1-indexed
+	if line_number > 0:
+		var target_line = line_number - 1
+		# Set caret to the current line to highlight it
+		code_editor.set_caret_line(target_line)
+		# Ensure the line is visible
+		code_editor.center_viewport_to_caret()
+
+
+func _on_execution_error(error: String, line: int) -> void:
+	_update_status("Error at line %d: %s" % [line, error])
+	# Highlight the error line
+	if line > 0:
+		code_editor.set_caret_line(line - 1)
+		code_editor.center_viewport_to_caret()
+
+
+func _on_level_manager_completed(level_id: String, stars: int) -> void:
+	_update_status("Level '%s' complete with %d stars!" % [level_id, stars])
+	_show_victory_popup(stars)
+
+
+func _on_level_manager_failed(level_id: String, reason: String) -> void:
+	_update_status("Level '%s' failed: %s" % [level_id, reason])
+	_show_failure_popup(reason)
+
+
 func _update_status(message: String) -> void:
 	status_label.text = "Status: %s" % message
 
@@ -219,20 +270,61 @@ func _lose_heart() -> void:
 
 func _show_victory_popup(stars: int) -> void:
 	result_title.text = "LEVEL COMPLETE!"
+
+	# Create star display with filled/empty stars
 	var star_display = ""
 	for i in range(3):
 		if i < stars:
 			star_display += "[*]"
 		else:
 			star_display += "[ ]"
-	result_message.text = "Stars: %s\nTime: %.1fs" % [star_display, simulation_engine.get_elapsed_time()]
+
+	# Count cars that reached destination
+	var cars_completed = 0
+	var total_cars = 0
+	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	for vehicle in vehicles:
+		total_cars += 1
+		if vehicle.is_at_destination():
+			cars_completed += 1
+
+	# Build result message
+	var message_parts: Array = []
+	message_parts.append("Stars: %s" % star_display)
+	message_parts.append("Time: %.1fs" % simulation_engine.get_elapsed_time())
+	message_parts.append("Cars: %d/%d" % [cars_completed, total_cars])
+	message_parts.append("Hearts remaining: %d" % hearts)
+
+	result_message.text = "\n".join(message_parts)
 	next_button.visible = true
 	result_popup.visible = true
 
 
 func _show_failure_popup(reason: String) -> void:
 	result_title.text = "LEVEL FAILED"
-	result_message.text = reason
+
+	# Build detailed failure message based on reason
+	var message_parts: Array = []
+	message_parts.append(reason)
+	message_parts.append("")  # Empty line
+
+	# Add specific failure context
+	if reason.find("hearts") >= 0 or reason.find("Hearts") >= 0:
+		message_parts.append("Too many crashes!")
+	elif reason.find("Time") >= 0 or reason.find("time") >= 0:
+		message_parts.append("Try to be more efficient.")
+	elif reason.find("infinite loop") >= 0:
+		message_parts.append("Check your code for infinite loops.")
+		message_parts.append("Use break or proper conditions.")
+	elif reason.find("map") >= 0 or reason.find("boundary") >= 0:
+		message_parts.append("Keep cars on the road!")
+	elif reason.find("Error") >= 0 or reason.find("error") >= 0:
+		message_parts.append("Check your Python syntax.")
+
+	message_parts.append("")
+	message_parts.append("Press R to retry")
+
+	result_message.text = "\n".join(message_parts)
 	next_button.visible = false  # Can't proceed on failure
 	result_popup.visible = true
 
@@ -266,39 +358,73 @@ func _on_retry_pressed() -> void:
 
 func _on_next_pressed() -> void:
 	_hide_result_popup()
-	# For now, just reset - in full game this would load next level
+
+	# Try to load next level
+	if level_manager.is_level_loaded():
+		if level_manager.go_to_next_level():
+			_update_status("Loading next level...")
+			return
+
+	# Fallback: just reset the current state
 	_on_retry_pressed()
-	_update_status("Next level would load here - Ready")
+	_update_status("No more levels - Ready")
+
+
+## Fast retry - instant reset (R or Ctrl+R)
+func _do_fast_retry() -> void:
+	_hide_result_popup()
+	simulation_engine.reset()
+	is_spawning_cars = false
+
+	# Clear all crashed cars
+	_clear_all_crashed_cars()
+
+	# Reset or respawn test vehicle
+	if is_instance_valid(test_vehicle) and test_vehicle.vehicle_state == 1:
+		test_vehicle.reset(Vector2(100, 300), Vector2.RIGHT)
+	else:
+		# Respawn the test vehicle if it was crashed
+		_spawn_new_car()
+
+	if test_stoplight:
+		test_stoplight.reset()
+	hearts = initial_hearts
+	_update_hearts_label()
+	_update_status("Reset - Ready")
+	run_button.disabled = false
 
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
+		# Check for Ctrl modifier
+		var ctrl_pressed = event.ctrl_pressed
+
 		match event.keycode:
+			KEY_F5:
+				# F5 - Run code
+				if not run_button.disabled:
+					_on_run_button_pressed()
+			KEY_ENTER:
+				# Ctrl+Enter - Run code
+				if ctrl_pressed and not run_button.disabled:
+					_on_run_button_pressed()
 			KEY_R:
-				# Handle R key for reset
-				_hide_result_popup()
-				simulation_engine.reset()
-				is_spawning_cars = false
-
-				# Clear all crashed cars
-				_clear_all_crashed_cars()
-
-				# Reset or respawn test vehicle
-				if is_instance_valid(test_vehicle) and test_vehicle.vehicle_state == 1:
-					test_vehicle.reset(Vector2(100, 300), Vector2.RIGHT)
+				# R or Ctrl+R - Fast Retry (reset level)
+				_do_fast_retry()
+			KEY_F10:
+				# F10 - Step mode (execute one step)
+				simulation_engine.step()
+				_update_status("Step executed")
+			KEY_EQUAL, KEY_KP_ADD:
+				# + key for speed up, Ctrl++ for 4x
+				if ctrl_pressed:
+					simulation_engine.set_speed(simulation_engine.SPEED_FASTER)
 				else:
-					# Respawn the test vehicle if it was crashed
-					_spawn_new_car()
-
-				if test_stoplight:
-					test_stoplight.reset()
-				hearts = initial_hearts
-				_update_hearts_label()
-				_update_status("Reset - Ready")
-				run_button.disabled = false
-			KEY_EQUAL, KEY_KP_ADD, KEY_MINUS, KEY_KP_SUBTRACT:
-				# Update speed label when speed changes
-				# Give a small delay to let simulation engine process first
+					simulation_engine.speed_up()
+				call_deferred("_update_speed_label")
+			KEY_MINUS, KEY_KP_SUBTRACT:
+				# - key for slow down
+				simulation_engine.slow_down()
 				call_deferred("_update_speed_label")
 
 	# Handle tile editing (only when not running simulation)
@@ -370,7 +496,7 @@ func _on_stoplight_green_pressed() -> void:
 		_update_status("Stoplight set to GREEN")
 
 
-func _on_stoplight_state_changed(stoplight_id: String, new_state: String) -> void:
+func _on_stoplight_state_changed(_stoplight_id: String, _new_state: String) -> void:
 	_update_stoplight_state_label()
 
 
