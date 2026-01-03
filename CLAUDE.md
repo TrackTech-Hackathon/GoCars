@@ -235,9 +235,22 @@ car.turn_left()             # Queue 90° left turn at intersection
 car.turn_right()            # Queue 90° right turn at intersection
 car.wait(seconds)           # Wait for seconds (float)
 
+# Enhanced Movement (NEW!)
+car.turn(direction)         # Turn 90° immediately ("left" or "right")
+car.move(tiles)             # Move forward N tiles (1-100)
+
 # Speed Control
 car.set_speed(multiplier)   # Set speed (0.5 to 2.0)
 car.get_speed()             # Get current speed → float
+
+# Road Detection (NEW!)
+car.is_front_road()         # Is there a road tile in front? → bool
+car.is_left_road()          # Is there a road tile to the left? → bool
+car.is_right_road()         # Is there a road tile to the right? → bool
+
+# Car Detection (NEW!)
+car.is_front_car()          # Is there ANY car (active or crashed) in front? → bool
+car.is_front_crashed_car()  # Is there a CRASHED car in front? → bool
 
 # State Queries (return bool)
 car.is_moving()             # Is car currently moving?
@@ -673,3 +686,189 @@ Rows are selected based on which diagonal tiles contain roads (for corner decora
 ### Map Editor Code Location
 - Scene: `scenes/map_editor/map_editor.tscn`
 - Script: `scenes/map_editor/map_editor.gd`
+
+---
+
+## Implemented Game Mechanics
+
+### TileMapLayer System
+The main game scene uses Godot's modern `TileMapLayer` for rendering roads and terrain:
+- **Grass tiles**: Column 0 in the tileset
+- **Road tiles**: Columns 1-16 in the tileset (auto-connecting)
+- Players can edit the map by placing/removing roads
+
+### Road Cards System
+Players have a limited number of road cards to modify the map:
+- **Initial count**: 10 road cards (configurable per level)
+- **Placing a road**: Costs 1 road card (left-click on grass tile)
+- **Removing a road**: Refunds 1 road card (right-click on road tile)
+- **Live editing**: Map editing works DURING gameplay, allowing reactive strategy
+- **UI Display**: Road card count shown in top-left corner
+
+### Hearts System
+Players have a limited number of hearts (lives):
+- **Initial count**: 10 hearts (configurable per level)
+- **Losing hearts**: Car goes off-road or collides with another car (-1 heart)
+- **Game over**: When hearts reach 0, level fails
+- **UI Display**: Hearts count shown in top-left corner
+
+### Crashed Cars as Obstacles (CRITICAL MECHANIC!)
+Cars do NOT disappear when they crash - they become permanent obstacles:
+- **Visual**: Crashed cars are darkened (50% gray modulate)
+- **Vehicle States**:
+  - State 1 (Active): Car moves and executes code normally
+  - State 0 (Crashed): Car stops all movement, becomes a static obstacle
+- **Off-Road Crashes**: Moving onto grass triggers crash (car stays on map)
+- **Car-to-Car Collisions**:
+  - Active hits Active: Both crash and turn gray, 1 heart lost
+  - Active hits Crashed: Only active car crashes, 1 heart lost
+  - Crashed cars always stay on the map as obstacles
+
+### Automatic Car Spawning
+Cars automatically spawn at regular intervals after running code:
+- **Interval**: Every 15 seconds after simulation starts
+- **Location**: Position (100, 300) facing RIGHT
+- **Destination**: Position (700, 300)
+- **Naming**: car1, car2, car3, car4, etc.
+- **Code Execution**: Each new car automatically runs the current code
+- **Control**: Spawning starts when "Run Code" is pressed, stops on reset
+- **Strategy**: Your code must handle multiple cars and navigate around crashed cars
+
+### Stoplight Control Panel
+UI panel in top-right corner allows manual stoplight control:
+- **Set Red** button - Change stoplight to red
+- **Set Yellow** button - Change stoplight to yellow
+- **Set Green** button - Change stoplight to green
+- **State display** - Shows current stoplight color
+
+### Road-Only Movement
+Cars must stay on road tiles:
+- **Valid roads**: Columns 1-16 (any road tile)
+- **Invalid terrain**: Column 0 (grass)
+- **Detection methods**: `is_front_road()`, `is_left_road()`, `is_right_road()`
+- **Penalty**: Moving onto grass triggers crash and heart loss
+
+---
+
+## Implemented Features Summary
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| TileMapLayer System | ✅ COMPLETE | Modern tile rendering with auto-connecting roads |
+| Road Cards System | ✅ COMPLETE | Consumable resource for map editing |
+| Hearts System | ✅ COMPLETE | Lives/health system with crash penalties |
+| Live Map Editing | ✅ COMPLETE | Edit roads during gameplay (always enabled) |
+| Crashed Cars as Obstacles | ✅ COMPLETE | Cars stay on map when crashed (darkened) |
+| Vehicle State System | ✅ COMPLETE | State 0 = Crashed, 1 = Active |
+| Automatic Car Spawning | ✅ COMPLETE | New car every 15 seconds |
+| `car.turn(direction)` | ✅ COMPLETE | Immediate 90° turns |
+| `car.move(tiles)` | ✅ COMPLETE | Move forward N tiles |
+| `car.is_front_road()` | ✅ COMPLETE | Detect road ahead |
+| `car.is_left_road()` | ✅ COMPLETE | Detect road to left |
+| `car.is_right_road()` | ✅ COMPLETE | Detect road to right |
+| `car.is_front_car()` | ✅ COMPLETE | Detect any car ahead |
+| `car.is_front_crashed_car()` | ✅ COMPLETE | Detect crashed cars ahead |
+| Stoplight Control Panel | ✅ COMPLETE | Manual stoplight control UI |
+| Road-Only Movement | ✅ COMPLETE | Cars crash on non-road tiles |
+| Car-to-Car Collisions | ✅ COMPLETE | State-aware collision detection |
+
+---
+
+## Python Code Examples
+
+### Example 1: Basic Navigation with Road Detection
+```python
+# Move forward if road ahead, otherwise turn right
+if car.is_front_road():
+    car.move(3)
+else:
+    car.turn("right")
+```
+
+### Example 2: Intersection Logic
+```python
+# Navigate through an intersection
+if car.is_front_road():
+    car.go()
+elif car.is_left_road():
+    car.turn("left")
+    car.go()
+elif car.is_right_road():
+    car.turn("right")
+    car.go()
+else:
+    car.stop()
+```
+
+### Example 3: Obstacle Avoidance (Multi-Car Strategy)
+```python
+# Navigate around crashed cars
+if car.is_front_crashed_car():
+    # Crashed car blocking, find alternate route
+    if car.is_left_road():
+        car.turn("left")
+        car.go()
+    elif car.is_right_road():
+        car.turn("right")
+        car.go()
+    else:
+        car.stop()  # Stuck, need player to build road
+elif car.is_front_car():
+    # Active car ahead, wait
+    car.stop()
+elif car.is_front_road():
+    # Clear path
+    car.go()
+```
+
+### Example 4: Multi-Car Code (Runs on Every Spawned Car)
+```python
+# This code runs on ALL cars (spawned every 15 seconds)
+# Must handle different scenarios dynamically
+
+# First priority: Check for obstacles
+if car.is_front_crashed_car():
+    # Route around crashed car
+    if car.is_left_road() and not car.is_front_car():
+        car.turn("left")
+    elif car.is_right_road():
+        car.turn("right")
+
+# Second priority: Check for active cars
+elif car.is_front_car():
+    car.stop()  # Wait for car to move
+
+# Third priority: Continue if path clear
+elif car.is_front_road():
+    car.go()
+```
+
+---
+
+## Game Controls Summary
+
+| Action | Input | Notes |
+|--------|-------|-------|
+| Place road | Left-click | Costs 1 road card, **works during gameplay** |
+| Remove road | Right-click | Refunds 1 road card, **works during gameplay** |
+| Control stoplight | Stoplight panel buttons | Red/Yellow/Green buttons in top-right |
+| Run code | Run Code button or F5 | Starts car spawning every 15 seconds |
+| Pause/Resume | Space | Pauses simulation and spawning |
+| Reset level | R | Clears crashed cars, resets hearts, stops spawning |
+| Speed up | + or = | 2x or 4x speed |
+| Slow down | - | 0.5x speed |
+| Step | F10 | Execute one line |
+
+---
+
+## Educational Value
+
+The current game mechanics teach:
+- **Conditional logic**: if/elif/else for decisions
+- **State management**: Tracking crashed vs active vehicles
+- **Edge case handling**: Multiple scenarios with different vehicle states
+- **Resource management**: Hearts and road cards as constraints
+- **Dynamic problem solving**: React to changing conditions (crashed cars)
+- **Code reuse**: Same code runs on all spawned cars
+- **Debugging live systems**: See code execute in real-time on multiple vehicles
+- **Spatial reasoning**: Road detection and pathfinding
