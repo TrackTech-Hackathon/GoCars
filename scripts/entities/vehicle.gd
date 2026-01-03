@@ -199,14 +199,33 @@ func turn_right() -> void:
 
 
 ## Pause movement for specified seconds
-func wait(seconds: int) -> void:
+func wait(seconds: float) -> void:
 	is_waiting = true
-	wait_timer = float(seconds)
+	wait_timer = seconds
 
 
 ## Set speed multiplier (0.5 to 2.0)
 func set_speed(value: float) -> void:
 	speed_multiplier = clamp(value, 0.5, 2.0)
+
+
+## Get current speed multiplier
+func get_speed() -> float:
+	return speed_multiplier
+
+
+## Check if vehicle is currently moving
+func is_vehicle_moving() -> bool:
+	return is_moving
+
+
+## Check if vehicle path is blocked (by another car or obstacle)
+func is_blocked() -> bool:
+	# Check if stopped at a red light
+	if _stopped_at_stoplight != null:
+		return true
+	# Check if there's a car in front
+	return is_front_car()
 
 
 ## Turn left or right (simplified - no intersection required)
@@ -286,6 +305,11 @@ func at_destination() -> bool:
 	if destination == Vector2.ZERO:
 		return false
 	return global_position.distance_to(destination) < DESTINATION_THRESHOLD
+
+
+## Alias for at_destination() to match Python API
+func is_at_destination() -> bool:
+	return at_destination()
 
 
 ## Get distance to destination
@@ -469,6 +493,11 @@ func at_intersection() -> bool:
 		if distance < INTERSECTION_DETECTION_RANGE:
 			return true
 	return false
+
+
+## Alias for at_intersection() to match Python API
+func is_at_intersection() -> bool:
+	return at_intersection()
 
 
 ## Check if vehicle is currently turning
