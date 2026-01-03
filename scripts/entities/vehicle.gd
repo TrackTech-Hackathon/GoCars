@@ -13,13 +13,84 @@ signal stopped_at_light(vehicle_id: String, stoplight_id: String)
 signal resumed_from_light(vehicle_id: String, stoplight_id: String)
 signal off_road_crash(vehicle_id: String)
 
+# ============================================
+# Vehicle Types
+# ============================================
+enum VehicleType {
+	SEDAN,      # Standard car - Speed 1.0x, Size 1.0
+	SUV,        # Larger vehicle - Speed 0.9x, Size 1.2
+	MOTORCYCLE, # Fast and small - Speed 1.3x, Size 0.5 (can lane split)
+	JEEPNEY,    # Filipino transport - Speed 0.7x, Size 1.5
+	TRUCK,      # Large cargo - Speed 0.6x, Size 2.0 (longer stopping)
+	TRICYCLE    # Small 3-wheeler - Speed 0.7x, Size 0.7 (tight turns)
+}
+
+# Vehicle type configuration
+const VEHICLE_CONFIG: Dictionary = {
+	VehicleType.SEDAN: {
+		"name": "Sedan",
+		"speed_mult": 1.0,
+		"size_mult": 1.0,
+		"color": Color(0.2, 0.4, 0.8),  # Blue
+		"can_lane_split": false,
+		"stopping_distance": 1.0
+	},
+	VehicleType.SUV: {
+		"name": "SUV",
+		"speed_mult": 0.9,
+		"size_mult": 1.2,
+		"color": Color(0.3, 0.3, 0.3),  # Dark gray
+		"can_lane_split": false,
+		"stopping_distance": 1.1
+	},
+	VehicleType.MOTORCYCLE: {
+		"name": "Motorcycle",
+		"speed_mult": 1.3,
+		"size_mult": 0.5,
+		"color": Color(0.8, 0.2, 0.2),  # Red
+		"can_lane_split": true,
+		"stopping_distance": 0.7
+	},
+	VehicleType.JEEPNEY: {
+		"name": "Jeepney",
+		"speed_mult": 0.7,
+		"size_mult": 1.5,
+		"color": Color(0.9, 0.7, 0.1),  # Yellow/Gold
+		"can_lane_split": false,
+		"stopping_distance": 1.3
+	},
+	VehicleType.TRUCK: {
+		"name": "Truck",
+		"speed_mult": 0.6,
+		"size_mult": 2.0,
+		"color": Color(0.5, 0.3, 0.1),  # Brown
+		"can_lane_split": false,
+		"stopping_distance": 1.5
+	},
+	VehicleType.TRICYCLE: {
+		"name": "Tricycle",
+		"speed_mult": 0.7,
+		"size_mult": 0.7,
+		"color": Color(0.2, 0.7, 0.3),  # Green
+		"can_lane_split": false,
+		"stopping_distance": 0.8
+	}
+}
+
 # Vehicle properties
 @export var vehicle_id: String = "car1"
-@export var speed: float = 200.0  # Pixels per second
+@export var vehicle_type: VehicleType = VehicleType.SEDAN
+@export var speed: float = 200.0  # Base pixels per second
 @export var destination: Vector2 = Vector2.ZERO
 
 # Vehicle state (0 = crashed, 1 = normal/active)
 var vehicle_state: int = 1
+
+# Type-based properties (set in _ready based on vehicle_type)
+var type_speed_mult: float = 1.0
+var type_size_mult: float = 1.0
+var can_lane_split: bool = false
+var stopping_distance_mult: float = 1.0
 
 # Movement state
 var is_moving: bool = false
@@ -77,6 +148,53 @@ func _ready() -> void:
 	set_collision_layer_value(1, true)  # Layer 1 for vehicles
 	set_collision_mask_value(1, true)   # Detect other vehicles
 
+	# Apply vehicle type configuration
+	_apply_vehicle_type()
+
+
+## Apply configuration based on vehicle type
+func _apply_vehicle_type() -> void:
+	if vehicle_type in VEHICLE_CONFIG:
+		var config = VEHICLE_CONFIG[vehicle_type]
+		type_speed_mult = config["speed_mult"]
+		type_size_mult = config["size_mult"]
+		can_lane_split = config["can_lane_split"]
+		stopping_distance_mult = config["stopping_distance"]
+
+		# Apply color to sprite if it exists
+		var sprite = get_node_or_null("Sprite2D")
+		if sprite:
+			sprite.modulate = config["color"]
+
+		# Apply size scaling
+		scale = Vector2(type_size_mult, type_size_mult)
+
+
+## Set vehicle type and apply configuration
+func set_vehicle_type(new_type: VehicleType) -> void:
+	vehicle_type = new_type
+	_apply_vehicle_type()
+
+
+## Get vehicle type name
+func get_vehicle_type_name() -> String:
+	if vehicle_type in VEHICLE_CONFIG:
+		return VEHICLE_CONFIG[vehicle_type]["name"]
+	return "Unknown"
+
+
+## Get a random vehicle type
+static func get_random_type() -> VehicleType:
+	var types = [
+		VehicleType.SEDAN,
+		VehicleType.SUV,
+		VehicleType.MOTORCYCLE,
+		VehicleType.JEEPNEY,
+		VehicleType.TRUCK,
+		VehicleType.TRICYCLE
+	]
+	return types[randi() % types.size()]
+
 
 func _physics_process(delta: float) -> void:
 	# Don't process if crashed
@@ -116,7 +234,8 @@ func _move(_delta: float) -> void:
 			_on_off_road_crash()
 			return
 
-	var actual_speed = speed * speed_multiplier
+	# Apply both user speed multiplier and vehicle type speed multiplier
+	var actual_speed = speed * speed_multiplier * type_speed_mult
 	velocity = direction * actual_speed
 	move_and_slide()
 

@@ -1,0 +1,40 @@
+{
+	"id": "C1",
+	"name": "Smallville Plaza",
+	"description": "Learn to use variables! Store a speed value and use it to control your car.",
+	"location": "Smallville, Iloilo",
+	"python_concepts": ["variables", "assignment"],
+	"available_functions": ["car.go", "car.stop", "car.set_speed", "car.wait"],
+	"time_limit": 0,
+	"entities": {
+		"cars": [
+			{
+				"id": "car1",
+				"position": [96, 288],
+				"destination": [736, 288],
+				"direction": "right"
+			}
+		],
+		"stoplights": [],
+		"intersections": []
+	},
+	"bounds": {
+		"x": -50,
+		"y": -50,
+		"width": 900,
+		"height": 700
+	},
+	"win_condition": "all_cars_at_destination",
+	"star_criteria": {
+		"one_star": "complete",
+		"two_stars": "no_crashes",
+		"three_stars": "lines_of_code <= 3"
+	},
+	"starter_code": "# Store a speed value in a variable\nmy_speed = 1.5\n\n# Use the variable with set_speed()\n",
+	"hints": [
+		"Create a variable: my_speed = 1.5",
+		"Use the variable: car.set_speed(my_speed)",
+		"Variables let you store and reuse values!"
+	],
+	"solution": "my_speed = 1.5\ncar.set_speed(my_speed)\ncar.go()"
+}

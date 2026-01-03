@@ -1,0 +1,44 @@
+{
+	"id": "W4",
+	"name": "Parola Lighthouse",
+	"description": "Master nested loops! Use loops inside loops for complex patterns.",
+	"location": "Parola, Iloilo City",
+	"python_concepts": ["nested_loops", "for", "while"],
+	"available_functions": ["car.go", "car.stop", "car.wait", "car.move", "car.turn"],
+	"time_limit": 120,
+	"entities": {
+		"cars": [
+			{
+				"id": "car1",
+				"position": [96, 288],
+				"destination": [480, 288],
+				"direction": "right"
+			}
+		],
+		"stoplights": [],
+		"intersections": [
+			{"position": [160, 288]},
+			{"position": [288, 288]},
+			{"position": [416, 288]}
+		]
+	},
+	"bounds": {
+		"x": -50,
+		"y": -50,
+		"width": 900,
+		"height": 700
+	},
+	"win_condition": "all_cars_at_destination",
+	"star_criteria": {
+		"one_star": "complete",
+		"two_stars": "no_crashes",
+		"three_stars": "lines_of_code <= 6"
+	},
+	"starter_code": "# Nested loops - a loop inside a loop\nfor section in range(3):\n    # Move through each section\n    for step in range(2):\n        # Take steps within each section\n        pass\n",
+	"hints": [
+		"Nested loops run the inner loop completely for each outer iteration",
+		"3 sections x 2 steps = 6 total moves",
+		"Use car.move() or car.go() inside the inner loop"
+	],
+	"solution": "for section in range(3):\n    for step in range(2):\n        car.move(1)"
+}

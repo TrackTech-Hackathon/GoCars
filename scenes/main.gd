@@ -50,7 +50,8 @@ var is_editing_enabled: bool = true
 # Car spawning
 var car_spawn_timer: float = 0.0
 const CAR_SPAWN_INTERVAL: float = 15.0  # Spawn every 15 seconds
-var car_spawn_position: Vector2 = Vector2(100, 300)
+# Spawn position aligned with tile (1, 4): X = 1*64+32 = 96, Y = 4*64+32 = 288 (tile center)
+var car_spawn_position: Vector2 = Vector2(96, 288)
 var car_spawn_direction: Vector2 = Vector2.RIGHT
 var is_spawning_cars: bool = false
 var next_car_id: int = 2  # Start from 2 since car1 is the test vehicle
@@ -153,8 +154,16 @@ func _on_run_button_pressed() -> void:
 		_update_status("Error: No code entered")
 		return
 
-	# Reset vehicle position before running
-	test_vehicle.reset(Vector2(100, 300), Vector2.RIGHT)
+	# Reset vehicle position before running (check if vehicle still exists)
+	if is_instance_valid(test_vehicle):
+		if test_vehicle.vehicle_state == 1:  # Only reset if not crashed
+			test_vehicle.reset(car_spawn_position, Vector2.RIGHT)
+		else:
+			# Vehicle is crashed, spawn a new one
+			_respawn_test_vehicle()
+	else:
+		# Vehicle was freed, spawn a new one
+		_respawn_test_vehicle()
 
 	# Execute the code
 	simulation_engine.execute_code(code)
@@ -338,15 +347,14 @@ func _on_retry_pressed() -> void:
 	simulation_engine.reset()
 	is_spawning_cars = false
 
-	# Clear all crashed cars
-	_clear_all_crashed_cars()
+	# Clear ALL spawned cars (crashed and active) except we'll respawn test vehicle
+	_clear_all_spawned_cars()
 
-	# Reset or respawn test vehicle
-	if is_instance_valid(test_vehicle) and test_vehicle.vehicle_state == 1:
-		test_vehicle.reset(Vector2(100, 300), Vector2.RIGHT)
-	else:
-		# Respawn the test vehicle if it was crashed
-		_spawn_new_car()
+	# Reset car ID counter
+	next_car_id = 2
+
+	# Always respawn the test vehicle fresh
+	_respawn_test_vehicle()
 
 	if test_stoplight:
 		test_stoplight.reset()
@@ -376,15 +384,14 @@ func _do_fast_retry() -> void:
 	simulation_engine.reset()
 	is_spawning_cars = false
 
-	# Clear all crashed cars
-	_clear_all_crashed_cars()
+	# Clear ALL spawned cars (crashed and active) except we'll respawn test vehicle
+	_clear_all_spawned_cars()
 
-	# Reset or respawn test vehicle
-	if is_instance_valid(test_vehicle) and test_vehicle.vehicle_state == 1:
-		test_vehicle.reset(Vector2(100, 300), Vector2.RIGHT)
-	else:
-		# Respawn the test vehicle if it was crashed
-		_spawn_new_car()
+	# Reset car ID counter
+	next_car_id = 2
+
+	# Always respawn the test vehicle fresh
+	_respawn_test_vehicle()
 
 	if test_stoplight:
 		test_stoplight.reset()
@@ -522,13 +529,17 @@ func _spawn_new_car() -> void:
 	new_car.vehicle_id = "car%d" % next_car_id
 	next_car_id += 1
 
+	# Assign random vehicle type for variety
+	var random_type = Vehicle.get_random_type()
+	new_car.vehicle_type = random_type
+
 	# Set position and direction
 	new_car.global_position = car_spawn_position
 	new_car.direction = car_spawn_direction
 	new_car.rotation = car_spawn_direction.angle()
 
-	# Set destination
-	new_car.destination = Vector2(700, 300)
+	# Set destination (end of road at tile column 11, same row)
+	new_car.destination = Vector2(11 * 64 + 32, 288)  # Tile (11, 4) center
 
 	# Add to scene
 	$GameWorld.add_child(new_car)
@@ -554,7 +565,7 @@ func _spawn_new_car() -> void:
 	if is_spawning_cars:
 		simulation_engine.execute_code(code_editor.text)
 
-	_update_status("Spawned new car: %s" % new_car.vehicle_id)
+	_update_status("Spawned %s: %s" % [new_car.get_vehicle_type_name(), new_car.vehicle_id])
 
 
 func _clear_all_crashed_cars() -> void:
@@ -562,4 +573,63 @@ func _clear_all_crashed_cars() -> void:
 	var vehicles = get_tree().get_nodes_in_group("vehicles")
 	for vehicle in vehicles:
 		if vehicle.vehicle_state == 0:  # Crashed
+			# Unregister from simulation engine
+			simulation_engine.unregister_vehicle(vehicle.vehicle_id)
 			vehicle.queue_free()
+
+
+func _clear_all_spawned_cars() -> void:
+	# Get all vehicles in the scene and remove them
+	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	for vehicle in vehicles:
+		# Unregister from simulation engine
+		simulation_engine.unregister_vehicle(vehicle.vehicle_id)
+		vehicle.queue_free()
+
+	# Clear the test_vehicle reference
+	test_vehicle = null
+
+
+func _respawn_test_vehicle() -> void:
+	# Load the vehicle scene
+	var vehicle_scene = load("res://objects/test_vehicle.tscn")
+	if vehicle_scene == null:
+		_update_status("Error: Could not load vehicle scene")
+		return
+
+	# Remove old test_vehicle if it exists but is crashed
+	if is_instance_valid(test_vehicle):
+		simulation_engine.unregister_vehicle(test_vehicle.vehicle_id)
+		test_vehicle.queue_free()
+
+	# Create new vehicle instance
+	test_vehicle = vehicle_scene.instantiate()
+	test_vehicle.vehicle_id = "car1"
+
+	# Set position and direction (aligned with road at tile row 4)
+	test_vehicle.global_position = car_spawn_position
+	test_vehicle.direction = Vector2.RIGHT
+	test_vehicle.rotation = Vector2.RIGHT.angle()
+
+	# Set destination (end of road at tile column 11, same row)
+	test_vehicle.destination = Vector2(11 * 64 + 32, 288)  # Tile (11, 4) center
+
+	# Add to scene
+	$GameWorld.add_child(test_vehicle)
+
+	# Set tilemap reference
+	test_vehicle.set_tile_map_layer(tile_map_layer)
+
+	# Register with simulation engine
+	simulation_engine.register_vehicle(test_vehicle)
+
+	# Connect signals
+	test_vehicle.reached_destination.connect(_on_car_reached_destination)
+	test_vehicle.crashed.connect(_on_car_crashed)
+	test_vehicle.off_road_crash.connect(_on_car_off_road)
+	test_vehicle.stopped_at_light.connect(_on_car_stopped_at_light)
+	test_vehicle.resumed_from_light.connect(_on_car_resumed_from_light)
+
+	# Make aware of stoplight
+	if test_stoplight:
+		test_vehicle.add_stoplight(test_stoplight)
