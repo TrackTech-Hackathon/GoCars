@@ -40,6 +40,12 @@ var _stoplights: Dictionary = {}  # stoplight_id -> Stoplight node
 var _command_queue: Array = []
 var _current_command_index: int = 0
 
+# Continuous execution mode - re-runs code periodically for real-time conditions
+var _continuous_execution: bool = false
+var _current_ast: Dictionary = {}
+var _execution_timer: float = 0.0
+const EXECUTION_INTERVAL: float = 0.1  # Re-execute every 100ms
+
 # Level tracking
 var _vehicles_at_destination: int = 0
 var _total_vehicles: int = 0
@@ -112,6 +118,13 @@ func _process(delta: float) -> void:
 		# Check for out-of-bounds vehicles
 		_check_vehicle_boundaries()
 
+		# Continuous execution - re-run code periodically for real-time conditions
+		if _continuous_execution and _current_ast.size() > 0:
+			_execution_timer += delta
+			if _execution_timer >= EXECUTION_INTERVAL:
+				_execution_timer = 0.0
+				_re_execute_ast()
+
 		# Handle step mode
 		if current_state == State.STEP:
 			_step_timer += delta
@@ -170,21 +183,17 @@ func _execute_code_python(code: String) -> void:
 			push_error("Line %s: %s" % [error["line"], error["message"]])
 		return
 
+	# Store AST for continuous execution
+	_current_ast = ast
+	_execution_timer = 0.0
+
+	# Check if code contains loops or conditionals that need real-time re-evaluation
+	_continuous_execution = _code_needs_continuous_execution(code)
+
 	# Register game objects with interpreter
-	_python_interpreter.clear_objects()
+	_register_game_objects()
 
-	# Register all vehicles as "car" (for simplicity, first vehicle)
-	# In the future, we can support car1, car2, etc.
-	if _vehicles.size() > 0:
-		var first_vehicle_id = _vehicles.keys()[0]
-		_python_interpreter.register_object("car", _vehicles[first_vehicle_id])
-
-	# Register all stoplights
-	if _stoplights.size() > 0:
-		var first_stoplight_id = _stoplights.keys()[0]
-		_python_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
-
-	# Execute AST
+	# Execute AST once initially
 	var result = _python_interpreter.execute(ast)
 
 	if not result["success"]:
@@ -194,6 +203,48 @@ func _execute_code_python(code: String) -> void:
 
 	# Start the simulation
 	start()
+
+
+## Check if code contains patterns that need continuous re-execution
+func _code_needs_continuous_execution(code: String) -> bool:
+	# If code contains while loops or conditionals with road/car detection,
+	# it needs continuous execution
+	if code.find("while") >= 0:
+		return true
+	if code.find("is_front_road") >= 0 or code.find("is_left_road") >= 0 or code.find("is_right_road") >= 0:
+		return true
+	if code.find("is_front_car") >= 0 or code.find("is_front_crashed_car") >= 0:
+		return true
+	if code.find("is_at_destination") >= 0:
+		return true
+	return false
+
+
+## Register all game objects with the interpreter
+func _register_game_objects() -> void:
+	_python_interpreter.clear_objects()
+
+	# Register all vehicles as "car" (for simplicity, first vehicle)
+	if _vehicles.size() > 0:
+		var first_vehicle_id = _vehicles.keys()[0]
+		_python_interpreter.register_object("car", _vehicles[first_vehicle_id])
+
+	# Register all stoplights
+	if _stoplights.size() > 0:
+		var first_stoplight_id = _stoplights.keys()[0]
+		_python_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
+
+
+## Re-execute the stored AST (for continuous execution mode)
+func _re_execute_ast() -> void:
+	if _current_ast.size() == 0:
+		return
+
+	# Re-register objects (in case they changed)
+	_register_game_objects()
+
+	# Execute without emitting signals to avoid spam
+	_python_interpreter.execute(_current_ast)
 
 
 ## Execute all queued commands
@@ -259,6 +310,15 @@ func _call_vehicle_function(vehicle: Vehicle, func_name: String, params: Array) 
 			var _result = vehicle.is_front_car()
 		"is_front_crashed_car":
 			var _result = vehicle.is_front_crashed_car()
+		"set_auto_navigate":
+			if params.size() > 0:
+				vehicle.set_auto_navigate(params[0])
+			else:
+				vehicle.set_auto_navigate(true)
+		"auto_navigate":
+			# Shorthand - enable auto-navigate and start moving
+			vehicle.set_auto_navigate(true)
+			vehicle.go()
 
 
 ## Call a function on a stoplight
@@ -315,6 +375,10 @@ func stop() -> void:
 	_vehicles_at_destination = 0
 	_step_timer = 0.0
 	_level_timer = 0.0
+	# Clear continuous execution state
+	_continuous_execution = false
+	_current_ast = {}
+	_execution_timer = 0.0
 
 
 ## Reset all vehicles to starting positions

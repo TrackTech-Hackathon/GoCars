@@ -102,6 +102,11 @@ var direction: Vector2 = Vector2.RIGHT  # Current facing direction
 # Speed multiplier (for car.speed() function)
 var speed_multiplier: float = 1.0
 
+# Auto-navigate mode - car automatically follows road
+var auto_navigate: bool = false
+var _nav_check_timer: float = 0.0
+const NAV_CHECK_INTERVAL: float = 0.1  # Check road every 100ms
+
 # Stoplight awareness
 var _nearby_stoplights: Array = []  # Array of Stoplight nodes in range
 var _stopped_at_stoplight: Stoplight = null  # Currently stopped at this stoplight
@@ -217,6 +222,13 @@ func _physics_process(delta: float) -> void:
 	# Check stoplight state if we want to move
 	if _wants_to_move:
 		_check_stoplights()
+
+	# Auto-navigate: check road and turn if needed
+	if auto_navigate and is_moving and not _is_turning:
+		_nav_check_timer += delta
+		if _nav_check_timer >= NAV_CHECK_INTERVAL:
+			_nav_check_timer = 0.0
+			_auto_navigate_check()
 
 	# Handle movement
 	if is_moving:
@@ -411,6 +423,41 @@ func is_front_crashed_car() -> bool:
 
 
 # ============================================
+# Auto-Navigation System
+# ============================================
+
+## Enable auto-navigation mode (car follows road automatically)
+func set_auto_navigate(enabled: bool) -> void:
+	auto_navigate = enabled
+	_nav_check_timer = 0.0
+
+
+## Check road ahead and turn if needed (called during auto-navigate)
+func _auto_navigate_check() -> void:
+	if _tile_map_layer == null:
+		return
+
+	# If road ahead, keep going
+	if is_front_road():
+		return
+
+	# No road ahead - check for turns
+	# Priority: prefer continuing in same general direction
+	var left_has_road = is_left_road()
+	var right_has_road = is_right_road()
+
+	if left_has_road and not right_has_road:
+		_execute_turn("left")
+	elif right_has_road and not left_has_road:
+		_execute_turn("right")
+	elif left_has_road and right_has_road:
+		# Both have roads - could add smarter logic here
+		# For now, prefer right (arbitrary choice)
+		_execute_turn("right")
+	# else: no road anywhere - will crash on next move
+
+
+# ============================================
 # Utility Functions
 # ============================================
 
@@ -454,6 +501,9 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Reset turn state
 	_is_turning = false
 	_turn_progress = 0.0
+	# Reset auto-navigate
+	auto_navigate = false
+	_nav_check_timer = 0.0
 
 
 # ============================================

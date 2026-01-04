@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(godot:*)"
+      "Bash(godot:*)",
+      "Bash(\"/c/Users/Mist/Downloads/Godot_v4.5.1-stable_win64.exe/Godot_v4.5.1-stable_win64_console.exe\" --path . --headless --script tests/python_interpreter.test.gd)"
     ]
   }
 }
