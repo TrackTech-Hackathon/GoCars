@@ -93,7 +93,7 @@ var can_lane_split: bool = false
 var stopping_distance_mult: float = 1.0
 
 # Movement state
-var is_moving: bool = false
+var _is_moving: bool = false
 var is_waiting: bool = false
 var wait_timer: float = 0.0
 var queued_turn: String = ""  # "left" or "right" or ""
@@ -139,10 +139,16 @@ const TURN_DURATION: float = 0.3
 var _tile_map_layer: TileMapLayer = null
 const ROAD_TILE_COLUMN_START: int = 1  # Columns 1-16 are road tiles
 
-# Tile-based movement (reserved for future use)
+# Tile-based movement
 var _tiles_to_move: int = 0
-# var _moving_to_tile: bool = false  # Reserved for tile-based movement
-# var _target_tile_position: Vector2 = Vector2.ZERO  # Reserved for tile-based movement
+var _move_start_position: Vector2 = Vector2.ZERO
+const TILE_SIZE: float = 64.0  # Pixels per tile
+
+# Command queue for sequential execution
+# Commands: {"type": "move", "tiles": N}, {"type": "wait", "seconds": N},
+#           {"type": "turn", "direction": "left"/"right"}, {"type": "go"}, {"type": "stop"}
+var _command_queue: Array = []
+var _current_command: Dictionary = {}  # Currently executing command
 
 
 func _ready() -> void:
@@ -212,6 +218,8 @@ func _physics_process(delta: float) -> void:
 		if wait_timer <= 0:
 			is_waiting = false
 			wait_timer = 0.0
+			# Wait command completed - process next command
+			_command_completed()
 		return
 
 	# Handle smooth turning animation
@@ -224,19 +232,29 @@ func _physics_process(delta: float) -> void:
 		_check_stoplights()
 
 	# Auto-navigate: check road and turn if needed
-	if auto_navigate and is_moving and not _is_turning:
+	if auto_navigate and _is_moving and not _is_turning:
 		_nav_check_timer += delta
 		if _nav_check_timer >= NAV_CHECK_INTERVAL:
 			_nav_check_timer = 0.0
 			_auto_navigate_check()
 
 	# Handle movement
-	if is_moving:
+	if _is_moving:
 		# Check for queued turn at intersection
 		if queued_turn != "":
 			_check_intersection_for_turn()
 		_move(delta)
 		_check_destination()
+		# Check if we've moved enough tiles (for move(N) command)
+		if _tiles_to_move > 0:
+			var distance_moved = global_position.distance_to(_move_start_position)
+			if distance_moved >= _tiles_to_move * TILE_SIZE:
+				_tiles_to_move = 0
+				_is_moving = false
+				_wants_to_move = false
+				velocity = Vector2.ZERO
+				# Move command completed - process next command
+				_command_completed()
 
 
 func _move(_delta: float) -> void:
@@ -295,47 +313,40 @@ func _on_off_road_crash() -> void:
 
 # ============================================
 # Command Functions (called by SimulationEngine)
+# These queue commands for sequential execution
 # ============================================
 
 ## Start moving forward continuously
 func go() -> void:
-	_wants_to_move = true
-	# Only actually move if not blocked by a red light
-	if _stopped_at_stoplight == null:
-		is_moving = true
+	_command_queue.append({"type": "go"})
+	_process_next_command()
 
 
 ## Stop immediately
 func stop() -> void:
-	is_moving = false
-	_wants_to_move = false
-	_stopped_at_stoplight = null
-	velocity = Vector2.ZERO
+	_command_queue.append({"type": "stop"})
+	_process_next_command()
 
 
 ## Queue a 90-degree left turn at next intersection
 func turn_left() -> void:
-	queued_turn = "left"
-	# If not moving or no intersections registered, turn immediately
-	if not is_moving or _intersections.is_empty():
-		_execute_turn("left")
+	_command_queue.append({"type": "turn", "direction": "left"})
+	_process_next_command()
 
 
 ## Queue a 90-degree right turn at next intersection
 func turn_right() -> void:
-	queued_turn = "right"
-	# If not moving or no intersections registered, turn immediately
-	if not is_moving or _intersections.is_empty():
-		_execute_turn("right")
+	_command_queue.append({"type": "turn", "direction": "right"})
+	_process_next_command()
 
 
 ## Pause movement for specified seconds
 func wait(seconds: float) -> void:
-	is_waiting = true
-	wait_timer = seconds
+	_command_queue.append({"type": "wait", "seconds": seconds})
+	_process_next_command()
 
 
-## Set speed multiplier (0.5 to 2.0)
+## Set speed multiplier (0.5 to 2.0) - executes immediately (no queue)
 func set_speed(value: float) -> void:
 	speed_multiplier = clamp(value, 0.5, 2.0)
 
@@ -345,9 +356,14 @@ func get_speed() -> float:
 	return speed_multiplier
 
 
-## Check if vehicle is currently moving
+## Check if vehicle is currently moving (internal)
 func is_vehicle_moving() -> bool:
-	return is_moving
+	return _is_moving
+
+
+## Check if vehicle is currently moving (Python API)
+func is_moving() -> bool:
+	return is_vehicle_moving()
 
 
 ## Check if vehicle path is blocked (by another car or obstacle)
@@ -361,16 +377,97 @@ func is_blocked() -> bool:
 
 ## Turn left or right (simplified - no intersection required)
 func turn(turn_direction: String) -> void:
-	if turn_direction == "left":
-		_execute_turn("left")
-	elif turn_direction == "right":
-		_execute_turn("right")
+	_command_queue.append({"type": "turn", "direction": turn_direction})
+	_process_next_command()
 
 
 ## Move a specific number of tiles
 func move(tiles: int) -> void:
+	if tiles <= 0:
+		return
+	_command_queue.append({"type": "move", "tiles": tiles})
+	_process_next_command()
+
+
+# ============================================
+# Command Queue Processing
+# ============================================
+
+## Try to start the next command if idle
+func _process_next_command() -> void:
+	# If already executing a command, wait for it to finish
+	if not _current_command.is_empty():
+		return
+
+	# If queue is empty, nothing to do
+	if _command_queue.is_empty():
+		return
+
+	# Get next command
+	_current_command = _command_queue.pop_front()
+
+	# Execute the command
+	match _current_command["type"]:
+		"go":
+			_exec_go()
+		"stop":
+			_exec_stop()
+		"turn":
+			_exec_turn(_current_command["direction"])
+		"wait":
+			_exec_wait(_current_command["seconds"])
+		"move":
+			_exec_move(_current_command["tiles"])
+
+
+## Called when current command completes
+func _command_completed() -> void:
+	_current_command = {}
+	_process_next_command()
+
+
+# ============================================
+# Command Execution (internal)
+# ============================================
+
+func _exec_go() -> void:
+	_wants_to_move = true
+	if _stopped_at_stoplight == null:
+		_is_moving = true
+	# go() runs indefinitely, so mark command as complete immediately
+	# (the car keeps moving until stop() is called)
+	_command_completed()
+
+
+func _exec_stop() -> void:
+	_is_moving = false
+	_wants_to_move = false
+	_stopped_at_stoplight = null
+	velocity = Vector2.ZERO
+	_tiles_to_move = 0
+	_command_completed()
+
+
+func _exec_turn(turn_direction: String) -> void:
+	if turn_direction == "left" or turn_direction == "right":
+		_execute_turn(turn_direction)
+		# Turn completion is handled in _process_turn()
+	else:
+		_command_completed()
+
+
+func _exec_wait(seconds: float) -> void:
+	wait_timer = seconds
+	is_waiting = true
+	# Wait completion is handled in _physics_process()
+
+
+func _exec_move(tiles: int) -> void:
 	_tiles_to_move = tiles
-	# Movement will be handled in physics process
+	_move_start_position = global_position
+	_is_moving = true
+	_wants_to_move = true
+	# Move completion is handled in _physics_process()
 
 
 ## Check if there's a road in front of the car
@@ -485,12 +582,25 @@ func distance_to_destination() -> float:
 	return global_position.distance_to(destination)
 
 
+## Get distance to nearest intersection
+func distance_to_intersection() -> float:
+	if _intersections.is_empty():
+		return -1.0  # No intersections registered
+
+	var min_distance: float = -1.0
+	for intersection_pos in _intersections:
+		var dist = global_position.distance_to(intersection_pos)
+		if min_distance < 0 or dist < min_distance:
+			min_distance = dist
+	return min_distance
+
+
 ## Reset vehicle to initial state
 func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	global_position = start_pos
 	direction = start_dir.normalized()
 	rotation = direction.angle()
-	is_moving = false
+	_is_moving = false
 	is_waiting = false
 	wait_timer = 0.0
 	queued_turn = ""
@@ -498,12 +608,18 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	velocity = Vector2.ZERO
 	_wants_to_move = false
 	_stopped_at_stoplight = null
+	# Reset tile-based movement
+	_tiles_to_move = 0
+	_move_start_position = Vector2.ZERO
 	# Reset turn state
 	_is_turning = false
 	_turn_progress = 0.0
 	# Reset auto-navigate
 	auto_navigate = false
 	_nav_check_timer = 0.0
+	# Reset command queue
+	_command_queue.clear()
+	_current_command = {}
 
 
 # ============================================
@@ -525,7 +641,7 @@ func remove_stoplight(stoplight: Stoplight) -> void:
 	if stoplight == _stopped_at_stoplight:
 		_stopped_at_stoplight = null
 		if _wants_to_move:
-			is_moving = true
+			_is_moving = true
 
 
 ## Check if any nearby stoplight requires us to stop
@@ -536,7 +652,7 @@ func _check_stoplights() -> void:
 			# Light turned green, resume movement
 			resumed_from_light.emit(vehicle_id, _stopped_at_stoplight.stoplight_id)
 			_stopped_at_stoplight = null
-			is_moving = true
+			_is_moving = true
 		return
 
 	# Check all nearby stoplights
@@ -547,7 +663,7 @@ func _check_stoplights() -> void:
 			if distance < STOPLIGHT_STOP_DISTANCE:
 				# Need to stop at this light
 				_stopped_at_stoplight = stoplight
-				is_moving = false
+				_is_moving = false
 				stopped_at_light.emit(vehicle_id, stoplight.stoplight_id)
 				return
 
@@ -560,7 +676,7 @@ func _on_stoplight_changed(stoplight_id: String, new_state: String) -> void:
 			resumed_from_light.emit(vehicle_id, stoplight_id)
 			_stopped_at_stoplight = null
 			if _wants_to_move:
-				is_moving = true
+				_is_moving = true
 
 
 ## Check if vehicle is currently stopped at a red light
@@ -640,6 +756,9 @@ func _process_turn(delta: float) -> void:
 		# Snap to exact target rotation
 		rotation = _turn_target_rotation
 		direction = Vector2.RIGHT.rotated(rotation)
+
+		# Turn command completed - process next command
+		_command_completed()
 	else:
 		# Interpolate rotation smoothly (ease in-out)
 		var t = _ease_in_out(_turn_progress)

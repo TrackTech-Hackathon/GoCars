@@ -133,15 +133,15 @@ Check off items as they are completed.
 	- [x] `car.is_front_crashed_car()` - crashed car ahead (obstacle)?
   - [x] **Speed Control**
 	- [x] `car.set_speed(value)` - speed multiplier 0.5 to 2.0
-	- [ ] `car.get_speed()` - returns current speed multiplier (needs implementation)
+	- [x] `car.get_speed()` - returns current speed multiplier
   - [x] **State Queries (return bool)**
-	- [ ] `car.is_moving()` - is car currently moving? (needs getter method)
-	- [ ] `car.is_blocked()` - is path obstructed? (needs implementation)
+	- [x] `car.is_moving()` - is car currently moving?
+	- [x] `car.is_blocked()` - is path obstructed?
 	- [x] `car.is_at_intersection()` - is car at intersection?
 	- [x] `car.is_at_destination()` - has car reached destination?
   - [x] **Distance Queries (return float)**
 	- [x] `car.distance_to_destination()` - distance to destination
-	- [ ] `car.distance_to_intersection()` - distance to next intersection (needs implementation)
+	- [x] `car.distance_to_intersection()` - distance to next intersection
 
 ### Traffic Light System (P0)
 - [x] Create `scripts/entities/stoplight.gd`
@@ -639,7 +639,7 @@ SCRIPT ERROR: Invalid cast. Cannot convert from "Node2D" to "ColorRect".
 - `scripts/entities/stoplight.gd`
 
 **Verification:**
-- All 24 tests pass (17 code_parser tests + 7 stoplight tests)
+- All stoplight tests pass (7 tests)
 - Game runs without errors in headless mode
 - Game launches successfully with window
 
@@ -671,11 +671,10 @@ SCRIPT ERROR: Invalid cast. Cannot convert from "Node2D" to "ColorRect".
 - `scripts/core/simulation_engine.gd`
   - Added PythonParser and PythonInterpreter integration
   - New `_execute_code_python()` function
-  - Backward compatibility with legacy CodeParser maintained
 
 **Test Results:**
-- All 4 test files pass (parser, interpreter, code_parser, stoplight)
-- Total: 147+ tests passing
+- All 3 test files pass (python_parser, python_interpreter, stoplight)
+- Total: 154+ tests passing
 
 ---
 

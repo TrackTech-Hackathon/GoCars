@@ -646,11 +646,12 @@ offset_left = 20.0
 offset_top = 100.0
 offset_right = 600.0
 offset_bottom = 200.0
-text = "Python Commands:
-- car.go() | car.stop() | car.turn(\"left\") | car.turn(\"right\") | car.move(5) | car.wait(2)
-- car.is_front_road() | car.is_left_road() | car.is_right_road() | car.is_front_car()
-- Click tiles to place/remove roads (costs road cards)
-- Space: pause/resume | R: reset | +/-: speed"
+text = "Python Examples:
+- car.go() | car.stop() | car.turn(\"left\") | car.move(5) | car.wait(2)
+- if car.is_front_road(): car.go()
+- while not car.is_at_destination(): car.go()
+- for loops need newline + indent: for i in range(3): [Enter] [Tab] car.go()
+- Space: pause | R: reset | +/-: speed"
 
 [node name="StoplightPanel" type="Panel" parent="UI"]
 offset_left = 800.0
