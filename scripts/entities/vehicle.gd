@@ -620,6 +620,8 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Reset command queue
 	_command_queue.clear()
 	_current_command = {}
+	# Reset tile-based movement
+	_tiles_to_move = 0
 
 
 # ============================================

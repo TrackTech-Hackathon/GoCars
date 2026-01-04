@@ -225,23 +225,47 @@ func _on_car_resumed_from_light(car_id: String, stoplight_id: String) -> void:
 
 
 func _on_execution_line_changed(line_number: int) -> void:
-	# Update the current executing line (highlight it)
+	# Clear previous line highlight
+	if _current_executing_line > 0:
+		var prev_line = _current_executing_line - 1
+		if prev_line < code_editor.get_line_count():
+			code_editor.set_line_background_color(prev_line, Color(0, 0, 0, 0))  # Transparent
+
+	# Update the current executing line
 	_current_executing_line = line_number
-	# TextEdit lines are 0-indexed, but code lines are 1-indexed
+
+	# Highlight the new line (TextEdit lines are 0-indexed, code lines are 1-indexed)
 	if line_number > 0:
 		var target_line = line_number - 1
-		# Set caret to the current line to highlight it
-		code_editor.set_caret_line(target_line)
-		# Ensure the line is visible
-		code_editor.center_viewport_to_caret()
+		if target_line < code_editor.get_line_count():
+			# Highlight with a yellow/gold background color
+			code_editor.set_line_background_color(target_line, Color(0.3, 0.3, 0.0, 0.5))
+			# Set caret to current line (without scrolling)
+			code_editor.set_caret_line(target_line)
 
 
 func _on_execution_error(error: String, line: int) -> void:
 	_update_status("Error at line %d: %s" % [line, error])
-	# Highlight the error line
+	# Clear previous highlight
+	if _current_executing_line > 0:
+		var prev_line = _current_executing_line - 1
+		if prev_line < code_editor.get_line_count():
+			code_editor.set_line_background_color(prev_line, Color(0, 0, 0, 0))
+	# Highlight the error line in red
 	if line > 0:
-		code_editor.set_caret_line(line - 1)
-		code_editor.center_viewport_to_caret()
+		var target_line = line - 1
+		if target_line < code_editor.get_line_count():
+			code_editor.set_line_background_color(target_line, Color(0.5, 0.0, 0.0, 0.5))
+			code_editor.set_caret_line(target_line)
+
+
+## Clear any line highlighting in the code editor
+func _clear_line_highlight() -> void:
+	if _current_executing_line > 0:
+		var prev_line = _current_executing_line - 1
+		if prev_line < code_editor.get_line_count():
+			code_editor.set_line_background_color(prev_line, Color(0, 0, 0, 0))
+	_current_executing_line = -1
 
 
 func _on_level_manager_completed(level_id: String, stars: int) -> void:
@@ -346,6 +370,7 @@ func _on_retry_pressed() -> void:
 	_hide_result_popup()
 	simulation_engine.reset()
 	is_spawning_cars = false
+	_clear_line_highlight()
 
 	# Clear ALL spawned cars (crashed and active) except we'll respawn test vehicle
 	_clear_all_spawned_cars()
@@ -383,6 +408,7 @@ func _do_fast_retry() -> void:
 	_hide_result_popup()
 	simulation_engine.reset()
 	is_spawning_cars = false
+	_clear_line_highlight()
 
 	# Clear ALL spawned cars (crashed and active) except we'll respawn test vehicle
 	_clear_all_spawned_cars()
@@ -561,9 +587,9 @@ func _spawn_new_car() -> void:
 	if test_stoplight:
 		new_car.add_stoplight(test_stoplight)
 
-	# Execute current code on the new car
+	# Execute current code on the new car (using vehicle-specific interpreter)
 	if is_spawning_cars:
-		simulation_engine.execute_code(code_editor.text)
+		simulation_engine.execute_code_for_vehicle(code_editor.text, new_car)
 
 	_update_status("Spawned %s: %s" % [new_car.get_vehicle_type_name(), new_car.vehicle_id])
 

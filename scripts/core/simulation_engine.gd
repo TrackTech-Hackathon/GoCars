@@ -40,11 +40,12 @@ var _stoplights: Dictionary = {}  # stoplight_id -> Stoplight node
 var _command_queue: Array = []
 var _current_command_index: int = 0
 
-# Continuous execution mode - re-runs code periodically for real-time conditions
-var _continuous_execution: bool = false
-var _current_ast: Dictionary = {}
+# Step-based execution (execute one statement per interval)
+var _current_code: String = ""
+var _execution_interval: float = 0.016  # Execute one step every 16ms (~60fps) for smooth movement
 var _execution_timer: float = 0.0
-const EXECUTION_INTERVAL: float = 0.1  # Re-execute every 100ms
+var _is_executing: bool = false
+var _current_ast: Dictionary = {}
 
 # Level tracking
 var _vehicles_at_destination: int = 0
@@ -118,12 +119,15 @@ func _process(delta: float) -> void:
 		# Check for out-of-bounds vehicles
 		_check_vehicle_boundaries()
 
-		# Continuous execution - re-run code periodically for real-time conditions
-		if _continuous_execution and _current_ast.size() > 0:
-			_execution_timer += delta
-			if _execution_timer >= EXECUTION_INTERVAL:
-				_execution_timer = 0.0
-				_re_execute_ast()
+		# Step-based code execution (one statement/iteration per interval)
+		_execution_timer += delta
+		if _execution_timer >= _execution_interval:
+			_execution_timer = 0.0
+			# Execute main interpreter
+			if _is_executing:
+				_execute_one_step()
+			# Execute each vehicle's interpreter
+			_execute_vehicle_interpreters()
 
 		# Handle step mode
 		if current_state == State.STEP:
@@ -172,52 +176,61 @@ func execute_code(code: String) -> void:
 	_execute_code_python(code)
 
 
-## Execute code using the new Python parser and interpreter
+## Execute code using the new Python parser and interpreter (step-based execution)
 func _execute_code_python(code: String) -> void:
-	# Parse code with PythonParser
-	var ast = _python_parser.parse(code)
-
-	# Check for parse errors
-	if ast["errors"].size() > 0:
-		for error in ast["errors"]:
-			push_error("Line %s: %s" % [error["line"], error["message"]])
-		return
-
-	# Store AST for continuous execution
-	_current_ast = ast
+	# Store code for step-based execution
+	_current_code = code
 	_execution_timer = 0.0
 
-	# Check if code contains loops or conditionals that need real-time re-evaluation
-	_continuous_execution = _code_needs_continuous_execution(code)
+	# Parse code with PythonParser
+	_current_ast = _python_parser.parse(code)
+
+	# Check for parse errors
+	if _current_ast["errors"].size() > 0:
+		for error in _current_ast["errors"]:
+			push_error("Line %s: %s" % [error["line"], error["message"]])
+			execution_error_occurred.emit(error["message"], error["line"])
+		_is_executing = false
+		return
 
 	# Register game objects with interpreter
 	_register_game_objects()
 
-	# Execute AST once initially
-	var result = _python_interpreter.execute(ast)
+	# Initialize step-based execution
+	_python_interpreter.start_execution(_current_ast)
+	_is_executing = true
 
-	if not result["success"]:
-		for error in result["errors"]:
-			push_error("Runtime Error: %s" % error["full"])
-		return
+	# Execute first step immediately
+	_execute_one_step()
 
 	# Start the simulation
 	start()
 
 
-## Check if code contains patterns that need continuous re-execution
-func _code_needs_continuous_execution(code: String) -> bool:
-	# If code contains while loops or conditionals with road/car detection,
-	# it needs continuous execution
-	if code.find("while") >= 0:
-		return true
-	if code.find("is_front_road") >= 0 or code.find("is_left_road") >= 0 or code.find("is_right_road") >= 0:
-		return true
-	if code.find("is_front_car") >= 0 or code.find("is_front_crashed_car") >= 0:
-		return true
-	if code.find("is_at_destination") >= 0:
-		return true
-	return false
+## Execute one step of code (one statement or one loop iteration)
+func _execute_one_step() -> void:
+	if not _is_executing:
+		return
+
+	# Re-register game objects (in case new vehicles spawned)
+	_register_game_objects()
+
+	# Execute one step
+	var has_more = _python_interpreter.step()
+
+	# Check for errors
+	if _python_interpreter.has_errors():
+		var errors = _python_interpreter.get_errors()
+		if errors.size() > 0:
+			var err = errors[0]
+			execution_error_occurred.emit(err.get("message", "Unknown error"), err.get("line", 0))
+		_is_executing = false
+		return
+
+	# Check if execution is complete
+	if not has_more:
+		_is_executing = false
+		# Execution complete - code finished running
 
 
 ## Register all game objects with the interpreter
@@ -235,16 +248,40 @@ func _register_game_objects() -> void:
 		_python_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
 
 
-## Re-execute the stored AST (for continuous execution mode)
-func _re_execute_ast() -> void:
-	if _current_ast.size() == 0:
+## Execute code for a specific vehicle (used for spawned cars)
+func execute_code_for_vehicle(code: String, vehicle: Vehicle) -> void:
+	# Create a temporary interpreter for this vehicle
+	var temp_interpreter = PythonInterpreter.new()
+	temp_interpreter.register_object("car", vehicle)
+
+	# Register stoplights too
+	if _stoplights.size() > 0:
+		var first_stoplight_id = _stoplights.keys()[0]
+		temp_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
+
+	# Parse and start execution
+	var ast = _python_parser.parse(code)
+	if ast["errors"].size() > 0:
 		return
 
-	# Re-register objects (in case they changed)
-	_register_game_objects()
+	temp_interpreter.start_execution(ast)
 
-	# Execute without emitting signals to avoid spam
-	_python_interpreter.execute(_current_ast)
+	# Store the interpreter for this vehicle
+	vehicle.set_meta("interpreter", temp_interpreter)
+
+
+## Execute one step for each vehicle's individual interpreter
+func _execute_vehicle_interpreters() -> void:
+	for vehicle_id in _vehicles:
+		var vehicle = _vehicles[vehicle_id]
+		if not is_instance_valid(vehicle):
+			continue
+		if vehicle.vehicle_state == 0:  # Skip crashed vehicles
+			continue
+		if vehicle.has_meta("interpreter"):
+			var interp: PythonInterpreter = vehicle.get_meta("interpreter")
+			if interp.is_running():
+				interp.step()
 
 
 ## Execute all queued commands
@@ -375,10 +412,12 @@ func stop() -> void:
 	_vehicles_at_destination = 0
 	_step_timer = 0.0
 	_level_timer = 0.0
-	# Clear continuous execution state
-	_continuous_execution = false
+	# Stop step-based execution
+	_is_executing = false
+	_current_code = ""
 	_current_ast = {}
 	_execution_timer = 0.0
+	_python_interpreter.stop_execution()
 
 
 ## Reset all vehicles to starting positions

@@ -3,7 +3,8 @@ class_name PythonInterpreter
 
 ## Python Interpreter for GoCars
 ## Executes AST produced by PythonParser
-## Manages variables, control flow, and game entity interactions
+## Supports STEP-BASED execution for proper loop handling
+## Each call to step() executes one statement/iteration
 
 # ============================================
 # Signals
@@ -30,6 +31,22 @@ var _break_requested: bool = false
 var _execution_start_time: int = 0
 var _current_line: int = 0
 
+# Step-based execution state
+var _execution_stack: Array = []  # Stack of execution contexts
+var _is_running: bool = false
+var _is_paused: bool = false
+var _current_ast: Dictionary = {}
+
+# ============================================
+# Execution Context Types
+# ============================================
+enum ContextType {
+	BLOCK,      # Executing a block of statements
+	WHILE_LOOP, # While loop - re-evaluate condition each step
+	FOR_LOOP,   # For loop - iterate through range
+	IF_STMT     # If statement (handled immediately, not pushed)
+}
+
 # ============================================
 # Public API
 # ============================================
@@ -46,7 +63,107 @@ func unregister_object(name: String) -> void:
 func clear_objects() -> void:
 	_game_objects.clear()
 
-## Execute parsed AST
+## Initialize execution with AST (call once, then call step() repeatedly)
+func start_execution(ast: Dictionary) -> void:
+	_variables.clear()
+	_errors.clear()
+	_break_requested = false
+	_execution_start_time = Time.get_ticks_msec()
+	_current_line = 0
+	_execution_stack.clear()
+	_current_ast = ast
+	_is_running = true
+	_is_paused = false
+
+	execution_started.emit()
+
+	# Check for parse errors
+	if ast.has("errors") and ast["errors"].size() > 0:
+		for err in ast["errors"]:
+			_errors.append(err)
+		_is_running = false
+		return
+
+	# Push the main program body onto the execution stack
+	if ast.has("body") and ast["body"].size() > 0:
+		_push_block_context(ast["body"])
+
+
+## Execute one step (one statement or one loop iteration)
+## Returns true if there's more to execute, false if done
+func step() -> bool:
+	if not _is_running or _is_paused:
+		return false
+
+	if _execution_stack.size() == 0:
+		# Execution complete
+		_is_running = false
+		execution_completed.emit()
+		return false
+
+	if _errors.size() > 0:
+		_is_running = false
+		return false
+
+	if _check_timeout():
+		_add_error("RuntimeError: infinite loop detected (exceeded 10s)", _current_line)
+		_is_running = false
+		return false
+
+	# Check if car is busy (turning or waiting) - don't execute next step yet
+	if _is_car_busy():
+		# Reset timeout while waiting for car action to complete
+		_execution_start_time = Time.get_ticks_msec()
+		return true  # Still running, but wait for car to finish
+
+	# Get current context and execute one step
+	var context = _execution_stack.back()
+	_execute_context_step(context)
+
+	return _execution_stack.size() > 0 and _is_running
+
+
+## Check if the car is busy (turning, waiting, etc.)
+func _is_car_busy() -> bool:
+	if "car" in _game_objects:
+		var car = _game_objects["car"]
+		if car != null and is_instance_valid(car):
+			# Check if car is turning
+			if car.has_method("is_turning") and car.is_turning():
+				return true
+			# Check if car is waiting
+			if car.has_method("is_waiting") and car.is_waiting:
+				return true
+	return false
+
+
+## Check if execution is still running
+func is_running() -> bool:
+	return _is_running and _execution_stack.size() > 0
+
+
+## Check if there are errors
+func has_errors() -> bool:
+	return _errors.size() > 0
+
+
+## Stop execution
+func stop_execution() -> void:
+	_is_running = false
+	_execution_stack.clear()
+
+
+## Pause execution
+func pause_execution() -> void:
+	_is_paused = true
+
+
+## Resume execution
+func resume_execution() -> void:
+	_is_paused = false
+
+
+## Legacy execute function (runs all at once - for backwards compatibility)
 func execute(ast: Dictionary) -> Dictionary:
 	_variables.clear()
 	_errors.clear()
@@ -80,6 +197,7 @@ func execute(ast: Dictionary) -> Dictionary:
 		"variables": _variables.duplicate()
 	}
 
+
 ## Get current variables (for debugging)
 func get_variables() -> Dictionary:
 	return _variables.duplicate()
@@ -89,7 +207,206 @@ func get_errors() -> Array:
 	return _errors
 
 # ============================================
-# Statement Execution
+# Context Management
+# ============================================
+
+## Push a block context (list of statements to execute)
+func _push_block_context(statements: Array) -> void:
+	if statements.size() == 0:
+		return
+	_execution_stack.push_back({
+		"type": ContextType.BLOCK,
+		"statements": statements,
+		"index": 0
+	})
+
+
+## Push a while loop context
+func _push_while_context(condition: Dictionary, body: Array, line: int) -> void:
+	_execution_stack.push_back({
+		"type": ContextType.WHILE_LOOP,
+		"condition": condition,
+		"body": body,
+		"iterations": 0,
+		"line": line
+	})
+
+
+## Push a for loop context
+func _push_for_context(variable: String, range_end: int, body: Array, line: int) -> void:
+	_execution_stack.push_back({
+		"type": ContextType.FOR_LOOP,
+		"variable": variable,
+		"range_end": range_end,
+		"current": 0,
+		"body": body,
+		"line": line
+	})
+
+
+# ============================================
+# Step Execution
+# ============================================
+
+## Execute one step of the current context
+func _execute_context_step(context: Dictionary) -> void:
+	match context["type"]:
+		ContextType.BLOCK:
+			_execute_block_step(context)
+		ContextType.WHILE_LOOP:
+			_execute_while_step(context)
+		ContextType.FOR_LOOP:
+			_execute_for_step(context)
+
+
+## Execute one step of a block (one statement)
+func _execute_block_step(context: Dictionary) -> void:
+	var statements = context["statements"]
+	var index = context["index"]
+
+	if index >= statements.size() or _break_requested:
+		# Block complete, pop context
+		_execution_stack.pop_back()
+		return
+
+	var stmt = statements[index]
+	context["index"] = index + 1
+
+	# Execute the statement (may push new contexts)
+	_execute_statement_step(stmt)
+
+
+## Execute one iteration of a while loop
+func _execute_while_step(context: Dictionary) -> void:
+	# Check for break
+	if _break_requested:
+		_break_requested = false
+		_execution_stack.pop_back()
+		return
+
+	context["iterations"] += 1
+	_current_line = context.get("line", _current_line)
+
+	# Check iteration limit
+	if context["iterations"] > MAX_LOOP_ITERATIONS:
+		_add_error("RuntimeError: maximum loop iterations exceeded", _current_line)
+		_execution_stack.pop_back()
+		return
+
+	# Evaluate condition
+	var condition_result = _evaluate_expression(context["condition"])
+	if _errors.size() > 0:
+		_execution_stack.pop_back()
+		return
+
+	if _is_truthy(condition_result):
+		# Condition true, push body for execution
+		# Body will be executed, then we'll come back to while_step
+		if context["body"].size() > 0:
+			_push_block_context(context["body"])
+	else:
+		# Condition false, loop done
+		_execution_stack.pop_back()
+
+
+## Execute one iteration of a for loop
+func _execute_for_step(context: Dictionary) -> void:
+	# Check for break
+	if _break_requested:
+		_break_requested = false
+		_execution_stack.pop_back()
+		return
+
+	var current = context["current"]
+	var range_end = context["range_end"]
+	_current_line = context.get("line", _current_line)
+
+	if current >= range_end:
+		# Loop complete
+		_execution_stack.pop_back()
+		return
+
+	# Set loop variable
+	_variables[context["variable"]] = current
+	context["current"] = current + 1
+
+	# Push body for execution
+	if context["body"].size() > 0:
+		_push_block_context(context["body"])
+
+
+## Execute a single statement (may push contexts for loops)
+func _execute_statement_step(stmt: Dictionary) -> void:
+	if stmt == null:
+		return
+
+	_current_line = stmt.get("line", _current_line)
+	execution_line.emit(_current_line)
+
+	var stmt_type = stmt.get("type", -1)
+
+	match stmt_type:
+		PythonParser.ASTType.EXPRESSION_STMT:
+			_execute_expression_stmt(stmt)
+		PythonParser.ASTType.ASSIGNMENT:
+			_execute_assignment(stmt)
+		PythonParser.ASTType.IF_STMT:
+			_execute_if_stmt_step(stmt)
+		PythonParser.ASTType.WHILE_STMT:
+			# Push while context - will be executed on next step
+			_push_while_context(stmt["condition"], stmt["body"], _current_line)
+		PythonParser.ASTType.FOR_STMT:
+			_execute_for_stmt_init(stmt)
+		PythonParser.ASTType.BREAK_STMT:
+			_break_requested = true
+		_:
+			_add_error("RuntimeError: unknown statement type", _current_line)
+
+
+## Execute if statement (immediately evaluates and pushes appropriate block)
+func _execute_if_stmt_step(stmt: Dictionary) -> void:
+	var condition = _evaluate_expression(stmt["condition"])
+	if _errors.size() > 0:
+		return
+
+	if _is_truthy(condition):
+		if stmt["then_body"].size() > 0:
+			_push_block_context(stmt["then_body"])
+		return
+
+	# Check elif clauses
+	for elif_clause in stmt.get("elif_clauses", []):
+		var elif_condition = _evaluate_expression(elif_clause["condition"])
+		if _errors.size() > 0:
+			return
+		if _is_truthy(elif_condition):
+			if elif_clause["body"].size() > 0:
+				_push_block_context(elif_clause["body"])
+			return
+
+	# Execute else clause
+	if stmt.get("else_body", []).size() > 0:
+		_push_block_context(stmt["else_body"])
+
+
+## Initialize for loop (evaluate range and push context)
+func _execute_for_stmt_init(stmt: Dictionary) -> void:
+	var var_name = stmt["variable"]
+	var range_end = _evaluate_expression(stmt["range_end"])
+
+	if _errors.size() > 0:
+		return
+
+	if not (range_end is int or range_end is float):
+		_add_error("TypeError: range() requires an integer, got %s" % typeof(range_end), _current_line)
+		return
+
+	var end_val = int(range_end)
+	_push_for_context(var_name, end_val, stmt["body"], _current_line)
+
+
+# ============================================
+# Statement Execution (Legacy - for execute())
 # ============================================
 
 func _execute_statement(stmt: Dictionary) -> void:
@@ -125,10 +442,10 @@ func _execute_expression_stmt(stmt: Dictionary) -> void:
 	_evaluate_expression(stmt["expression"])
 
 func _execute_assignment(stmt: Dictionary) -> void:
-	var name = stmt["name"]
+	var var_name = stmt["name"]
 	var value = _evaluate_expression(stmt["value"])
 	if _errors.size() == 0:
-		_variables[name] = value
+		_variables[var_name] = value
 
 func _execute_if_stmt(stmt: Dictionary) -> void:
 	var condition = _evaluate_expression(stmt["condition"])
@@ -211,9 +528,6 @@ func _execute_for_stmt(stmt: Dictionary) -> void:
 		if _errors.size() > 0:
 			break
 
-	# Clean up loop variable (optional, Python keeps it)
-	# _variables.erase(var_name)
-
 func _execute_block(statements: Array) -> void:
 	for stmt in statements:
 		if _break_requested or _errors.size() > 0:
@@ -257,17 +571,17 @@ func _evaluate_expression(expr: Dictionary) -> Variant:
 			return null
 
 func _evaluate_identifier(expr: Dictionary) -> Variant:
-	var name = expr["name"]
+	var ident_name = expr["name"]
 
 	# Check if it's a game object
-	if name in _game_objects:
-		return _game_objects[name]
+	if ident_name in _game_objects:
+		return _game_objects[ident_name]
 
 	# Check if it's a variable
-	if name in _variables:
-		return _variables[name]
+	if ident_name in _variables:
+		return _variables[ident_name]
 
-	_add_error("NameError: '%s' is not defined" % name, _current_line)
+	_add_error("NameError: '%s' is not defined" % ident_name, _current_line)
 	return null
 
 func _evaluate_binary_expr(expr: Dictionary) -> Variant:
