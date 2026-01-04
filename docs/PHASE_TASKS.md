@@ -156,7 +156,7 @@ Check off items as they are completed.
   - [x] **State Getter (return string)**
 	- [x] `stoplight.get_state()` - returns "red", "yellow", or "green"
   - [x] Implement state machine transitions
-  - [x] Car stopping at red lights behavior
+  - [x] Red light violation detection (cars do NOT auto-stop)
 - [ ] Create traffic light sprite (2-way and 4-way variants)
 - [x] Write tests for stoplight (`tests/stoplight.test.gd`) - 7 tests passing
 
@@ -174,7 +174,13 @@ Check off items as they are completed.
 - [x] **Hearts/Lives System**
   - [x] Players start with hearts (default: 10)
   - [x] Lose 1 heart on crash or collision
+  - [x] Lose 1 heart on running a red light
   - [x] Game over when hearts reach 0
+- [x] **Red Light Violation System**
+  - [x] Cars do NOT automatically stop at red lights
+  - [x] Players must code: `if stoplight.is_red(): car.stop()`
+  - [x] Running a red light costs 1 heart
+  - [x] `ran_red_light` signal emitted on violation
 - [x] **Crashed Cars as Obstacles**
   - [x] Crashed cars remain on map (don't disappear)
   - [x] Visual feedback (darkened/grayed)
@@ -789,6 +795,50 @@ SCRIPT ERROR: Invalid cast. Cannot convert from "Node2D" to "ColorRect".
 - Default road is at tile row 4, columns 0-11
 - Tile (1, 4) = (96, 288) - start position
 - Tile (11, 4) = (736, 288) - end destination
+
+---
+
+### January 4, 2026 - Red Light Violation System Implementation
+
+**Feature Change:** Cars no longer automatically stop at red lights.
+
+**Motivation:**
+- Educational goal: Teach conditional logic and defensive programming
+- Players must write: `if stoplight.is_red(): car.stop()`
+- Running a red light now costs 1 heart (penalty for not checking)
+
+**Changes Made:**
+
+1. **`scripts/entities/vehicle.gd`**
+   - Removed `_check_stoplights()` function (auto-stop behavior)
+   - Removed `_on_stoplight_changed()` handler
+   - Removed `stopped_at_light` and `resumed_from_light` signals
+   - Added `ran_red_light` signal for violation detection
+   - Added `_check_red_light_violation()` function
+   - Added `_passed_stoplights` array to track which lights were passed
+
+2. **`scenes/main.gd`**
+   - Added `_on_car_ran_red_light()` handler
+   - Connected `ran_red_light` signal from vehicles
+   - Handler reduces hearts and shows status message
+
+3. **Documentation Updated:**
+   - `CLAUDE.md` - Added Red Light Violation System section
+   - `docs/PRD.md` - Updated Hearts System and CORE-005
+   - `docs/PHASE_TASKS.md` - Updated stoplight and hearts sections
+
+**Expected Player Behavior:**
+```python
+# Before (auto-stop):
+car.go()  # Car would automatically stop at red lights
+
+# After (manual control):
+if stoplight.is_red():
+    car.stop()
+else:
+    car.go()
+# If player doesn't check → loses 1 heart
+```
 
 ---
 

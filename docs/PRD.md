@@ -528,8 +528,16 @@ car.go()  # Inline comment
 - Lose 1 heart when:
   - Car crashes (moves onto non-road tile)
   - Car collides with another car
+  - Car runs a red light (passes through while light is red)
 - Game over when hearts reach 0
 - UI displays remaining hearts in top-left corner
+
+**Red Light Violation System (IMPORTANT!):**
+- Cars do NOT automatically stop at red lights
+- Players MUST code stoplight handling: `if stoplight.is_red(): car.stop()`
+- If a car passes through a stoplight while it's red, player loses 1 heart
+- Teaches conditional logic and defensive programming
+- Detection: Violation occurs when car is within 30px of stoplight and light is red
 
 **Crashed Cars as Obstacles:**
 - When a car crashes, it does NOT disappear
@@ -564,6 +572,7 @@ car.go()  # Inline comment
 - [x] Cars spawn automatically every 15 seconds
 - [x] Stoplight control panel allows manual control
 - [x] Cars crash when moving off-road
+- [x] Red light violations detected and penalized (-1 heart)
 
 ---
 
@@ -596,6 +605,7 @@ car.go()  # Inline comment
 - Timer expires before all cars reach destinations
 - Car exits map boundary
 - Infinite loop detected (safety timeout)
+- Hearts depleted (from crashes, off-road, or running red lights)
 
 **Level Structure:**
 

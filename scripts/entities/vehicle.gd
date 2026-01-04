@@ -4,13 +4,12 @@ class_name Vehicle
 ## Vehicle entity that can be controlled via code commands.
 ## Supports: go(), stop(), turn_left(), turn_right(), wait(seconds)
 ##
-## Vehicles automatically stop at red lights when they enter a stoplight's
-## detection zone. They resume when the light turns green.
+## Vehicles do NOT automatically stop at red lights - players must code this!
+## Running a red light (passing through when red) costs the player a heart.
 
 signal reached_destination(vehicle_id: String)
 signal crashed(vehicle_id: String)
-signal stopped_at_light(vehicle_id: String, stoplight_id: String)
-signal resumed_from_light(vehicle_id: String, stoplight_id: String)
+signal ran_red_light(vehicle_id: String, stoplight_id: String)
 signal off_road_crash(vehicle_id: String)
 
 # ============================================
@@ -107,9 +106,9 @@ var auto_navigate: bool = false
 var _nav_check_timer: float = 0.0
 const NAV_CHECK_INTERVAL: float = 0.1  # Check road every 100ms
 
-# Stoplight awareness
+# Stoplight awareness (for red light violation detection)
 var _nearby_stoplights: Array = []  # Array of Stoplight nodes in range
-var _stopped_at_stoplight: Stoplight = null  # Currently stopped at this stoplight
+var _passed_stoplights: Array = []  # Track stoplights we've passed (for violation detection)
 var _wants_to_move: bool = false  # True if go() was called (intention to move)
 
 # Intersection/turn tracking
@@ -227,9 +226,9 @@ func _physics_process(delta: float) -> void:
 		_process_turn(delta)
 		return
 
-	# Check stoplight state if we want to move
-	if _wants_to_move:
-		_check_stoplights()
+	# Check for red light violations (player must code stoplight handling!)
+	if _is_moving:
+		_check_red_light_violation()
 
 	# Auto-navigate: check road and turn if needed
 	if auto_navigate and _is_moving and not _is_turning:
@@ -366,10 +365,10 @@ func is_moving() -> bool:
 	return is_vehicle_moving()
 
 
-## Check if vehicle path is blocked (by another car or obstacle)
+## Check if vehicle path is blocked (by another car or red light ahead)
 func is_blocked() -> bool:
-	# Check if stopped at a red light
-	if _stopped_at_stoplight != null:
+	# Check if there's a red light ahead
+	if is_blocked_by_light():
 		return true
 	# Check if there's a car in front
 	return is_front_car()
@@ -432,8 +431,7 @@ func _command_completed() -> void:
 
 func _exec_go() -> void:
 	_wants_to_move = true
-	if _stopped_at_stoplight == null:
-		_is_moving = true
+	_is_moving = true
 	# go() runs indefinitely, so mark command as complete immediately
 	# (the car keeps moving until stop() is called)
 	_command_completed()
@@ -442,7 +440,6 @@ func _exec_go() -> void:
 func _exec_stop() -> void:
 	_is_moving = false
 	_wants_to_move = false
-	_stopped_at_stoplight = null
 	velocity = Vector2.ZERO
 	_tiles_to_move = 0
 	_command_completed()
@@ -616,7 +613,8 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	speed_multiplier = 1.0
 	velocity = Vector2.ZERO
 	_wants_to_move = false
-	_stopped_at_stoplight = null
+	# Reset red light violation tracking
+	_passed_stoplights.clear()
 	# Reset tile-based movement
 	_tiles_to_move = 0
 	_move_start_position = Vector2.ZERO
@@ -629,8 +627,6 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Reset command queue
 	_command_queue.clear()
 	_current_command = {}
-	# Reset tile-based movement
-	_tiles_to_move = 0
 
 
 # ============================================
@@ -641,58 +637,41 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 func add_stoplight(stoplight: Stoplight) -> void:
 	if not stoplight in _nearby_stoplights:
 		_nearby_stoplights.append(stoplight)
-		# Connect to state change signal
-		if not stoplight.state_changed.is_connected(_on_stoplight_changed):
-			stoplight.state_changed.connect(_on_stoplight_changed)
 
 
 ## Remove a stoplight from awareness
 func remove_stoplight(stoplight: Stoplight) -> void:
 	_nearby_stoplights.erase(stoplight)
-	if stoplight == _stopped_at_stoplight:
-		_stopped_at_stoplight = null
-		if _wants_to_move:
-			_is_moving = true
+	_passed_stoplights.erase(stoplight)
 
 
-## Check if any nearby stoplight requires us to stop
-func _check_stoplights() -> void:
-	# If already stopped at a light, check if we can resume
-	if _stopped_at_stoplight != null:
-		if not _stopped_at_stoplight.should_stop():
-			# Light turned green, resume movement
-			resumed_from_light.emit(vehicle_id, _stopped_at_stoplight.stoplight_id)
-			_stopped_at_stoplight = null
-			_is_moving = true
-		return
-
-	# Check all nearby stoplights
+## Check if car runs a red light (passing through when light is red)
+## This does NOT auto-stop - players must code stoplight handling!
+func _check_red_light_violation() -> void:
 	for stoplight in _nearby_stoplights:
-		if stoplight.should_stop():
-			# Check if we're close enough to need to stop
+		var distance = global_position.distance_to(stoplight.global_position)
+
+		# If we're very close (passing through) and light is red
+		if distance < 30.0 and stoplight.is_red():
+			if stoplight not in _passed_stoplights:
+				# First time passing this red light - violation!
+				_passed_stoplights.append(stoplight)
+				ran_red_light.emit(vehicle_id, stoplight.stoplight_id)
+
+		# Reset tracking when we're far away from the stoplight
+		elif distance > STOPLIGHT_DETECTION_RANGE:
+			if stoplight in _passed_stoplights:
+				_passed_stoplights.erase(stoplight)
+
+
+## Check if there's a red light nearby (for player queries)
+func is_at_red_light() -> bool:
+	for stoplight in _nearby_stoplights:
+		if stoplight.is_red():
 			var distance = global_position.distance_to(stoplight.global_position)
 			if distance < STOPLIGHT_STOP_DISTANCE:
-				# Need to stop at this light
-				_stopped_at_stoplight = stoplight
-				_is_moving = false
-				stopped_at_light.emit(vehicle_id, stoplight.stoplight_id)
-				return
-
-
-## Called when any connected stoplight changes state
-func _on_stoplight_changed(stoplight_id: String, new_state: String) -> void:
-	# If we're stopped at this light and it turned green, resume
-	if _stopped_at_stoplight != null and _stopped_at_stoplight.stoplight_id == stoplight_id:
-		if new_state == "green":
-			resumed_from_light.emit(vehicle_id, stoplight_id)
-			_stopped_at_stoplight = null
-			if _wants_to_move:
-				_is_moving = true
-
-
-## Check if vehicle is currently stopped at a red light
-func is_at_red_light() -> bool:
-	return _stopped_at_stoplight != null
+				return true
+	return false
 
 
 ## Check if there's a red light ahead (within detection range)

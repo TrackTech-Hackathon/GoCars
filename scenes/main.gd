@@ -94,10 +94,9 @@ func _ready() -> void:
 	simulation_engine.execution_line_changed.connect(_on_execution_line_changed)
 	simulation_engine.execution_error_occurred.connect(_on_execution_error)
 
-	# Connect vehicle stoplight signals if vehicle exists
+	# Connect vehicle signals if vehicle exists
 	if test_vehicle:
-		test_vehicle.stopped_at_light.connect(_on_car_stopped_at_light)
-		test_vehicle.resumed_from_light.connect(_on_car_resumed_from_light)
+		test_vehicle.ran_red_light.connect(_on_car_ran_red_light)
 		test_vehicle.off_road_crash.connect(_on_car_off_road)
 
 	# Connect result popup buttons
@@ -216,12 +215,12 @@ func _on_level_failed(reason: String) -> void:
 	_show_failure_popup(reason)
 
 
-func _on_car_stopped_at_light(car_id: String, stoplight_id: String) -> void:
-	_update_status("Car '%s' stopped at red light '%s'" % [car_id, stoplight_id])
-
-
-func _on_car_resumed_from_light(car_id: String, stoplight_id: String) -> void:
-	_update_status("Car '%s' resumed (light '%s' turned green)" % [car_id, stoplight_id])
+func _on_car_ran_red_light(vehicle_id: String, stoplight_id: String) -> void:
+	hearts -= 1
+	_update_hearts_label()
+	_update_status("%s ran a red light! (-1 heart)" % vehicle_id)
+	if hearts <= 0:
+		_on_level_failed("Ran too many red lights!")
 
 
 func _on_execution_line_changed(line_number: int) -> void:
@@ -580,8 +579,7 @@ func _spawn_new_car() -> void:
 	new_car.reached_destination.connect(_on_car_reached_destination)
 	new_car.crashed.connect(_on_car_crashed)
 	new_car.off_road_crash.connect(_on_car_off_road)
-	new_car.stopped_at_light.connect(_on_car_stopped_at_light)
-	new_car.resumed_from_light.connect(_on_car_resumed_from_light)
+	new_car.ran_red_light.connect(_on_car_ran_red_light)
 
 	# Make aware of stoplight
 	if test_stoplight:
@@ -653,8 +651,7 @@ func _respawn_test_vehicle() -> void:
 	test_vehicle.reached_destination.connect(_on_car_reached_destination)
 	test_vehicle.crashed.connect(_on_car_crashed)
 	test_vehicle.off_road_crash.connect(_on_car_off_road)
-	test_vehicle.stopped_at_light.connect(_on_car_stopped_at_light)
-	test_vehicle.resumed_from_light.connect(_on_car_resumed_from_light)
+	test_vehicle.ran_red_light.connect(_on_car_ran_red_light)
 
 	# Make aware of stoplight
 	if test_stoplight:

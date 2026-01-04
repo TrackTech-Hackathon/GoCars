@@ -709,9 +709,28 @@ Players have a limited number of road cards to modify the map:
 ### Hearts System
 Players have a limited number of hearts (lives):
 - **Initial count**: 10 hearts (configurable per level)
-- **Losing hearts**: Car goes off-road or collides with another car (-1 heart)
+- **Losing hearts**:
+  - Car goes off-road (-1 heart)
+  - Car collides with another car (-1 heart)
+  - Car runs a red light (-1 heart)
 - **Game over**: When hearts reach 0, level fails
 - **UI Display**: Hearts count shown in top-left corner
+
+### Red Light Violation System (IMPORTANT!)
+Cars do NOT automatically stop at red lights - players must code the logic!
+- **No auto-stop**: Cars will pass through stoplights regardless of color
+- **Violation detection**: If a car passes through a stoplight while it's red, it's a violation
+- **Penalty**: Running a red light costs 1 heart
+- **Player responsibility**: Code must check `stoplight.is_red()` and call `car.stop()`
+- **Educational goal**: Teaches conditional logic and defensive programming
+
+```python
+# REQUIRED: Players must code stoplight handling
+if stoplight.is_red():
+	car.stop()
+else:
+	car.go()
+```
 
 ### Crashed Cars as Obstacles (CRITICAL MECHANIC!)
 Cars do NOT disappear when they crash - they become permanent obstacles:
@@ -773,6 +792,7 @@ Cars must stay on road tiles:
 | Stoplight Control Panel | ✅ COMPLETE | Manual stoplight control UI |
 | Road-Only Movement | ✅ COMPLETE | Cars crash on non-road tiles |
 | Car-to-Car Collisions | ✅ COMPLETE | State-aware collision detection |
+| Red Light Violations | ✅ COMPLETE | Running red lights costs hearts (no auto-stop) |
 
 ---
 
@@ -845,6 +865,28 @@ elif car.is_front_road():
 	car.go()
 ```
 
+### Example 5: Stoplight Handling (REQUIRED!)
+```python
+# Cars do NOT auto-stop at red lights!
+# You MUST code the stoplight logic or lose hearts
+
+# Basic stoplight check
+if stoplight.is_red():
+	car.stop()
+elif stoplight.is_yellow():
+	car.stop()  # Slow down for yellow
+else:
+	car.go()
+
+# Combined with road detection
+if stoplight.is_red():
+	car.stop()
+elif car.is_front_road():
+	car.go()
+else:
+	car.turn("right")
+```
+
 ---
 
 ## Game Controls Summary
@@ -874,3 +916,4 @@ The current game mechanics teach:
 - **Code reuse**: Same code runs on all spawned cars
 - **Debugging live systems**: See code execute in real-time on multiple vehicles
 - **Spatial reasoning**: Road detection and pathfinding
+- **Defensive programming**: Must check stoplight state before proceeding (no auto-stop!)
