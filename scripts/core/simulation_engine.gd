@@ -42,7 +42,7 @@ var _current_command_index: int = 0
 
 # Step-based execution (execute one statement per interval)
 var _current_code: String = ""
-var _execution_interval: float = 0.1  # Execute one step every 100ms
+var _execution_interval: float = 0.016  # Execute one step every 16ms (~60fps) for smooth movement
 var _execution_timer: float = 0.0
 var _is_executing: bool = false
 var _current_ast: Dictionary = {}
@@ -120,11 +120,14 @@ func _process(delta: float) -> void:
 		_check_vehicle_boundaries()
 
 		# Step-based code execution (one statement/iteration per interval)
-		if _is_executing:
-			_execution_timer += delta
-			if _execution_timer >= _execution_interval:
-				_execution_timer = 0.0
+		_execution_timer += delta
+		if _execution_timer >= _execution_interval:
+			_execution_timer = 0.0
+			# Execute main interpreter
+			if _is_executing:
 				_execute_one_step()
+			# Execute each vehicle's interpreter
+			_execute_vehicle_interpreters()
 
 		# Handle step mode
 		if current_state == State.STEP:
@@ -243,6 +246,42 @@ func _register_game_objects() -> void:
 	if _stoplights.size() > 0:
 		var first_stoplight_id = _stoplights.keys()[0]
 		_python_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
+
+
+## Execute code for a specific vehicle (used for spawned cars)
+func execute_code_for_vehicle(code: String, vehicle: Vehicle) -> void:
+	# Create a temporary interpreter for this vehicle
+	var temp_interpreter = PythonInterpreter.new()
+	temp_interpreter.register_object("car", vehicle)
+
+	# Register stoplights too
+	if _stoplights.size() > 0:
+		var first_stoplight_id = _stoplights.keys()[0]
+		temp_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
+
+	# Parse and start execution
+	var ast = _python_parser.parse(code)
+	if ast["errors"].size() > 0:
+		return
+
+	temp_interpreter.start_execution(ast)
+
+	# Store the interpreter for this vehicle
+	vehicle.set_meta("interpreter", temp_interpreter)
+
+
+## Execute one step for each vehicle's individual interpreter
+func _execute_vehicle_interpreters() -> void:
+	for vehicle_id in _vehicles:
+		var vehicle = _vehicles[vehicle_id]
+		if not is_instance_valid(vehicle):
+			continue
+		if vehicle.vehicle_state == 0:  # Skip crashed vehicles
+			continue
+		if vehicle.has_meta("interpreter"):
+			var interp: PythonInterpreter = vehicle.get_meta("interpreter")
+			if interp.is_running():
+				interp.step()
 
 
 ## Execute all queued commands

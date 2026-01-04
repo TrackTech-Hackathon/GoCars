@@ -110,11 +110,31 @@ func step() -> bool:
 		_is_running = false
 		return false
 
+	# Check if car is busy (turning or waiting) - don't execute next step yet
+	if _is_car_busy():
+		# Reset timeout while waiting for car action to complete
+		_execution_start_time = Time.get_ticks_msec()
+		return true  # Still running, but wait for car to finish
+
 	# Get current context and execute one step
 	var context = _execution_stack.back()
 	_execute_context_step(context)
 
 	return _execution_stack.size() > 0 and _is_running
+
+
+## Check if the car is busy (turning, waiting, etc.)
+func _is_car_busy() -> bool:
+	if "car" in _game_objects:
+		var car = _game_objects["car"]
+		if car != null and is_instance_valid(car):
+			# Check if car is turning
+			if car.has_method("is_turning") and car.is_turning():
+				return true
+			# Check if car is waiting
+			if car.has_method("is_waiting") and car.is_waiting:
+				return true
+	return false
 
 
 ## Check if execution is still running
