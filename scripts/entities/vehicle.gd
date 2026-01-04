@@ -139,10 +139,8 @@ const TURN_DURATION: float = 0.3
 var _tile_map_layer: TileMapLayer = null
 const ROAD_TILE_COLUMN_START: int = 1  # Columns 1-16 are road tiles
 
-# Tile-based movement (reserved for future use)
+# Tile-based movement
 var _tiles_to_move: int = 0
-# var _moving_to_tile: bool = false  # Reserved for tile-based movement
-# var _target_tile_position: Vector2 = Vector2.ZERO  # Reserved for tile-based movement
 
 
 func _ready() -> void:
@@ -369,8 +367,10 @@ func turn(turn_direction: String) -> void:
 
 ## Move a specific number of tiles
 func move(tiles: int) -> void:
+	if tiles <= 0:
+		return
 	_tiles_to_move = tiles
-	# Movement will be handled in physics process
+	go()  # Start moving, tiles will be counted down
 
 
 ## Check if there's a road in front of the car
@@ -504,6 +504,8 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Reset auto-navigate
 	auto_navigate = false
 	_nav_check_timer = 0.0
+	# Reset tile-based movement
+	_tiles_to_move = 0
 
 
 # ============================================
