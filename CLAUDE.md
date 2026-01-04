@@ -247,6 +247,7 @@ car.get_speed()             # Get current speed → float
 car.is_front_road()         # Is there a road tile in front? → bool
 car.is_left_road()          # Is there a road tile to the left? → bool
 car.is_right_road()         # Is there a road tile to the right? → bool
+car.is_at_dead_end()        # No roads in any direction? → bool (stops loops automatically)
 
 # Car Detection (NEW!)
 car.is_front_car()          # Is there ANY car (active or crashed) in front? → bool
@@ -768,6 +769,7 @@ Cars must stay on road tiles:
 | `car.is_right_road()` | ✅ COMPLETE | Detect road to right |
 | `car.is_front_car()` | ✅ COMPLETE | Detect any car ahead |
 | `car.is_front_crashed_car()` | ✅ COMPLETE | Detect crashed cars ahead |
+| `car.is_at_dead_end()` | ✅ COMPLETE | Detect dead ends (auto-stops loops) |
 | Stoplight Control Panel | ✅ COMPLETE | Manual stoplight control UI |
 | Road-Only Movement | ✅ COMPLETE | Cars crash on non-road tiles |
 | Car-to-Car Collisions | ✅ COMPLETE | State-aware collision detection |

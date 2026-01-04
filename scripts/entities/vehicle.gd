@@ -422,6 +422,15 @@ func is_front_crashed_car() -> bool:
 	return _is_crashed_vehicle_at_position(front_pos)
 
 
+## Check if the car is at a dead end (no road ahead, left, or right)
+## This is useful for detecting when navigation is complete on edited roads
+func is_at_dead_end() -> bool:
+	if _tile_map_layer == null:
+		return false
+	# Dead end = no road in any direction the car can go
+	return not is_front_road() and not is_left_road() and not is_right_road()
+
+
 # ============================================
 # Auto-Navigation System
 # ============================================

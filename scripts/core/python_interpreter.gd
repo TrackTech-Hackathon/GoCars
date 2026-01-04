@@ -137,6 +137,30 @@ func _is_car_busy() -> bool:
 	return false
 
 
+## Check if the car has reached a dead end (no roads in any direction)
+## This allows loops to complete naturally when navigating edited roads
+func _is_car_at_dead_end() -> bool:
+	if "car" in _game_objects:
+		var car = _game_objects["car"]
+		if car != null and is_instance_valid(car):
+			if car.has_method("is_at_dead_end") and car.is_at_dead_end():
+				# Car is at dead end and not moving - navigation complete
+				if car.has_method("is_vehicle_moving") and not car.is_vehicle_moving():
+					return true
+	return false
+
+
+## Check if the car has reached its destination
+## This allows loops to complete naturally when car arrives at destination
+func _is_car_at_destination() -> bool:
+	if "car" in _game_objects:
+		var car = _game_objects["car"]
+		if car != null and is_instance_valid(car):
+			if car.has_method("is_at_destination") and car.is_at_destination():
+				return true
+	return false
+
+
 ## Check if execution is still running
 func is_running() -> bool:
 	return _is_running and _execution_stack.size() > 0
@@ -281,6 +305,18 @@ func _execute_while_step(context: Dictionary) -> void:
 	# Check for break
 	if _break_requested:
 		_break_requested = false
+		_execution_stack.pop_back()
+		return
+
+	# Check if car has reached destination (natural termination)
+	if _is_car_at_destination():
+		# Car has reached its destination - complete the loop
+		_execution_stack.pop_back()
+		return
+
+	# Check if car is at dead end (natural termination for navigation loops)
+	if _is_car_at_dead_end():
+		# Car has navigated to the end of the road - complete the loop
 		_execution_stack.pop_back()
 		return
 
