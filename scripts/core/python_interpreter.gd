@@ -30,6 +30,7 @@ var _errors: Array = []
 var _break_requested: bool = false
 var _execution_start_time: int = 0
 var _current_line: int = 0
+var _last_emitted_line: int = -1  # Track last emitted line to avoid duplicate signals
 
 # Step-based execution state
 var _execution_stack: Array = []  # Stack of execution contexts
@@ -70,6 +71,7 @@ func start_execution(ast: Dictionary) -> void:
 	_break_requested = false
 	_execution_start_time = Time.get_ticks_msec()
 	_current_line = 0
+	_last_emitted_line = -1  # Reset line tracking
 	_execution_stack.clear()
 	_current_ast = ast
 	_is_running = true
@@ -194,6 +196,7 @@ func execute(ast: Dictionary) -> Dictionary:
 	_break_requested = false
 	_execution_start_time = Time.get_ticks_msec()
 	_current_line = 0
+	_last_emitted_line = -1  # Reset line tracking
 
 	execution_started.emit()
 
@@ -377,7 +380,10 @@ func _execute_statement_step(stmt: Dictionary) -> void:
 		return
 
 	_current_line = stmt.get("line", _current_line)
-	execution_line.emit(_current_line)
+	# Only emit if line actually changed (prevents flickering)
+	if _current_line != _last_emitted_line:
+		_last_emitted_line = _current_line
+		execution_line.emit(_current_line)
 
 	var stmt_type = stmt.get("type", -1)
 
@@ -450,7 +456,10 @@ func _execute_statement(stmt: Dictionary) -> void:
 		return
 
 	_current_line = stmt.get("line", _current_line)
-	execution_line.emit(_current_line)
+	# Only emit if line actually changed (prevents flickering)
+	if _current_line != _last_emitted_line:
+		_last_emitted_line = _current_line
+		execution_line.emit(_current_line)
 
 	if _check_timeout():
 		_add_error("RuntimeError: infinite loop detected (exceeded 10s)", _current_line)
