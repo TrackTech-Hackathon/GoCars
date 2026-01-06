@@ -13,7 +13,7 @@ extends Node2D
 @onready var road_cards_label: Label = $UI/RoadCardsLabel
 @onready var test_vehicle: Vehicle = $GameWorld/TestVehicle
 @onready var test_stoplight: Stoplight = $GameWorld/TestStoplight
-@onready var tile_map_layer: TileMapLayer = $GameWorld/TileMapLayer
+@onready var roads_container: Node2D = $GameWorld/Roads
 
 # Result popup elements
 @onready var result_popup: Panel = $UI/ResultPopup
@@ -42,21 +42,32 @@ var road_cards: int = 10
 var initial_hearts: int = 10
 var initial_road_cards: int = 10
 
-# TileMap constants
-const SOURCE_ID: int = 0
-const TILE_SIZE: int = 64
-const GRASS_TILE: Vector2i = Vector2i(0, 0)
-const ROAD_TILE: Vector2i = Vector2i(1, 0)  # Basic road tile
+# Road tile constants
+const TILE_SIZE: int = 144
+var road_tile_scene: PackedScene = preload("res://scenes/map_editor/road_tile.tscn")
+var road_tiles: Dictionary = {}  # Key: Vector2i grid position, Value: RoadTile instance
 
 # Map editing state
 var is_editing_enabled: bool = true
 
+# Camera movement
+const CAMERA_SPEED: float = 500.0
+const CAMERA_ZOOM_DEFAULT: Vector2 = Vector2(0.5, 0.5)  # Zoomed out to see more
+@onready var camera: Camera2D = $GameWorld/Camera2D
+
+# Parking spots (spawn and destination)
+@onready var spawn_parking: Sprite2D = $GameWorld/SpawnParking
+@onready var destination_parking: Sprite2D = $GameWorld/DestinationParking
+
 # Car spawning
 var car_spawn_timer: float = 0.0
 const CAR_SPAWN_INTERVAL: float = 15.0  # Spawn every 15 seconds
-# Spawn position aligned with tile (1, 4): X = 1*64+32 = 96, Y = 4*64+32 = 288 (tile center)
-var car_spawn_position: Vector2 = Vector2(96, 288)
+# Spawn position - will be set from parking spot
+# Road is at row 3, tile center is at y = 3*144 + 72 = 504
+var car_spawn_position: Vector2 = Vector2(72, 504)  # Tile (0,3) center
 var car_spawn_direction: Vector2 = Vector2.RIGHT
+var car_spawn_rotation: float = PI / 2  # 90 degrees - car faces right
+var car_destination: Vector2 = Vector2(1368, 504)  # Tile (9,3) center (9*144+72)
 var is_spawning_cars: bool = false
 var next_car_id: int = 2  # Start from 2 since car1 is the test vehicle
 
@@ -77,8 +88,8 @@ func _ready() -> void:
 	# Register vehicle with simulation engine
 	simulation_engine.register_vehicle(test_vehicle)
 
-	# Pass tile map layer to vehicle for road checking
-	test_vehicle.set_tile_map_layer(tile_map_layer)
+	# Pass road checker reference to vehicle for road detection
+	test_vehicle.set_road_checker(self)
 
 	# Register stoplight if it exists
 	if test_stoplight:
@@ -135,6 +146,21 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Handle camera movement (WASD or Arrow keys)
+	if camera:
+		var camera_velocity = Vector2.ZERO
+		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
+			camera_velocity.y -= 1
+		if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
+			camera_velocity.y += 1
+		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
+			camera_velocity.x -= 1
+		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
+			camera_velocity.x += 1
+
+		if camera_velocity != Vector2.ZERO:
+			camera.position += camera_velocity.normalized() * CAMERA_SPEED * delta
+
 	# Handle car spawning
 	if is_spawning_cars:
 		car_spawn_timer += delta
@@ -144,14 +170,94 @@ func _process(delta: float) -> void:
 
 
 func _create_default_map() -> void:
-	# Create a simple grass field with a road path
-	for x in range(-5, 15):
-		for y in range(-5, 15):
-			tile_map_layer.set_cell(Vector2i(x, y), SOURCE_ID, GRASS_TILE)
+	# With 144x144 tiles, create a horizontal road using RoadTile scenes
+	# No grass for now as per user request - only roads
 
-	# Add a horizontal road in the middle
-	for x in range(0, 12):
-		tile_map_layer.set_cell(Vector2i(x, 4), SOURCE_ID, ROAD_TILE)
+	# Add a horizontal road (10 tiles = 1440 pixels wide)
+	# Position at row 3 (y=3) so cars at y=432+72=504 are centered on road
+	for x in range(0, 10):
+		var grid_pos = Vector2i(x, 3)
+		_place_road_tile(grid_pos)
+
+	# Connect adjacent road tiles
+	_update_all_road_connections()
+
+
+func _place_road_tile(grid_pos: Vector2i) -> RoadTile:
+	# Check if tile already exists
+	if road_tiles.has(grid_pos):
+		return road_tiles[grid_pos]
+
+	# Create new road tile
+	var road_tile = road_tile_scene.instantiate() as RoadTile
+	road_tile.position = Vector2(grid_pos.x * TILE_SIZE, grid_pos.y * TILE_SIZE)
+	roads_container.add_child(road_tile)
+	road_tiles[grid_pos] = road_tile
+	return road_tile
+
+
+func _remove_road_tile(grid_pos: Vector2i) -> void:
+	if road_tiles.has(grid_pos):
+		var road_tile = road_tiles[grid_pos]
+		road_tile.queue_free()
+		road_tiles.erase(grid_pos)
+		_update_all_road_connections()
+
+
+func _update_all_road_connections() -> void:
+	# Update connections for all road tiles
+	for grid_pos in road_tiles:
+		_update_road_tile_connections(grid_pos)
+
+
+func _update_road_tile_connections(grid_pos: Vector2i) -> void:
+	if not road_tiles.has(grid_pos):
+		return
+
+	var road_tile = road_tiles[grid_pos] as RoadTile
+
+	# Check all 8 neighbors
+	var directions = {
+		"top": Vector2i(0, -1),
+		"bottom": Vector2i(0, 1),
+		"left": Vector2i(-1, 0),
+		"right": Vector2i(1, 0),
+		"top_left": Vector2i(-1, -1),
+		"top_right": Vector2i(1, -1),
+		"bottom_left": Vector2i(-1, 1),
+		"bottom_right": Vector2i(1, 1)
+	}
+
+	var conn_dict = {}
+	var extended_dict = {}
+
+	for dir_name in directions:
+		var offset = directions[dir_name]
+		var neighbor_pos = grid_pos + offset
+		conn_dict[dir_name] = road_tiles.has(neighbor_pos)
+
+		# Check 2-step connections for extended visibility rules
+		var two_step_pos = grid_pos + offset * 2
+		var extended_key = dir_name + "_" + dir_name
+		if road_tile.extended_connections.has(extended_key):
+			extended_dict[extended_key] = road_tiles.has(two_step_pos)
+
+	road_tile.set_all_connections(conn_dict, extended_dict)
+
+
+## Check if there's a road tile at the given world position (public API for vehicles)
+func is_road_at_position(world_pos: Vector2) -> bool:
+	var grid_pos = Vector2i(int(world_pos.x / TILE_SIZE), int(world_pos.y / TILE_SIZE))
+	return road_tiles.has(grid_pos)
+
+
+func _get_grid_pos_from_world(world_pos: Vector2) -> Vector2i:
+	return Vector2i(int(world_pos.x / TILE_SIZE), int(world_pos.y / TILE_SIZE))
+
+
+## Get tile size (public API for vehicles)
+func get_tile_size() -> float:
+	return float(TILE_SIZE)
 
 
 func _on_run_button_pressed() -> void:
@@ -484,36 +590,35 @@ func _place_road_at_mouse() -> void:
 		return
 
 	var mouse_pos = get_global_mouse_position()
-	var tile_pos = tile_map_layer.local_to_map(tile_map_layer.to_local(mouse_pos))
+	var grid_pos = _get_grid_pos_from_world(mouse_pos)
 
 	# Check if tile is not already a road
-	var current_tile = tile_map_layer.get_cell_atlas_coords(tile_pos)
-	if current_tile == ROAD_TILE:
+	if road_tiles.has(grid_pos):
 		_update_status("Road already exists here")
 		return
 
 	# Place road and consume a card
-	tile_map_layer.set_cell(tile_pos, SOURCE_ID, ROAD_TILE)
+	_place_road_tile(grid_pos)
+	_update_all_road_connections()
 	road_cards -= 1
 	_update_road_cards_label()
-	_update_status("Road placed at %s" % tile_pos)
+	_update_status("Road placed at %s" % grid_pos)
 
 
 func _remove_road_at_mouse() -> void:
 	var mouse_pos = get_global_mouse_position()
-	var tile_pos = tile_map_layer.local_to_map(tile_map_layer.to_local(mouse_pos))
+	var grid_pos = _get_grid_pos_from_world(mouse_pos)
 
 	# Check if tile is a road
-	var current_tile = tile_map_layer.get_cell_atlas_coords(tile_pos)
-	if current_tile != ROAD_TILE:
+	if not road_tiles.has(grid_pos):
 		_update_status("No road here to remove")
 		return
 
 	# Remove road and gain a card back
-	tile_map_layer.set_cell(tile_pos, SOURCE_ID, GRASS_TILE)
+	_remove_road_tile(grid_pos)
 	road_cards += 1
 	_update_road_cards_label()
-	_update_status("Road removed at %s" % tile_pos)
+	_update_status("Road removed at %s" % grid_pos)
 
 
 # ============================================
@@ -561,8 +666,18 @@ func _on_toggle_help_pressed() -> void:
 # ============================================
 
 func _spawn_new_car() -> void:
-	# Load the vehicle scene
-	var vehicle_scene = load("res://objects/test_vehicle.tscn")
+	# Load a random car scene from the 7 available
+	var car_scenes = [
+		"res://scenes/entities/car_sedan.tscn",
+		"res://scenes/entities/car_estate.tscn",
+		"res://scenes/entities/car_micro.tscn",
+		"res://scenes/entities/car_sport.tscn",
+		"res://scenes/entities/car_pickup.tscn",
+		"res://scenes/entities/car_jeepney.tscn",
+		"res://scenes/entities/car_motorbike.tscn"
+	]
+	var random_index = randi() % car_scenes.size()
+	var vehicle_scene = load(car_scenes[random_index])
 	if vehicle_scene == null:
 		_update_status("Error: Could not load vehicle scene")
 		return
@@ -572,23 +687,21 @@ func _spawn_new_car() -> void:
 	new_car.vehicle_id = "car%d" % next_car_id
 	next_car_id += 1
 
-	# Assign random vehicle type for variety
-	var random_type = Vehicle.get_random_type()
-	new_car.vehicle_type = random_type
-
-	# Set position and direction
+	# Set position and direction (car sprite faces UP, so rotation PI/2 makes it face RIGHT)
 	new_car.global_position = car_spawn_position
 	new_car.direction = car_spawn_direction
-	new_car.rotation = car_spawn_direction.angle()
+	new_car.rotation = car_spawn_rotation
 
-	# Set destination (end of road at tile column 11, same row)
-	new_car.destination = Vector2(11 * 64 + 32, 288)  # Tile (11, 4) center
+	# Set destination
+	new_car.destination = car_destination
+
+	# Note: Vehicle type is already set in the scene file
 
 	# Add to scene
 	$GameWorld.add_child(new_car)
 
-	# Set tilemap reference
-	new_car.set_tile_map_layer(tile_map_layer)
+	# Set road checker reference
+	new_car.set_road_checker(self)
 
 	# Register with simulation engine
 	simulation_engine.register_vehicle(new_car)
@@ -633,8 +746,18 @@ func _clear_all_spawned_cars() -> void:
 
 
 func _respawn_test_vehicle() -> void:
-	# Load the vehicle scene
-	var vehicle_scene = load("res://objects/test_vehicle.tscn")
+	# Load a random car scene from the 7 available
+	var car_scenes = [
+		"res://scenes/entities/car_sedan.tscn",
+		"res://scenes/entities/car_estate.tscn",
+		"res://scenes/entities/car_micro.tscn",
+		"res://scenes/entities/car_sport.tscn",
+		"res://scenes/entities/car_pickup.tscn",
+		"res://scenes/entities/car_jeepney.tscn",
+		"res://scenes/entities/car_motorbike.tscn"
+	]
+	var random_index = randi() % car_scenes.size()
+	var vehicle_scene = load(car_scenes[random_index])
 	if vehicle_scene == null:
 		_update_status("Error: Could not load vehicle scene")
 		return
@@ -648,19 +771,19 @@ func _respawn_test_vehicle() -> void:
 	test_vehicle = vehicle_scene.instantiate()
 	test_vehicle.vehicle_id = "car1"
 
-	# Set position and direction (aligned with road at tile row 4)
+	# Set position and direction (car sprite faces UP, so rotation PI/2 makes it face RIGHT)
 	test_vehicle.global_position = car_spawn_position
-	test_vehicle.direction = Vector2.RIGHT
-	test_vehicle.rotation = Vector2.RIGHT.angle()
+	test_vehicle.direction = car_spawn_direction
+	test_vehicle.rotation = car_spawn_rotation
 
-	# Set destination (end of road at tile column 11, same row)
-	test_vehicle.destination = Vector2(11 * 64 + 32, 288)  # Tile (11, 4) center
+	# Set destination
+	test_vehicle.destination = car_destination
 
 	# Add to scene
 	$GameWorld.add_child(test_vehicle)
 
-	# Set tilemap reference
-	test_vehicle.set_tile_map_layer(tile_map_layer)
+	# Set road checker reference
+	test_vehicle.set_road_checker(self)
 
 	# Register with simulation engine
 	simulation_engine.register_vehicle(test_vehicle)
