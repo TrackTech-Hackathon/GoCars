@@ -3,16 +3,18 @@ class_name MapEditor
 
 ## Map Editor for creating GoCars levels using RoadTile instances
 ##
-## Road Tool Mode:
-## - Toggle Road Tool button to enable road editing
-## - Hover shows 50% opacity preview
-## - Click empty space: place isolated road
-## - Click existing road, drag to neighbor: place and connect
-## - Hold-drag: chain-place roads with connections
-## - Right-click: delete road
+## Selection-Based Road Placement:
+## - Click empty area: Place isolated road, becomes selected
+## - Click existing road: Select that road
+## - Selected road shows 8 preview tiles for neighbors
+## - Click preview: Place/connect road there, new road becomes selected
+## - Click outside previews: Deselect
+## - Right-click: Delete road
 
 signal tile_placed(position: Vector2i, is_road: bool)
 signal road_tool_toggled(enabled: bool)
+signal road_selected(position: Vector2i)
+signal road_deselected()
 
 # Direction vectors for checking all 8 neighbors (1 step)
 const DIRECTIONS = {
@@ -49,15 +51,16 @@ var road_tile_scene: PackedScene = preload("res://scenes/map_editor/road_tile.ts
 # Dictionary to track placed road tiles by grid position
 var road_tiles: Dictionary = {}  # Vector2i -> RoadTile instance
 
-# Preview tile (50% opacity)
-var preview_tile: RoadTile = null
-var preview_position: Vector2i = Vector2i(-9999, -9999)
+# Preview tiles (8 for each neighbor direction)
+var preview_tiles: Dictionary = {}  # direction_name -> RoadTile instance
+
+# Selection state
+var selected_pos: Vector2i = Vector2i(-9999, -9999)  # Currently selected road position
+var has_selection: bool = false
 
 # Road tool state
 var road_tool_enabled: bool = true
-var is_placing: bool = false
 var is_erasing: bool = false
-var last_placed_pos: Vector2i = Vector2i(-9999, -9999)  # Track last position for chain placement
 
 # Camera settings
 const CAMERA_SPEED: float = 400.0
@@ -65,8 +68,8 @@ const ZOOM_SPEED: float = 0.1
 const MIN_ZOOM: float = 0.25
 const MAX_ZOOM: float = 3.0
 
-# Tile size for positioning
-const TILE_SIZE: int = 48
+# Tile size for positioning (3x larger: 144x144 main tiles)
+const TILE_SIZE: int = 144
 
 
 func _ready() -> void:
@@ -84,20 +87,22 @@ func _ready() -> void:
 	if clear_button:
 		clear_button.pressed.connect(clear_map)
 
-	# Create preview tile
-	_create_preview_tile()
+	# Create 8 preview tiles (one for each direction)
+	_create_preview_tiles()
 
 
-func _create_preview_tile() -> void:
-	preview_tile = road_tile_scene.instantiate()
-	preview_tile.set_preview(true)
-	preview_tile.visible = false
-	add_child(preview_tile)
+func _create_preview_tiles() -> void:
+	for dir_name in DIRECTIONS:
+		var preview = road_tile_scene.instantiate()
+		preview.set_preview(true)
+		preview.visible = false
+		add_child(preview)
+		preview_tiles[dir_name] = preview
 
 
 func _process(delta: float) -> void:
 	_handle_camera_movement(delta)
-	_update_preview()
+	_update_previews()
 
 
 func _handle_camera_movement(delta: float) -> void:
@@ -118,39 +123,120 @@ func _handle_camera_movement(delta: float) -> void:
 		camera.position += move_direction * adjusted_speed * delta
 
 
-func _update_preview() -> void:
-	if not road_tool_enabled or not preview_tile:
-		if preview_tile:
-			preview_tile.visible = false
+func _update_previews() -> void:
+	if not road_tool_enabled or not has_selection:
+		_hide_all_previews()
 		return
 
+	# Get mouse position and find closest preview direction
 	var mouse_pos = get_global_mouse_position()
-	var tile_pos = _world_to_tile(mouse_pos)
+	var selected_world_center = _tile_to_world(selected_pos) + Vector2(TILE_SIZE / 2.0, TILE_SIZE / 2.0)
+	var direction_to_mouse = mouse_pos - selected_world_center
 
-	# Don't show preview if there's already a road there (unless we're connecting)
-	if road_tiles.has(tile_pos):
-		preview_tile.visible = false
+	# Find the direction that best matches where mouse is pointing
+	var best_dir = _get_closest_direction(direction_to_mouse)
+
+	# Hide all previews first
+	_hide_all_previews()
+
+	# If no valid direction found, return
+	if best_dir == "":
 		return
 
-	# Update preview position
-	preview_tile.position = _tile_to_world(tile_pos)
-	preview_tile.visible = true
-	preview_position = tile_pos
+	# Show only the preview in the best direction
+	var preview = preview_tiles[best_dir]
+	var neighbor_pos = selected_pos + DIRECTIONS[best_dir]
 
-	# Calculate what connections the preview would have
+	# Position the preview
+	preview.position = _tile_to_world(neighbor_pos)
+
+	# Calculate connection (pointing back to selected road)
 	var preview_connections = {}
-	for dir in DIRECTIONS:
-		preview_connections[dir] = false
+	for d in DIRECTIONS:
+		preview_connections[d] = false
 
-	# If we're dragging from a previous position, show connection to it
-	if is_placing and last_placed_pos != Vector2i(-9999, -9999):
-		var dir_to_last = _get_direction_between(tile_pos, last_placed_pos)
-		if dir_to_last != "":
-			preview_connections[dir_to_last] = true
+	var opposite_dir = RoadTile.get_opposite_direction(best_dir)
+	preview_connections[opposite_dir] = true
+
+	# If there's already a road at neighbor, show it connecting
+	if road_tiles.has(neighbor_pos):
+		# Copy existing connections and add the new one
+		var existing_tile = road_tiles[neighbor_pos]
+		for d in DIRECTIONS:
+			preview_connections[d] = existing_tile.has_connection(d) or (d == opposite_dir)
 
 	# Calculate extended connections for preview
-	var extended = _calculate_extended_connections(tile_pos, preview_connections)
-	preview_tile.set_all_connections(preview_connections, extended)
+	var extended = _calculate_extended_connections_for_preview(neighbor_pos, preview_connections)
+	preview.set_all_connections(preview_connections, extended)
+	preview.visible = true
+
+
+## Get the direction that best matches a vector from center to mouse
+func _get_closest_direction(direction_vec: Vector2) -> String:
+	if direction_vec.length() < 10.0:
+		return ""  # Mouse too close to center
+
+	# Normalize to compare angles
+	var normalized = direction_vec.normalized()
+
+	# Define direction vectors for each of the 8 directions
+	var dir_vectors = {
+		"top": Vector2(0, -1),
+		"bottom": Vector2(0, 1),
+		"left": Vector2(-1, 0),
+		"right": Vector2(1, 0),
+		"top_left": Vector2(-1, -1).normalized(),
+		"top_right": Vector2(1, -1).normalized(),
+		"bottom_left": Vector2(-1, 1).normalized(),
+		"bottom_right": Vector2(1, 1).normalized()
+	}
+
+	var best_dir = ""
+	var best_dot = -2.0
+
+	for dir_name in dir_vectors:
+		var dot = normalized.dot(dir_vectors[dir_name])
+		if dot > best_dot:
+			best_dot = dot
+			best_dir = dir_name
+
+	return best_dir
+
+
+func _calculate_extended_connections_for_preview(pos: Vector2i, connections: Dictionary) -> Dictionary:
+	var extended = {}
+
+	for ext_dir in EXTENDED_DIRECTIONS:
+		extended[ext_dir] = false
+
+		var base_dir = ""
+		match ext_dir:
+			"top_top": base_dir = "top"
+			"bottom_bottom": base_dir = "bottom"
+			"left_left": base_dir = "left"
+			"right_right": base_dir = "right"
+			"top_left_top_left": base_dir = "top_left"
+			"top_right_top_right": base_dir = "top_right"
+			"bottom_left_bottom_left": base_dir = "bottom_left"
+			"bottom_right_bottom_right": base_dir = "bottom_right"
+
+		if base_dir == "":
+			continue
+
+		if not connections.get(base_dir, false):
+			continue
+
+		var neighbor_pos = pos + DIRECTIONS[base_dir]
+		var neighbor = road_tiles.get(neighbor_pos)
+		if neighbor and neighbor.has_connection(base_dir):
+			extended[ext_dir] = true
+
+	return extended
+
+
+func _hide_all_previews() -> void:
+	for dir_name in preview_tiles:
+		preview_tiles[dir_name].visible = false
 
 
 func _input(event: InputEvent) -> void:
@@ -159,71 +245,117 @@ func _input(event: InputEvent) -> void:
 			_zoom_camera(ZOOM_SPEED)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			_zoom_camera(-ZOOM_SPEED)
-		elif event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed:
-				is_placing = true
-				is_erasing = false
-				_handle_place_start()
-			else:
-				is_placing = false
-				last_placed_pos = Vector2i(-9999, -9999)
+		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			is_erasing = false
+			_handle_click()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			if event.pressed:
 				is_erasing = true
-				is_placing = false
 				_erase_at_mouse_position()
 			else:
 				is_erasing = false
 
 	elif event is InputEventMouseMotion:
-		if is_placing and road_tool_enabled:
-			_handle_place_drag()
-		elif is_erasing and road_tool_enabled:
+		if is_erasing and road_tool_enabled:
 			_erase_at_mouse_position()
 
 
-func _handle_place_start() -> void:
+func _handle_click() -> void:
 	if not road_tool_enabled:
 		return
 
 	var mouse_pos = get_global_mouse_position()
 	var tile_pos = _world_to_tile(mouse_pos)
 
+	# Check if clicked on a preview position (neighbor of selected)
+	if has_selection:
+		var clicked_preview_dir = _get_clicked_preview_direction(tile_pos)
+
+		if clicked_preview_dir != "":
+			# Clicked on a preview - place/connect road there
+			_place_or_connect_at_preview(clicked_preview_dir)
+			return
+		elif tile_pos == selected_pos:
+			# Clicked on the selected road itself - do nothing or deselect
+			return
+
+	# Check if clicked on existing road
 	if road_tiles.has(tile_pos):
-		# Clicked on existing road - start chain from here
-		last_placed_pos = tile_pos
+		# Select this road
+		_select_road(tile_pos)
 	else:
-		# Clicked on empty space - place new isolated road
-		_place_road(tile_pos)
-		last_placed_pos = tile_pos
-
-
-func _handle_place_drag() -> void:
-	var mouse_pos = get_global_mouse_position()
-	var tile_pos = _world_to_tile(mouse_pos)
-
-	# Skip if same position as last
-	if tile_pos == last_placed_pos:
-		return
-
-	# Check if this is a neighbor of the last position
-	var dir_from_last = _get_direction_between(last_placed_pos, tile_pos)
-
-	if road_tiles.has(tile_pos):
-		# Dragged onto existing road - connect them if neighbors
-		if dir_from_last != "" and last_placed_pos != Vector2i(-9999, -9999):
-			_connect_tiles(last_placed_pos, tile_pos, dir_from_last)
-		last_placed_pos = tile_pos
-	else:
-		# Dragged onto empty space
-		if dir_from_last != "" and last_placed_pos != Vector2i(-9999, -9999):
-			# Place new road and connect to last
-			_place_road(tile_pos)
-			_connect_tiles(last_placed_pos, tile_pos, dir_from_last)
+		# Clicked on empty space
+		if has_selection:
+			# Check if it's a neighbor of selected
+			var dir = _get_direction_between(selected_pos, tile_pos)
+			if dir != "":
+				# It's a neighbor - place and connect
+				_place_road(tile_pos)
+				_connect_tiles(selected_pos, tile_pos, dir)
+				_select_road(tile_pos)
+			else:
+				# Not a neighbor - deselect and place isolated road
+				_deselect_road()
+				_place_road(tile_pos)
+				_select_road(tile_pos)
 		else:
-			# Not a neighbor, place isolated
+			# No selection - place isolated road and select it
 			_place_road(tile_pos)
-		last_placed_pos = tile_pos
+			_select_road(tile_pos)
+
+
+func _get_clicked_preview_direction(tile_pos: Vector2i) -> String:
+	if not has_selection:
+		return ""
+
+	for dir_name in DIRECTIONS:
+		var preview_pos = selected_pos + DIRECTIONS[dir_name]
+		if tile_pos == preview_pos:
+			return dir_name
+
+	return ""
+
+
+func _place_or_connect_at_preview(direction: String) -> void:
+	var target_pos = selected_pos + DIRECTIONS[direction]
+
+	if road_tiles.has(target_pos):
+		# Connect to existing road
+		_connect_tiles(selected_pos, target_pos, direction)
+		_select_road(target_pos)
+	else:
+		# Place new road and connect
+		_place_road(target_pos)
+		_connect_tiles(selected_pos, target_pos, direction)
+		_select_road(target_pos)
+
+
+func _select_road(pos: Vector2i) -> void:
+	# Deselect previous if any
+	if has_selection and road_tiles.has(selected_pos):
+		var prev_tile = road_tiles[selected_pos]
+		prev_tile.modulate = Color.WHITE  # Reset color
+
+	selected_pos = pos
+	has_selection = true
+
+	# Highlight selected road
+	if road_tiles.has(pos):
+		var tile = road_tiles[pos]
+		tile.modulate = Color(1.2, 1.2, 1.0)  # Slight yellow tint
+
+	road_selected.emit(pos)
+
+
+func _deselect_road() -> void:
+	if has_selection and road_tiles.has(selected_pos):
+		var prev_tile = road_tiles[selected_pos]
+		prev_tile.modulate = Color.WHITE  # Reset color
+
+	has_selection = false
+	selected_pos = Vector2i(-9999, -9999)
+	_hide_all_previews()
+	road_deselected.emit()
 
 
 func _zoom_camera(zoom_change: float) -> void:
@@ -361,6 +493,10 @@ func _remove_road(pos: Vector2i) -> void:
 	if not road_tiles.has(pos):
 		return
 
+	# If deleting selected road, deselect first
+	if has_selection and pos == selected_pos:
+		_deselect_road()
+
 	# Disconnect from all neighbors first
 	_disconnect_tile(pos)
 
@@ -382,8 +518,8 @@ func _remove_road(pos: Vector2i) -> void:
 
 func _on_road_tool_toggled(pressed: bool) -> void:
 	road_tool_enabled = pressed
-	if preview_tile:
-		preview_tile.visible = false
+	if not pressed:
+		_deselect_road()
 	road_tool_toggled.emit(pressed)
 
 
@@ -391,11 +527,12 @@ func set_road_tool_enabled(enabled: bool) -> void:
 	road_tool_enabled = enabled
 	if road_tool_button:
 		road_tool_button.button_pressed = enabled
-	if preview_tile:
-		preview_tile.visible = false
+	if not enabled:
+		_deselect_road()
 
 
 func clear_map() -> void:
+	_deselect_road()
 	for pos in road_tiles:
 		var road_tile = road_tiles[pos]
 		road_tile.queue_free()

@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://w7aq4i2l4rnp"
-path="res://.godot/imported/RoadTiles-Sheet.png-342c572a1c2d774d8a2a148bb7af3220.ctex"
+path="res://.godot/imported/RoadTiles-Sheet.png-ac5b0534c40656a3f4d422357ee7f5d9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tiles/RoadTiles-Sheet.png"
-dest_files=["res://.godot/imported/RoadTiles-Sheet.png-342c572a1c2d774d8a2a148bb7af3220.ctex"]
+source_file="res://assets/tiles/Old Assets/RoadTiles-Sheet.png"
+dest_files=["res://.godot/imported/RoadTiles-Sheet.png-ac5b0534c40656a3f4d422357ee7f5d9.ctex"]
 
 [params]
 

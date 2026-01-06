@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c2mm76n0lml87"
-path="res://.godot/imported/RoadTilesDebug32x32.png-5dadcc8d107b8706de912870702a0281.ctex"
+uid="uid://ce38qedlya0bo"
+path="res://.godot/imported/gocars.png-904544250c6ab24fbf6bf505152671f3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tiles/RoadTilesDebug32x32.png"
-dest_files=["res://.godot/imported/RoadTilesDebug32x32.png-5dadcc8d107b8706de912870702a0281.ctex"]
+source_file="res://assets/cars/gocars.png"
+dest_files=["res://.godot/imported/gocars.png-904544250c6ab24fbf6bf505152671f3.ctex"]
 
 [params]
 

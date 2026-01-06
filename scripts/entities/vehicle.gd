@@ -149,6 +149,62 @@ const TILE_SIZE: float = 64.0  # Pixels per tile
 var _command_queue: Array = []
 var _current_command: Dictionary = {}  # Currently executing command
 
+# Wheel references (set in _ready)
+var wheels: Array = []
+
+# Sprite region for each car type (6 cars in gocars.png spritesheet)
+# Each car is 48x96 pixels (16x3 width, 16x6 height), spaced in columns
+const CAR_SPRITE_WIDTH: int = 48
+const CAR_SPRITE_HEIGHT: int = 96
+const CAR_SPRITE_REGIONS: Dictionary = {
+	VehicleType.SEDAN: Rect2(0, 0, 48, 96),
+	VehicleType.SUV: Rect2(48, 0, 48, 96),
+	VehicleType.MOTORCYCLE: Rect2(96, 0, 48, 96),
+	VehicleType.JEEPNEY: Rect2(144, 0, 48, 96),
+	VehicleType.TRUCK: Rect2(192, 0, 48, 96),
+	VehicleType.TRICYCLE: Rect2(240, 0, 48, 96)
+}
+
+# Wheel positions per vehicle type (relative to center, for 48x96 car sprites)
+const WHEEL_POSITIONS: Dictionary = {
+	VehicleType.SEDAN: {
+		"FL": Vector2(-16, -30),
+		"FR": Vector2(16, -30),
+		"BL": Vector2(-16, 30),
+		"BR": Vector2(16, 30)
+	},
+	VehicleType.SUV: {
+		"FL": Vector2(-16, -30),
+		"FR": Vector2(16, -30),
+		"BL": Vector2(-16, 30),
+		"BR": Vector2(16, 30)
+	},
+	VehicleType.MOTORCYCLE: {
+		"FL": Vector2(-16, -30),
+		"FR": Vector2(16, -30),
+		"BL": Vector2(-16, 30),
+		"BR": Vector2(16, 30)
+	},
+	VehicleType.JEEPNEY: {
+		"FL": Vector2(-16, -30),
+		"FR": Vector2(16, -30),
+		"BL": Vector2(-16, 30),
+		"BR": Vector2(16, 30)
+	},
+	VehicleType.TRUCK: {
+		"FL": Vector2(-16, -30),
+		"FR": Vector2(16, -30),
+		"BL": Vector2(-16, 30),
+		"BR": Vector2(16, 30)
+	},
+	VehicleType.TRICYCLE: {
+		"FL": Vector2(-16, -30),
+		"FR": Vector2(16, -30),
+		"BL": Vector2(-16, 30),
+		"BR": Vector2(16, 30)
+	}
+}
+
 
 func _ready() -> void:
 	# Add to vehicles group for detection
@@ -161,6 +217,9 @@ func _ready() -> void:
 	# Apply vehicle type configuration
 	_apply_vehicle_type()
 
+	# Find and register wheels
+	_setup_wheels()
+
 
 ## Apply configuration based on vehicle type
 func _apply_vehicle_type() -> void:
@@ -171,13 +230,63 @@ func _apply_vehicle_type() -> void:
 		can_lane_split = config["can_lane_split"]
 		stopping_distance_mult = config["stopping_distance"]
 
-		# Apply color to sprite if it exists
+		# Apply sprite region from gocars.png spritesheet
 		var sprite = get_node_or_null("Sprite2D")
-		if sprite:
-			sprite.modulate = config["color"]
+		if sprite and vehicle_type in CAR_SPRITE_REGIONS:
+			sprite.region_enabled = true
+			sprite.region_rect = CAR_SPRITE_REGIONS[vehicle_type]
+			# Reset modulate to white (use sprite's actual colors)
+			sprite.modulate = Color.WHITE
 
 		# Apply size scaling
 		scale = Vector2(type_size_mult, type_size_mult)
+
+		# Update wheel positions for this vehicle type
+		_update_wheel_positions()
+
+
+## Set up wheels - find wheel children and register them
+func _setup_wheels() -> void:
+	var wheels_container = get_node_or_null("Wheels")
+	if wheels_container:
+		for child in wheels_container.get_children():
+			if child is Wheel:
+				child.vehicle = self
+				wheels.append(child)
+
+	# Position wheels according to vehicle type
+	_update_wheel_positions()
+
+
+## Update wheel positions based on vehicle type
+func _update_wheel_positions() -> void:
+	if wheels.is_empty():
+		return
+
+	if vehicle_type not in WHEEL_POSITIONS:
+		return
+
+	var positions = WHEEL_POSITIONS[vehicle_type]
+	var wheels_container = get_node_or_null("Wheels")
+	if not wheels_container:
+		return
+
+	# Map wheel names to positions
+	var wheel_fl = wheels_container.get_node_or_null("WheelFL")
+	var wheel_fr = wheels_container.get_node_or_null("WheelFR")
+	var wheel_bl = wheels_container.get_node_or_null("WheelBL")
+	var wheel_br = wheels_container.get_node_or_null("WheelBR")
+
+	if wheel_fl:
+		wheel_fl.position = positions["FL"]
+		wheel_fl.is_front_wheel = true
+	if wheel_fr:
+		wheel_fr.position = positions["FR"]
+		wheel_fr.is_front_wheel = true
+	if wheel_bl:
+		wheel_bl.position = positions["BL"]
+	if wheel_br:
+		wheel_br.position = positions["BR"]
 
 
 ## Set vehicle type and apply configuration

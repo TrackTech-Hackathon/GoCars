@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bo63rvvj0fx2t"
-path="res://.godot/imported/RoadTiles.png-2b88f0cfed2b0b1f920a951452e76093.ctex"
+uid="uid://cf5v5oc5evd7c"
+path="res://.godot/imported/RoadTile1.png-9e731a7b8c4bb1151e956b3779e4e5c2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tiles/RoadTiles.png"
-dest_files=["res://.godot/imported/RoadTiles.png-2b88f0cfed2b0b1f920a951452e76093.ctex"]
+source_file="res://assets/tiles/Old Assets/RoadTile1.png"
+dest_files=["res://.godot/imported/RoadTile1.png-9e731a7b8c4bb1151e956b3779e4e5c2.ctex"]
 
 [params]
 

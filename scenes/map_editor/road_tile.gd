@@ -1,25 +1,25 @@
 extends Area2D
 class_name RoadTile
 
-## A single road tile with combination (neighbor connection) sprites behind it
+## A single road tile with connection sprites behind it
 ##
 ## Structure:
-## - MainSprite: 48x48 road tile at center
-## - ComboSprites: 8 Sprite2D children (144x144 each) for neighbor connections
+## - MainSprite: 144x144 road tile at center
+## - ConnectionSprites: 8 Sprite2D children (432x432 each) for neighbor connections
 ##
 ## Connections are stored manually - roads only connect when explicitly linked
 ## Preview mode shows the tile at 50% opacity
 
-# References to combo sprites (8 directions)
-@onready var combo_sprites: Dictionary = {
-	"top_left": $ComboSprites/TopLeft,
-	"top": $ComboSprites/Top,
-	"top_right": $ComboSprites/TopRight,
-	"left": $ComboSprites/Left,
-	"right": $ComboSprites/Right,
-	"bottom_left": $ComboSprites/BottomLeft,
-	"bottom": $ComboSprites/Bottom,
-	"bottom_right": $ComboSprites/BottomRight
+# References to connection sprites (8 directions)
+@onready var connection_sprites: Dictionary = {
+	"top_left": $ConnectionSprites/TopLeft,
+	"top": $ConnectionSprites/Top,
+	"top_right": $ConnectionSprites/TopRight,
+	"left": $ConnectionSprites/Left,
+	"right": $ConnectionSprites/Right,
+	"bottom_left": $ConnectionSprites/BottomLeft,
+	"bottom": $ConnectionSprites/Bottom,
+	"bottom_right": $ConnectionSprites/BottomRight
 }
 
 @onready var main_sprite: Sprite2D = $MainSprite
@@ -54,7 +54,7 @@ var is_preview: bool = false
 
 
 func _ready() -> void:
-	update_combo_sprites()
+	update_connection_sprites()
 	_update_opacity()
 
 
@@ -75,54 +75,54 @@ func _update_opacity() -> void:
 	modulate.a = alpha
 
 
-func update_combo_sprites() -> void:
+func update_connection_sprites() -> void:
 	# Apply visibility rules for each sprite
 
 	# Cardinal sprites - check adjacent diagonals and 2-step cardinal
-	combo_sprites["top"].visible = _should_show_cardinal(
+	connection_sprites["top"].visible = _should_show_cardinal(
 		connections["top"],
 		connections["top_left"], connections["top_right"],
 		extended_connections["top_top"]
 	)
 
-	combo_sprites["bottom"].visible = _should_show_cardinal(
+	connection_sprites["bottom"].visible = _should_show_cardinal(
 		connections["bottom"],
 		connections["bottom_left"], connections["bottom_right"],
 		extended_connections["bottom_bottom"]
 	)
 
-	combo_sprites["left"].visible = _should_show_cardinal(
+	connection_sprites["left"].visible = _should_show_cardinal(
 		connections["left"],
 		connections["top_left"], connections["bottom_left"],
 		extended_connections["left_left"]
 	)
 
-	combo_sprites["right"].visible = _should_show_cardinal(
+	connection_sprites["right"].visible = _should_show_cardinal(
 		connections["right"],
 		connections["top_right"], connections["bottom_right"],
 		extended_connections["right_right"]
 	)
 
 	# Diagonal sprites - check adjacent cardinals and 2-step diagonal
-	combo_sprites["top_left"].visible = _should_show_diagonal(
+	connection_sprites["top_left"].visible = _should_show_diagonal(
 		connections["top_left"],
 		connections["top"], connections["left"],
 		extended_connections["top_left_top_left"]
 	)
 
-	combo_sprites["top_right"].visible = _should_show_diagonal(
+	connection_sprites["top_right"].visible = _should_show_diagonal(
 		connections["top_right"],
 		connections["top"], connections["right"],
 		extended_connections["top_right_top_right"]
 	)
 
-	combo_sprites["bottom_left"].visible = _should_show_diagonal(
+	connection_sprites["bottom_left"].visible = _should_show_diagonal(
 		connections["bottom_left"],
 		connections["bottom"], connections["left"],
 		extended_connections["bottom_left_bottom_left"]
 	)
 
-	combo_sprites["bottom_right"].visible = _should_show_diagonal(
+	connection_sprites["bottom_right"].visible = _should_show_diagonal(
 		connections["bottom_right"],
 		connections["bottom"], connections["right"],
 		extended_connections["bottom_right_bottom_right"]
@@ -153,14 +153,14 @@ func _should_show_diagonal(has_connection: bool, adjacent1: bool, adjacent2: boo
 func add_connection(direction: String) -> void:
 	if connections.has(direction):
 		connections[direction] = true
-		update_combo_sprites()
+		update_connection_sprites()
 
 
 # Remove a connection in a specific direction
 func remove_connection(direction: String) -> void:
 	if connections.has(direction):
 		connections[direction] = false
-		update_combo_sprites()
+		update_connection_sprites()
 
 
 # Check if connected in a direction
@@ -172,7 +172,7 @@ func has_connection(direction: String) -> bool:
 func set_extended_connection(direction: String, value: bool) -> void:
 	if extended_connections.has(direction):
 		extended_connections[direction] = value
-		update_combo_sprites()
+		update_connection_sprites()
 
 
 # Set all connections at once
@@ -183,7 +183,7 @@ func set_all_connections(conn_dict: Dictionary, extended_dict: Dictionary = {}) 
 	for dir in extended_dict:
 		if extended_connections.has(dir):
 			extended_connections[dir] = extended_dict[dir]
-	update_combo_sprites()
+	update_connection_sprites()
 
 
 # Get opposite direction for bidirectional connections

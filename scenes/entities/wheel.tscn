@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://wheel001"]
+
+[ext_resource type="Script" uid="uid://wheel_script" path="res://scripts/entities/wheel.gd" id="1_wheel"]
+[ext_resource type="Texture2D" uid="uid://wheelsprite" path="res://godot-wheeled-vehicle-template-f287cde8f8a816574966b7d32dbd1a2ab7ef901e/Sprites/Vehicles/wheel.png" id="2_wheel"]
+
+[node name="Wheel" type="Sprite2D"]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("2_wheel")
+script = ExtResource("1_wheel")

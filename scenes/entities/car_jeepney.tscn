@@ -1,0 +1,43 @@
+[gd_scene load_steps=5 format=3 uid="uid://car_jeepney"]
+
+[ext_resource type="Script" uid="uid://c2xn0chj2i2d4" path="res://scripts/entities/vehicle.gd" id="1_vehicle"]
+[ext_resource type="Texture2D" uid="uid://dxnxqprt5765q" path="res://assets/cars/gocars.png" id="2_gocars"]
+[ext_resource type="Texture2D" uid="uid://c28nuakupkfff" path="res://godot-wheeled-vehicle-template-f287cde8f8a816574966b7d32dbd1a2ab7ef901e/Sprites/Vehicles/wheel.png" id="3_wheelsprite"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_car"]
+size = Vector2(40, 80)
+
+[node name="CarJeepney" type="CharacterBody2D"]
+script = ExtResource("1_vehicle")
+vehicle_type = 3
+
+[node name="Wheels" type="Node2D" parent="."]
+z_index = -1
+
+[node name="WheelFL" type="Sprite2D" parent="Wheels"]
+position = Vector2(-16, -30)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("3_wheelsprite")
+
+[node name="WheelFR" type="Sprite2D" parent="Wheels"]
+position = Vector2(16, -30)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("3_wheelsprite")
+
+[node name="WheelBL" type="Sprite2D" parent="Wheels"]
+position = Vector2(-16, 30)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("3_wheelsprite")
+
+[node name="WheelBR" type="Sprite2D" parent="Wheels"]
+position = Vector2(16, 30)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("3_wheelsprite")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_gocars")
+region_enabled = true
+region_rect = Rect2(144, 0, 48, 96)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_car")

@@ -1,11 +1,11 @@
 [gd_scene load_steps=5 format=3 uid="uid://roadtile1"]
 
 [ext_resource type="Script" uid="uid://bme2ebhctatun" path="res://scenes/map_editor/road_tile.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://cf5v5oc5evd7c" path="res://assets/tiles/RoadTile1.png" id="2_main"]
-[ext_resource type="Texture2D" uid="uid://w7aq4i2l4rnp" path="res://assets/tiles/RoadTiles-Sheet.png" id="3_combo"]
+[ext_resource type="Texture2D" uid="uid://cf2lsv4eyedgh" path="res://assets/tiles/gocarsTile1.png" id="2_main"]
+[ext_resource type="Texture2D" uid="uid://bu25ljm5f2j2r" path="res://assets/tiles/gocarstilesSheet.png" id="3_connection"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_main"]
-size = Vector2(48, 48)
+size = Vector2(144, 144)
 
 [node name="RoadTile" type="Area2D" groups=["road_tiles"]]
 collision_layer = 2
@@ -13,68 +13,74 @@ collision_mask = 0
 script = ExtResource("1_script")
 
 [node name="MainCollision" type="CollisionShape2D" parent="."]
-position = Vector2(24, 24)
+position = Vector2(72, 72)
 shape = SubResource("RectangleShape2D_main")
 
-[node name="ComboSprites" type="Node2D" parent="."]
-position = Vector2(-48, -48)
+[node name="ConnectionSprites" type="Node2D" parent="."]
+position = Vector2(-144, -144)
 
-[node name="TopLeft" type="Sprite2D" parent="ComboSprites"]
+[node name="TopLeft" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
-position = Vector2(72, 72)
-texture = ExtResource("3_combo")
+position = Vector2(216, 216)
+texture = ExtResource("3_connection")
 region_enabled = true
-region_rect = Rect2(0, 0, 144, 144)
+region_rect = Rect2(0, 0, 432, 432)
 
-[node name="Top" type="Sprite2D" parent="ComboSprites"]
+[node name="Top" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
-position = Vector2(72, 72)
-texture = ExtResource("3_combo")
+z_index = -1
+position = Vector2(216, 216)
+texture = ExtResource("3_connection")
 region_enabled = true
-region_rect = Rect2(144, 0, 144, 144)
+region_rect = Rect2(432, 0, 432, 432)
 
-[node name="TopRight" type="Sprite2D" parent="ComboSprites"]
+[node name="TopRight" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
-position = Vector2(72, 72)
-texture = ExtResource("3_combo")
+position = Vector2(216, 216)
+texture = ExtResource("3_connection")
 region_enabled = true
-region_rect = Rect2(288, 0, 144, 144)
+region_rect = Rect2(864, 0, 432, 432)
 
-[node name="Left" type="Sprite2D" parent="ComboSprites"]
+[node name="Left" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
-position = Vector2(72, 72)
-texture = ExtResource("3_combo")
+z_index = -1
+position = Vector2(216, 216)
+texture = ExtResource("3_connection")
 region_enabled = true
-region_rect = Rect2(0, 144, 144, 144)
+region_rect = Rect2(0, 432, 432, 432)
 
-[node name="Right" type="Sprite2D" parent="ComboSprites"]
+[node name="Right" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
-position = Vector2(72, 72)
-texture = ExtResource("3_combo")
+z_index = -1
+position = Vector2(216, 216)
+texture = ExtResource("3_connection")
 region_enabled = true
-region_rect = Rect2(288, 144, 144, 144)
+region_rect = Rect2(864, 432, 432, 432)
 
-[node name="BottomLeft" type="Sprite2D" parent="ComboSprites"]
+[node name="BottomLeft" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
-position = Vector2(72, 72)
-texture = ExtResource("3_combo")
+position = Vector2(216, 216)
+texture = ExtResource("3_connection")
 region_enabled = true
-region_rect = Rect2(0, 288, 144, 144)
+region_rect = Rect2(0, 864, 432, 432)
 
-[node name="Bottom" type="Sprite2D" parent="ComboSprites"]
+[node name="Bottom" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
-position = Vector2(72, 72)
-texture = ExtResource("3_combo")
+z_index = -1
+position = Vector2(216, 216)
+texture = ExtResource("3_connection")
 region_enabled = true
-region_rect = Rect2(144, 288, 144, 144)
+region_rect = Rect2(432, 864, 432, 432)
 
-[node name="BottomRight" type="Sprite2D" parent="ComboSprites"]
+[node name="BottomRight" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
-position = Vector2(72, 72)
-texture = ExtResource("3_combo")
+z_as_relative = false
+position = Vector2(216, 216)
+texture = ExtResource("3_connection")
 region_enabled = true
-region_rect = Rect2(288, 288, 144, 144)
+region_rect = Rect2(864, 864, 432, 432)
 
 [node name="MainSprite" type="Sprite2D" parent="."]
-position = Vector2(24, 24)
+z_index = -2
+position = Vector2(72, 72)
 texture = ExtResource("2_main")

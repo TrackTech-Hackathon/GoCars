@@ -45,11 +45,13 @@ text = "Clear"
 
 [node name="InstructionsLabel" type="Label" parent="UI"]
 offset_left = 20.0
-offset_top = 540.0
+offset_top = 520.0
 offset_right = 500.0
 offset_bottom = 620.0
-text = "Road Tool ON:
-  Left Click empty: Place isolated road
-  Click road + drag: Chain-place connected roads
+text = "Road Tool:
+  Click empty: Place road (becomes selected)
+  Click road: Select it (shows 8 previews)
+  Click preview: Place/connect there
+  Click outside: Deselect
   Right Click: Delete road
-WASD: Move camera | Scroll: Zoom"
+WASD: Move | Scroll: Zoom"
