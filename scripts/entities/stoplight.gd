@@ -52,23 +52,38 @@ func _ready() -> void:
 # Command Functions (called by SimulationEngine)
 # ============================================
 
-## Set the traffic light to red
-func set_red() -> void:
+## Set the traffic light to red (short name)
+func red() -> void:
 	_set_state(LightState.RED)
 
 
-## Set the traffic light to green
-func set_green() -> void:
+## Legacy: set_red (alias)
+func set_red() -> void:
+	red()
+
+
+## Set the traffic light to green (short name)
+func green() -> void:
 	_set_state(LightState.GREEN)
 
 
-## Set the traffic light to yellow
-func set_yellow() -> void:
+## Legacy: set_green (alias)
+func set_green() -> void:
+	green()
+
+
+## Set the traffic light to yellow (short name)
+func yellow() -> void:
 	_set_state(LightState.YELLOW)
 
 
-## Get the current state as a string
-func get_state() -> String:
+## Legacy: set_yellow (alias)
+func set_yellow() -> void:
+	yellow()
+
+
+## Get the current state as a string (short name)
+func state() -> String:
 	match current_state:
 		LightState.RED:
 			return "red"
@@ -77,6 +92,11 @@ func get_state() -> String:
 		LightState.GREEN:
 			return "green"
 	return "unknown"
+
+
+## Legacy: get_state (alias)
+func get_state() -> String:
+	return state()
 
 
 # ============================================

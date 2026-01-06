@@ -469,18 +469,28 @@ func is_vehicle_moving() -> bool:
 	return _is_moving
 
 
-## Check if vehicle is currently moving (Python API)
+## Check if vehicle is currently moving (Python API - short name)
+func moving() -> bool:
+	return _is_moving
+
+
+## Legacy: is_moving (alias for moving)
 func is_moving() -> bool:
-	return is_vehicle_moving()
+	return moving()
 
 
 ## Check if vehicle path is blocked (by another car or red light ahead)
-func is_blocked() -> bool:
+func blocked() -> bool:
 	# Check if there's a red light ahead
 	if is_blocked_by_light():
 		return true
 	# Check if there's a car in front
-	return is_front_car()
+	return front_car()
+
+
+## Legacy: is_blocked (alias for blocked)
+func is_blocked() -> bool:
+	return blocked()
 
 
 ## Turn left or right (simplified - no intersection required)
@@ -576,62 +586,84 @@ func _exec_move(tiles: int) -> void:
 	# Move completion is handled in _physics_process()
 
 
-## Check if there's a road in front of the car
-func is_front_road() -> bool:
+## Check if there's a road in front of the car (short name)
+func front_road() -> bool:
 	if _tile_map_layer == null:
 		return false
-
-	# Get the tile in front based on current direction
-	var front_offset = direction.normalized() * 64  # One tile size ahead
+	var front_offset = direction.normalized() * 64
 	var front_pos = global_position + front_offset
 	return _is_road_at_position(front_pos)
 
 
-## Check if there's a road to the left of the car
-func is_left_road() -> bool:
+## Legacy: is_front_road (alias)
+func is_front_road() -> bool:
+	return front_road()
+
+
+## Check if there's a road to the left of the car (short name)
+func left_road() -> bool:
 	if _tile_map_layer == null:
 		return false
-
-	# Get the tile to the left based on current direction
-	var left_direction = direction.rotated(-PI / 2)  # 90 degrees counter-clockwise
+	var left_direction = direction.rotated(-PI / 2)
 	var left_offset = left_direction.normalized() * 64
 	var left_pos = global_position + left_offset
 	return _is_road_at_position(left_pos)
 
 
-## Check if there's a road to the right of the car
-func is_right_road() -> bool:
+## Legacy: is_left_road (alias)
+func is_left_road() -> bool:
+	return left_road()
+
+
+## Check if there's a road to the right of the car (short name)
+func right_road() -> bool:
 	if _tile_map_layer == null:
 		return false
-
-	# Get the tile to the right based on current direction
-	var right_direction = direction.rotated(PI / 2)  # 90 degrees clockwise
+	var right_direction = direction.rotated(PI / 2)
 	var right_offset = right_direction.normalized() * 64
 	var right_pos = global_position + right_offset
 	return _is_road_at_position(right_pos)
 
 
-## Check if there's ANY car (crashed or active) in front
-func is_front_car() -> bool:
-	var front_offset = direction.normalized() * 64  # One tile size ahead
+## Legacy: is_right_road (alias)
+func is_right_road() -> bool:
+	return right_road()
+
+
+## Check if there's ANY car (crashed or active) in front (short name)
+func front_car() -> bool:
+	var front_offset = direction.normalized() * 64
 	var front_pos = global_position + front_offset
 	return _is_vehicle_at_position(front_pos)
 
 
-## Check if there's a CRASHED car in front
-func is_front_crashed_car() -> bool:
-	var front_offset = direction.normalized() * 64  # One tile size ahead
+## Legacy: is_front_car (alias)
+func is_front_car() -> bool:
+	return front_car()
+
+
+## Check if there's a CRASHED car in front (short name)
+func front_crash() -> bool:
+	var front_offset = direction.normalized() * 64
 	var front_pos = global_position + front_offset
 	return _is_crashed_vehicle_at_position(front_pos)
 
 
-## Check if the car is at a dead end (no road ahead, left, or right)
-## This is useful for detecting when navigation is complete on edited roads
-func is_at_dead_end() -> bool:
+## Legacy: is_front_crashed_car (alias)
+func is_front_crashed_car() -> bool:
+	return front_crash()
+
+
+## Check if the car is at a dead end (no road in any direction) (short name)
+func dead_end() -> bool:
 	if _tile_map_layer == null:
 		return false
-	# Dead end = no road in any direction the car can go
-	return not is_front_road() and not is_left_road() and not is_right_road()
+	return not front_road() and not left_road() and not right_road()
+
+
+## Legacy: is_at_dead_end (alias)
+func is_at_dead_end() -> bool:
+	return dead_end()
 
 
 # ============================================
@@ -678,35 +710,44 @@ func set_destination(dest: Vector2) -> void:
 	destination = dest
 
 
-## Check if vehicle has reached its destination
-func at_destination() -> bool:
+## Check if vehicle has reached its destination (short name)
+func at_end() -> bool:
 	if destination == Vector2.ZERO:
 		return false
 	return global_position.distance_to(destination) < DESTINATION_THRESHOLD
 
 
-## Alias for at_destination() to match Python API
+## Legacy: at_destination (alias)
+func at_destination() -> bool:
+	return at_end()
+
+
+## Legacy: is_at_destination (alias)
 func is_at_destination() -> bool:
-	return at_destination()
+	return at_end()
 
 
-## Get distance to destination
-func distance_to_destination() -> float:
+## Get distance to destination (short name)
+func dist() -> float:
 	if destination == Vector2.ZERO:
 		return -1.0
 	return global_position.distance_to(destination)
 
 
+## Legacy: distance_to_destination (alias)
+func distance_to_destination() -> float:
+	return dist()
+
+
 ## Get distance to nearest intersection
 func distance_to_intersection() -> float:
 	if _intersections.is_empty():
-		return -1.0  # No intersections registered
-
+		return -1.0
 	var min_distance: float = -1.0
 	for intersection_pos in _intersections:
-		var dist = global_position.distance_to(intersection_pos)
-		if min_distance < 0 or dist < min_distance:
-			min_distance = dist
+		var d = global_position.distance_to(intersection_pos)
+		if min_distance < 0 or d < min_distance:
+			min_distance = d
 	return min_distance
 
 
@@ -773,22 +814,27 @@ func _check_red_light_violation() -> void:
 				_passed_stoplights.erase(stoplight)
 
 
-## Check if there's a red light nearby (for player queries)
-func is_at_red_light() -> bool:
+## Check if there's a red light nearby (short name)
+func at_red() -> bool:
 	for stoplight in _nearby_stoplights:
 		if stoplight.is_red():
-			var distance = global_position.distance_to(stoplight.global_position)
-			if distance < STOPLIGHT_STOP_DISTANCE:
+			var d = global_position.distance_to(stoplight.global_position)
+			if d < STOPLIGHT_STOP_DISTANCE:
 				return true
 	return false
+
+
+## Legacy: is_at_red_light (alias)
+func is_at_red_light() -> bool:
+	return at_red()
 
 
 ## Check if there's a red light ahead (within detection range)
 func is_blocked_by_light() -> bool:
 	for stoplight in _nearby_stoplights:
 		if stoplight.should_stop():
-			var distance = global_position.distance_to(stoplight.global_position)
-			if distance < STOPLIGHT_DETECTION_RANGE:
+			var d = global_position.distance_to(stoplight.global_position)
+			if d < STOPLIGHT_DETECTION_RANGE:
 				return true
 	return false
 
@@ -873,23 +919,33 @@ func _ease_in_out(t: float) -> float:
 		return 1.0 - pow(-2.0 * t + 2.0, 2.0) / 2.0
 
 
-## Check if vehicle is currently at an intersection
-func at_intersection() -> bool:
+## Check if vehicle is currently at an intersection (short name)
+func at_cross() -> bool:
 	for intersection_pos in _intersections:
-		var distance = global_position.distance_to(intersection_pos)
-		if distance < INTERSECTION_DETECTION_RANGE:
+		var d = global_position.distance_to(intersection_pos)
+		if d < INTERSECTION_DETECTION_RANGE:
 			return true
 	return false
 
 
-## Alias for at_intersection() to match Python API
+## Legacy: at_intersection (alias)
+func at_intersection() -> bool:
+	return at_cross()
+
+
+## Legacy: is_at_intersection (alias)
 func is_at_intersection() -> bool:
-	return at_intersection()
+	return at_cross()
 
 
 ## Check if vehicle is currently turning
-func is_turning() -> bool:
+func turning() -> bool:
 	return _is_turning
+
+
+## Legacy: is_turning (alias)
+func is_turning() -> bool:
+	return turning()
 
 
 # ============================================

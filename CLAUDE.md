@@ -225,60 +225,56 @@ var fn = func(x): return x * 2
 
 ## Python API Reference (Player Code)
 
-### Car Object
+### Car Commands (Short Names)
 
 ```python
-# Basic Movement
-car.go()                    # Start moving forward continuously
-car.stop()                  # Stop immediately
-car.turn_left()             # Queue 90° left turn at intersection
-car.turn_right()            # Queue 90° right turn at intersection
-car.wait(seconds)           # Wait for seconds (float)
+# Movement
+car.go()                # Start moving forward
+car.stop()              # Stop immediately
+car.turn("left")        # Turn 90° left
+car.turn("right")       # Turn 90° right
+car.move(N)             # Move forward N tiles
+car.wait(N)             # Wait N seconds
 
-# Enhanced Movement (NEW!)
-car.turn(direction)         # Turn 90° immediately ("left" or "right")
-car.move(tiles)             # Move forward N tiles (1-100)
+# Speed
+car.set_speed(N)        # Set speed (0.5-2.0)
+car.get_speed()         # Get current speed → float
 
-# Speed Control
-car.set_speed(multiplier)   # Set speed (0.5 to 2.0)
-car.get_speed()             # Get current speed → float
+# Road Detection
+car.front_road()        # Road ahead? → bool
+car.left_road()         # Road to left? → bool
+car.right_road()        # Road to right? → bool
+car.dead_end()          # No roads anywhere? → bool
 
-# Road Detection (NEW!)
-car.is_front_road()         # Is there a road tile in front? → bool
-car.is_left_road()          # Is there a road tile to the left? → bool
-car.is_right_road()         # Is there a road tile to the right? → bool
-car.is_at_dead_end()        # No roads in any direction? → bool (stops loops automatically)
+# Car Detection
+car.front_car()         # Any car ahead? → bool
+car.front_crash()       # Crashed car ahead? → bool
 
-# Car Detection (NEW!)
-car.is_front_car()          # Is there ANY car (active or crashed) in front? → bool
-car.is_front_crashed_car()  # Is there a CRASHED car in front? → bool
+# State
+car.moving()            # Is moving? → bool
+car.blocked()           # Path blocked? → bool
+car.at_cross()          # At intersection? → bool
+car.at_end()            # At destination? → bool
+car.at_red()            # Near red light? → bool
+car.turning()           # Currently turning? → bool
 
-# State Queries (return bool)
-car.is_moving()             # Is car currently moving?
-car.is_blocked()            # Is path blocked?
-car.is_at_intersection()    # Is car at intersection?
-car.is_at_destination()     # Has car reached destination?
-
-# Distance Queries (return float)
-car.distance_to_destination()    # Distance to destination
-car.distance_to_intersection()   # Distance to next intersection
+# Distance
+car.dist()              # Distance to destination → float
 ```
 
-### Stoplight Object
+### Stoplight Commands (Short Names)
 
 ```python
 # Control
-stoplight.set_red()         # Change to red
-stoplight.set_yellow()      # Change to yellow
-stoplight.set_green()       # Change to green
+stoplight.red()         # Set to red
+stoplight.yellow()      # Set to yellow
+stoplight.green()       # Set to green
 
-# State Queries (return bool)
-stoplight.is_red()          # Is light red?
-stoplight.is_yellow()       # Is light yellow?
-stoplight.is_green()        # Is light green?
-
-# Get State (return string)
-stoplight.get_state()       # Returns "red", "yellow", or "green"
+# State
+stoplight.is_red()      # Is red? → bool
+stoplight.is_yellow()   # Is yellow? → bool
+stoplight.is_green()    # Is green? → bool
+stoplight.state()       # Get state → "red"/"yellow"/"green"
 ```
 
 ### Boat Object
@@ -774,117 +770,80 @@ Cars must stay on road tiles:
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| TileMapLayer System | ✅ COMPLETE | Modern tile rendering with auto-connecting roads |
-| Road Cards System | ✅ COMPLETE | Consumable resource for map editing |
-| Hearts System | ✅ COMPLETE | Lives/health system with crash penalties |
-| Live Map Editing | ✅ COMPLETE | Edit roads during gameplay (always enabled) |
-| Crashed Cars as Obstacles | ✅ COMPLETE | Cars stay on map when crashed (darkened) |
-| Vehicle State System | ✅ COMPLETE | State 0 = Crashed, 1 = Active |
-| Automatic Car Spawning | ✅ COMPLETE | New car every 15 seconds |
-| `car.turn(direction)` | ✅ COMPLETE | Immediate 90° turns |
-| `car.move(tiles)` | ✅ COMPLETE | Move forward N tiles |
-| `car.is_front_road()` | ✅ COMPLETE | Detect road ahead |
-| `car.is_left_road()` | ✅ COMPLETE | Detect road to left |
-| `car.is_right_road()` | ✅ COMPLETE | Detect road to right |
-| `car.is_front_car()` | ✅ COMPLETE | Detect any car ahead |
-| `car.is_front_crashed_car()` | ✅ COMPLETE | Detect crashed cars ahead |
-| `car.is_at_dead_end()` | ✅ COMPLETE | Detect dead ends (auto-stops loops) |
-| Stoplight Control Panel | ✅ COMPLETE | Manual stoplight control UI |
-| Road-Only Movement | ✅ COMPLETE | Cars crash on non-road tiles |
-| Car-to-Car Collisions | ✅ COMPLETE | State-aware collision detection |
-| Red Light Violations | ✅ COMPLETE | Running red lights costs hearts (no auto-stop) |
+| TileMapLayer System | ✅ | Auto-connecting road tiles |
+| Road Cards System | ✅ | Consumable resource for map editing |
+| Hearts System | ✅ | Lives with crash penalties |
+| Live Map Editing | ✅ | Edit roads during gameplay |
+| Crashed Cars as Obstacles | ✅ | Cars stay on map when crashed |
+| Automatic Car Spawning | ✅ | New car every 15 seconds |
+| Short API Names | ✅ | `front_road()`, `at_end()`, etc. |
+| Stoplight Control Panel | ✅ | Manual stoplight control UI |
+| Red Light Violations | ✅ | Running red lights costs hearts |
 
 ---
 
-## Python Code Examples
+## Python Code Examples (Short API)
 
-### Example 1: Basic Navigation with Road Detection
+### Example 1: Basic Navigation
 ```python
-# Move forward if road ahead, otherwise turn right
-if car.is_front_road():
-	car.move(3)
+if car.front_road():
+    car.move(3)
 else:
-	car.turn("right")
+    car.turn("right")
 ```
 
 ### Example 2: Intersection Logic
 ```python
-# Navigate through an intersection
-if car.is_front_road():
-	car.go()
-elif car.is_left_road():
-	car.turn("left")
-	car.go()
-elif car.is_right_road():
-	car.turn("right")
-	car.go()
+if car.front_road():
+    car.go()
+elif car.left_road():
+    car.turn("left")
+    car.go()
+elif car.right_road():
+    car.turn("right")
+    car.go()
 else:
-	car.stop()
+    car.stop()
 ```
 
-### Example 3: Obstacle Avoidance (Multi-Car Strategy)
+### Example 3: Obstacle Avoidance
 ```python
-# Navigate around crashed cars
-if car.is_front_crashed_car():
-	# Crashed car blocking, find alternate route
-	if car.is_left_road():
-		car.turn("left")
-		car.go()
-	elif car.is_right_road():
-		car.turn("right")
-		car.go()
-	else:
-		car.stop()  # Stuck, need player to build road
-elif car.is_front_car():
-	# Active car ahead, wait
-	car.stop()
-elif car.is_front_road():
-	# Clear path
-	car.go()
+if car.front_crash():
+    if car.left_road():
+        car.turn("left")
+    elif car.right_road():
+        car.turn("right")
+elif car.front_car():
+    car.stop()
+elif car.front_road():
+    car.go()
 ```
 
-### Example 4: Multi-Car Code (Runs on Every Spawned Car)
+### Example 4: Stoplight Handling
 ```python
-# This code runs on ALL cars (spawned every 15 seconds)
-# Must handle different scenarios dynamically
-
-# First priority: Check for obstacles
-if car.is_front_crashed_car():
-	# Route around crashed car
-	if car.is_left_road() and not car.is_front_car():
-		car.turn("left")
-	elif car.is_right_road():
-		car.turn("right")
-
-# Second priority: Check for active cars
-elif car.is_front_car():
-	car.stop()  # Wait for car to move
-
-# Third priority: Continue if path clear
-elif car.is_front_road():
-	car.go()
-```
-
-### Example 5: Stoplight Handling (REQUIRED!)
-```python
-# Cars do NOT auto-stop at red lights!
-# You MUST code the stoplight logic or lose hearts
-
-# Basic stoplight check
+# REQUIRED! Cars don't auto-stop at red lights
 if stoplight.is_red():
-	car.stop()
+    car.stop()
 elif stoplight.is_yellow():
-	car.stop()  # Slow down for yellow
+    car.stop()
 else:
-	car.go()
+    car.go()
+```
 
-# Combined with road detection
-if stoplight.is_red():
-	car.stop()
-elif car.is_front_road():
-	car.go()
-else:
-	car.turn("right")
+### Example 5: Full Navigation Loop
+```python
+while not car.at_end():
+    if stoplight.is_red():
+        car.stop()
+    elif car.front_crash():
+        if car.left_road():
+            car.turn("left")
+        elif car.right_road():
+            car.turn("right")
+    elif car.front_road():
+        car.go()
+    else:
+        car.stop()
 ```
 
 ---
