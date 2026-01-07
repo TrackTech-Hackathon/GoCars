@@ -787,36 +787,36 @@ Cars must stay on road tiles:
 ### Example 1: Basic Navigation
 ```python
 if car.front_road():
-    car.move(3)
+	car.move(3)
 else:
-    car.turn("right")
+	car.turn("right")
 ```
 
 ### Example 2: Intersection Logic
 ```python
 if car.front_road():
-    car.go()
+	car.go()
 elif car.left_road():
-    car.turn("left")
-    car.go()
+	car.turn("left")
+	car.go()
 elif car.right_road():
-    car.turn("right")
-    car.go()
+	car.turn("right")
+	car.go()
 else:
-    car.stop()
+	car.stop()
 ```
 
 ### Example 3: Obstacle Avoidance
 ```python
 if car.front_crash():
-    if car.left_road():
-        car.turn("left")
-    elif car.right_road():
-        car.turn("right")
+	if car.left_road():
+		car.turn("left")
+	elif car.right_road():
+		car.turn("right")
 elif car.front_car():
-    car.stop()
+	car.stop()
 elif car.front_road():
-    car.go()
+	car.go()
 ```
 
 ### Example 4: Stoplight Handling
