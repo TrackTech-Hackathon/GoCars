@@ -651,8 +651,8 @@ offset_right = 600.0
 offset_bottom = 200.0
 text = "Python Examples:
 - car.go() | car.stop() | car.turn(\"left\") | car.move(5) | car.wait(2)
-- if car.is_front_road(): car.go()
-- while not car.is_at_destination(): car.go()
+- if car.front_road(): car.go()
+- while not car.at_end(): car.go()
 - for loops need newline + indent: for i in range(3): [Enter] [Tab] car.go()
 - Space: pause | R: reset | +/-: speed"
 
@@ -791,27 +791,27 @@ Movement:
   car.wait(seconds)  - Wait N seconds
 
 Road Detection:
-  car.is_front_road()  - Road ahead?
-  car.is_left_road()   - Road left?
-  car.is_right_road()  - Road right?
-  car.is_at_dead_end() - No roads?
+  car.front_road()   - Road ahead?
+  car.left_road()    - Road left?
+  car.right_road()   - Road right?
+  car.dead_end()     - No roads?
 
 Car Detection:
-  car.is_front_car()        - Car ahead?
-  car.is_front_crashed_car()- Crashed car?
+  car.front_car()    - Car ahead?
+  car.front_crash()  - Crashed car?
 
 State:
-  car.is_moving()
-  car.is_blocked()
-  car.is_at_intersection()
-  car.is_at_destination()
-  car.is_at_red_light()   - Near red?
+  car.moving()
+  car.blocked()
+  car.at_cross()
+  car.at_end()
+  car.at_red()       - Near red?
 
 === STOPLIGHT ===
 
-  stoplight.set_red()
-  stoplight.set_yellow()
-  stoplight.set_green()
+  stoplight.red()
+  stoplight.yellow()
+  stoplight.green()
   stoplight.is_red()
   stoplight.is_green()
 

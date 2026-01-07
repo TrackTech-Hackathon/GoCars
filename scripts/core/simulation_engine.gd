@@ -336,17 +336,17 @@ func _call_vehicle_function(vehicle: Vehicle, func_name: String, params: Array) 
 		"speed":
 			if params.size() > 0:
 				vehicle.set_speed(params[0])
-		"is_front_road":
+		"front_road":
 			# Query functions - return value but don't need to do anything here
-			var _result = vehicle.is_front_road()
-		"is_left_road":
-			var _result = vehicle.is_left_road()
-		"is_right_road":
-			var _result = vehicle.is_right_road()
-		"is_front_car":
-			var _result = vehicle.is_front_car()
-		"is_front_crashed_car":
-			var _result = vehicle.is_front_crashed_car()
+			var _result = vehicle.front_road()
+		"left_road":
+			var _result = vehicle.left_road()
+		"right_road":
+			var _result = vehicle.right_road()
+		"front_car":
+			var _result = vehicle.front_car()
+		"front_crash":
+			var _result = vehicle.front_crash()
 		"set_auto_navigate":
 			if params.size() > 0:
 				vehicle.set_auto_navigate(params[0])
@@ -538,7 +538,7 @@ func _count_active_vehicles() -> int:
 	for vehicle_id in _vehicles:
 		var vehicle = _vehicles[vehicle_id]
 		if is_instance_valid(vehicle) and vehicle.vehicle_state == 1:  # State 1 = Active
-			if not vehicle.is_at_destination():  # Only count those not yet at destination
+			if not vehicle.at_end():  # Only count those not yet at destination
 				count += 1
 	return count
 

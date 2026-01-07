@@ -275,7 +275,7 @@ func test_parse_while_loop():
 	print("\ntest_parse_while_loop:")
 	var parser = PythonParser.new()
 
-	var code = """while not car.is_at_destination():
+	var code = """while not car.at_end():
     car.go()
 """
 	var ast = parser.parse(code)
@@ -319,7 +319,7 @@ func test_parse_logical_operators():
 	print("\ntest_parse_logical_operators:")
 	var parser = PythonParser.new()
 
-	var code = """if stoplight.is_green() and not car.is_blocked():
+	var code = """if stoplight.is_green() and not car.blocked():
     car.go()
 """
 	var ast = parser.parse(code)
@@ -335,7 +335,7 @@ func test_parse_comparison_operators():
 	print("\ntest_parse_comparison_operators:")
 	var parser = PythonParser.new()
 
-	var code = """if car.distance_to_destination() < 5:
+	var code = """if car.dist() < 5:
     car.stop()
 """
 	var ast = parser.parse(code)

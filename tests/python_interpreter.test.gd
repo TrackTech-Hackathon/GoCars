@@ -95,15 +95,15 @@ class MockCar:
 		call_log.append({"method": "get_speed", "args": []})
 		return _speed
 
-	func is_moving() -> bool:
-		call_log.append({"method": "is_moving", "args": []})
+	func moving() -> bool:
+		call_log.append({"method": "moving", "args": []})
 		return _is_moving
 
 	func wait(seconds: float) -> void:
 		call_log.append({"method": "wait", "args": [seconds]})
 
-	func is_at_destination() -> bool:
-		call_log.append({"method": "is_at_destination", "args": []})
+	func at_end() -> bool:
+		call_log.append({"method": "at_end", "args": []})
 		return _position.x >= 100
 
 	func move_forward() -> void:

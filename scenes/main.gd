@@ -566,7 +566,7 @@ func _show_victory_popup(stars: int) -> void:
 	var vehicles = get_tree().get_nodes_in_group("vehicles")
 	for vehicle in vehicles:
 		total_cars += 1
-		if vehicle.is_at_destination():
+		if vehicle.at_end():
 			cars_completed += 1
 
 	# Build result message

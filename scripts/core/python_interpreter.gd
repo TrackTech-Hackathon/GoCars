@@ -131,7 +131,7 @@ func _is_car_busy() -> bool:
 		var car = _game_objects["car"]
 		if car != null and is_instance_valid(car):
 			# Check if car is turning
-			if car.has_method("is_turning") and car.is_turning():
+			if car.has_method("turning") and car.turning():
 				return true
 			# Check if car is waiting
 			if car.has_method("is_waiting") and car.is_waiting:
@@ -145,9 +145,9 @@ func _is_car_at_dead_end() -> bool:
 	if "car" in _game_objects:
 		var car = _game_objects["car"]
 		if car != null and is_instance_valid(car):
-			if car.has_method("is_at_dead_end") and car.is_at_dead_end():
+			if car.has_method("dead_end") and car.dead_end():
 				# Car is at dead end and not moving - navigation complete
-				if car.has_method("is_vehicle_moving") and not car.is_vehicle_moving():
+				if car.has_method("moving") and not car.moving():
 					return true
 	return false
 
@@ -158,7 +158,7 @@ func _is_car_at_destination() -> bool:
 	if "car" in _game_objects:
 		var car = _game_objects["car"]
 		if car != null and is_instance_valid(car):
-			if car.has_method("is_at_destination") and car.is_at_destination():
+			if car.has_method("at_end") and car.at_end():
 				return true
 	return false
 

@@ -20,7 +20,7 @@ func _process(delta: float) -> void:
 		return
 
 	# Only spin if vehicle is moving
-	if not vehicle.is_moving():
+	if not vehicle.moving():
 		return
 
 	# Calculate wheel spin based on vehicle velocity

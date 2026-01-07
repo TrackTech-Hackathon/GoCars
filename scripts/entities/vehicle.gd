@@ -546,11 +546,6 @@ func moving() -> bool:
 	return _is_moving
 
 
-## Legacy: is_moving (alias for moving)
-func is_moving() -> bool:
-	return moving()
-
-
 ## Check if vehicle path is blocked (by another car or red light ahead)
 func blocked() -> bool:
 	# Check if there's a red light ahead
@@ -558,11 +553,6 @@ func blocked() -> bool:
 		return true
 	# Check if there's a car in front
 	return front_car()
-
-
-## Legacy: is_blocked (alias for blocked)
-func is_blocked() -> bool:
-	return blocked()
 
 
 ## Turn left or right (simplified - no intersection required)
@@ -682,7 +672,36 @@ func _vector_to_connection_direction(dir: Vector2) -> String:
 	return ""
 
 
+## Get grid offset for a direction string
+func _get_grid_offset_from_direction(dir: String) -> Vector2i:
+	match dir:
+		"top": return Vector2i(0, -1)
+		"bottom": return Vector2i(0, 1)
+		"left": return Vector2i(-1, 0)
+		"right": return Vector2i(1, 0)
+		"top_left": return Vector2i(-1, -1)
+		"top_right": return Vector2i(1, -1)
+		"bottom_left": return Vector2i(-1, 1)
+		"bottom_right": return Vector2i(1, 1)
+	return Vector2i.ZERO
+
+
+## Get opposite direction string
+func _get_opposite_direction(dir: String) -> String:
+	match dir:
+		"top": return "bottom"
+		"bottom": return "top"
+		"left": return "right"
+		"right": return "left"
+		"top_left": return "bottom_right"
+		"top_right": return "bottom_left"
+		"bottom_left": return "top_right"
+		"bottom_right": return "top_left"
+	return ""
+
+
 ## Check if there's a CONNECTED road in front of the car (short name)
+## Checks if the ADJACENT tile ahead exists and has a connection back to current tile
 func front_road() -> bool:
 	if _road_checker == null:
 		return false
@@ -691,7 +710,12 @@ func front_road() -> bool:
 	var conn_dir = _vector_to_connection_direction(direction)
 
 	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
-		return _road_checker.is_road_connected(grid_pos, conn_dir)
+		# Get the adjacent tile in the direction we're facing
+		var adjacent_offset = _get_grid_offset_from_direction(conn_dir)
+		var adjacent_grid = grid_pos + adjacent_offset
+		# Check if adjacent tile has connection BACK to us
+		var opposite_dir = _get_opposite_direction(conn_dir)
+		return _road_checker.is_road_connected(adjacent_grid, opposite_dir)
 
 	# Fallback to old behavior
 	var front_offset = direction.normalized() * TILE_SIZE
@@ -699,12 +723,8 @@ func front_road() -> bool:
 	return _is_road_at_position(front_pos)
 
 
-## Legacy: is_front_road (alias)
-func is_front_road() -> bool:
-	return front_road()
-
-
 ## Check if there's a CONNECTED road to the left of the car (short name)
+## Checks if the ADJACENT tile to the left exists and has a connection back to current tile
 func left_road() -> bool:
 	if _road_checker == null:
 		return false
@@ -714,7 +734,12 @@ func left_road() -> bool:
 	var conn_dir = _vector_to_connection_direction(left_dir)
 
 	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
-		return _road_checker.is_road_connected(grid_pos, conn_dir)
+		# Get the adjacent tile in the left direction
+		var adjacent_offset = _get_grid_offset_from_direction(conn_dir)
+		var adjacent_grid = grid_pos + adjacent_offset
+		# Check if adjacent tile has connection BACK to us
+		var opposite_dir = _get_opposite_direction(conn_dir)
+		return _road_checker.is_road_connected(adjacent_grid, opposite_dir)
 
 	# Fallback to old behavior
 	var left_offset = left_dir.normalized() * TILE_SIZE
@@ -722,12 +747,8 @@ func left_road() -> bool:
 	return _is_road_at_position(left_pos)
 
 
-## Legacy: is_left_road (alias)
-func is_left_road() -> bool:
-	return left_road()
-
-
 ## Check if there's a CONNECTED road to the right of the car (short name)
+## Checks if the ADJACENT tile to the right exists and has a connection back to current tile
 func right_road() -> bool:
 	if _road_checker == null:
 		return false
@@ -737,17 +758,17 @@ func right_road() -> bool:
 	var conn_dir = _vector_to_connection_direction(right_dir)
 
 	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
-		return _road_checker.is_road_connected(grid_pos, conn_dir)
+		# Get the adjacent tile in the right direction
+		var adjacent_offset = _get_grid_offset_from_direction(conn_dir)
+		var adjacent_grid = grid_pos + adjacent_offset
+		# Check if adjacent tile has connection BACK to us
+		var opposite_dir = _get_opposite_direction(conn_dir)
+		return _road_checker.is_road_connected(adjacent_grid, opposite_dir)
 
 	# Fallback to old behavior
 	var right_offset = right_dir.normalized() * TILE_SIZE
 	var right_pos = global_position + right_offset
 	return _is_road_at_position(right_pos)
-
-
-## Legacy: is_right_road (alias)
-func is_right_road() -> bool:
-	return right_road()
 
 
 ## Check if there's ANY car (crashed or active) in front (short name)
@@ -757,11 +778,6 @@ func front_car() -> bool:
 	return _is_vehicle_at_position(front_pos)
 
 
-## Legacy: is_front_car (alias)
-func is_front_car() -> bool:
-	return front_car()
-
-
 ## Check if there's a CRASHED car in front (short name)
 func front_crash() -> bool:
 	var front_offset = direction.normalized() * TILE_SIZE
@@ -769,21 +785,11 @@ func front_crash() -> bool:
 	return _is_crashed_vehicle_at_position(front_pos)
 
 
-## Legacy: is_front_crashed_car (alias)
-func is_front_crashed_car() -> bool:
-	return front_crash()
-
-
 ## Check if the car is at a dead end (no road in any direction) (short name)
 func dead_end() -> bool:
 	if _road_checker == null:
 		return false
 	return not front_road() and not left_road() and not right_road()
-
-
-## Legacy: is_at_dead_end (alias)
-func is_at_dead_end() -> bool:
-	return dead_end()
 
 
 # ============================================
@@ -802,13 +808,13 @@ func _auto_navigate_check() -> void:
 		return
 
 	# If road ahead, keep going
-	if is_front_road():
+	if front_road():
 		return
 
 	# No road ahead - check for turns
 	# Priority: prefer continuing in same general direction
-	var left_has_road = is_left_road()
-	var right_has_road = is_right_road()
+	var left_has_road = left_road()
+	var right_has_road = right_road()
 
 	if left_has_road and not right_has_road:
 		_execute_turn("left")
@@ -837,26 +843,11 @@ func at_end() -> bool:
 	return global_position.distance_to(destination) < DESTINATION_THRESHOLD
 
 
-## Legacy: at_destination (alias)
-func at_destination() -> bool:
-	return at_end()
-
-
-## Legacy: is_at_destination (alias)
-func is_at_destination() -> bool:
-	return at_end()
-
-
 ## Get distance to destination (short name)
 func dist() -> float:
 	if destination == Vector2.ZERO:
 		return -1.0
 	return global_position.distance_to(destination)
-
-
-## Legacy: distance_to_destination (alias)
-func distance_to_destination() -> float:
-	return dist()
 
 
 ## Get distance to nearest intersection
@@ -944,11 +935,6 @@ func at_red() -> bool:
 			if d < STOPLIGHT_STOP_DISTANCE:
 				return true
 	return false
-
-
-## Legacy: is_at_red_light (alias)
-func is_at_red_light() -> bool:
-	return at_red()
 
 
 ## Check if there's a red light ahead (within detection range)
@@ -1052,24 +1038,9 @@ func at_cross() -> bool:
 	return false
 
 
-## Legacy: at_intersection (alias)
-func at_intersection() -> bool:
-	return at_cross()
-
-
-## Legacy: is_at_intersection (alias)
-func is_at_intersection() -> bool:
-	return at_cross()
-
-
 ## Check if vehicle is currently turning
 func turning() -> bool:
 	return _is_turning
-
-
-## Legacy: is_turning (alias)
-func is_turning() -> bool:
-	return turning()
 
 
 # ============================================
