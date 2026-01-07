@@ -17,11 +17,12 @@ signal off_road_crash(vehicle_id: String)
 # ============================================
 enum VehicleType {
 	SEDAN,      # Standard car - Speed 1.0x, Size 1.0
-	SUV,        # Larger vehicle - Speed 0.9x, Size 1.2
-	MOTORCYCLE, # Fast and small - Speed 1.3x, Size 0.5 (can lane split)
-	JEEPNEY,    # Filipino transport - Speed 0.7x, Size 1.5
-	TRUCK,      # Large cargo - Speed 0.6x, Size 2.0 (longer stopping)
-	TRICYCLE    # Small 3-wheeler - Speed 0.7x, Size 0.7 (tight turns)
+	ESTATE,     # Estate/wagon - Speed 0.9x, Size 1.2
+	MICRO,      # Micro car - Speed 1.1x, Size 0.8
+	SPORT,      # Sports car - Speed 1.4x, Size 1.0
+	PICKUP,     # Pickup truck - Speed 0.8x, Size 1.3
+	JEEPNEY,    # Modern Jeepney - Speed 0.7x, Size 1.5
+	MOTORBIKE   # Motorbike - Speed 1.5x, Size 0.4 (can lane split)
 }
 
 # Vehicle type configuration
@@ -30,49 +31,57 @@ const VEHICLE_CONFIG: Dictionary = {
 		"name": "Sedan",
 		"speed_mult": 1.0,
 		"size_mult": 1.0,
-		"color": Color(0.2, 0.4, 0.8),  # Blue
+		"color": Color(0.8, 0.2, 0.2),  # Red
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
-	VehicleType.SUV: {
-		"name": "SUV",
+	VehicleType.ESTATE: {
+		"name": "Estate",
 		"speed_mult": 0.9,
 		"size_mult": 1.2,
-		"color": Color(0.3, 0.3, 0.3),  # Dark gray
+		"color": Color(0.3, 0.3, 0.8),  # Blue
 		"can_lane_split": false,
 		"stopping_distance": 1.1
 	},
-	VehicleType.MOTORCYCLE: {
-		"name": "Motorcycle",
-		"speed_mult": 1.3,
-		"size_mult": 0.5,
-		"color": Color(0.8, 0.2, 0.2),  # Red
-		"can_lane_split": true,
-		"stopping_distance": 0.7
+	VehicleType.MICRO: {
+		"name": "Micro",
+		"speed_mult": 1.1,
+		"size_mult": 0.8,
+		"color": Color(0.2, 0.7, 0.3),  # Green
+		"can_lane_split": false,
+		"stopping_distance": 0.8
+	},
+	VehicleType.SPORT: {
+		"name": "Sport",
+		"speed_mult": 1.4,
+		"size_mult": 1.0,
+		"color": Color(0.9, 0.5, 0.1),  # Orange
+		"can_lane_split": false,
+		"stopping_distance": 0.9
+	},
+	VehicleType.PICKUP: {
+		"name": "Pickup",
+		"speed_mult": 0.8,
+		"size_mult": 1.3,
+		"color": Color(0.5, 0.3, 0.1),  # Brown
+		"can_lane_split": false,
+		"stopping_distance": 1.3
 	},
 	VehicleType.JEEPNEY: {
-		"name": "Jeepney",
+		"name": "Modern Jeepney",
 		"speed_mult": 0.7,
 		"size_mult": 1.5,
 		"color": Color(0.9, 0.7, 0.1),  # Yellow/Gold
 		"can_lane_split": false,
-		"stopping_distance": 1.3
+		"stopping_distance": 1.4
 	},
-	VehicleType.TRUCK: {
-		"name": "Truck",
-		"speed_mult": 0.6,
-		"size_mult": 2.0,
-		"color": Color(0.5, 0.3, 0.1),  # Brown
-		"can_lane_split": false,
-		"stopping_distance": 1.5
-	},
-	VehicleType.TRICYCLE: {
-		"name": "Tricycle",
-		"speed_mult": 0.7,
-		"size_mult": 0.7,
-		"color": Color(0.2, 0.7, 0.3),  # Green
-		"can_lane_split": false,
-		"stopping_distance": 0.8
+	VehicleType.MOTORBIKE: {
+		"name": "Motorbike",
+		"speed_mult": 1.5,
+		"size_mult": 0.4,
+		"color": Color(0.1, 0.1, 0.1),  # Black
+		"can_lane_split": true,
+		"stopping_distance": 0.6
 	}
 }
 
@@ -122,6 +131,9 @@ var _turn_start_direction: Vector2 = Vector2.ZERO
 # Distance threshold for reaching destination
 const DESTINATION_THRESHOLD: float = 10.0
 
+# Lane offset - cars drive on the left side of their direction (pixels from center)
+const LANE_OFFSET: float = 25.0
+
 # Distance at which vehicle detects stoplights (in pixels)
 const STOPLIGHT_DETECTION_RANGE: float = 100.0
 
@@ -134,14 +146,13 @@ const INTERSECTION_DETECTION_RANGE: float = 30.0
 # Turn animation duration in seconds
 const TURN_DURATION: float = 0.3
 
-# TileMap reference for road checking
-var _tile_map_layer: TileMapLayer = null
-const ROAD_TILE_COLUMN_START: int = 1  # Columns 1-16 are road tiles
+# Road checker reference (main scene with road_tiles Dictionary)
+var _road_checker: Node = null
 
 # Tile-based movement
 var _tiles_to_move: int = 0
 var _move_start_position: Vector2 = Vector2.ZERO
-const TILE_SIZE: float = 64.0  # Pixels per tile
+var TILE_SIZE: float = 144.0  # Pixels per tile (updated from road checker)
 
 # Command queue for sequential execution
 # Commands: {"type": "move", "tiles": N}, {"type": "wait", "seconds": N},
@@ -152,18 +163,38 @@ var _current_command: Dictionary = {}  # Currently executing command
 # Wheel references (set in _ready)
 var wheels: Array = []
 
-# Sprite region for each car type (6 cars in gocars.png spritesheet)
+# Sprite region for each car type (7 cars in gocars.png spritesheet)
 # Each car is 48x96 pixels (16x3 width, 16x6 height), spaced in columns
 const CAR_SPRITE_WIDTH: int = 48
 const CAR_SPRITE_HEIGHT: int = 96
 const CAR_SPRITE_REGIONS: Dictionary = {
 	VehicleType.SEDAN: Rect2(0, 0, 48, 96),
-	VehicleType.SUV: Rect2(48, 0, 48, 96),
-	VehicleType.MOTORCYCLE: Rect2(96, 0, 48, 96),
-	VehicleType.JEEPNEY: Rect2(144, 0, 48, 96),
-	VehicleType.TRUCK: Rect2(192, 0, 48, 96),
-	VehicleType.TRICYCLE: Rect2(240, 0, 48, 96)
+	VehicleType.ESTATE: Rect2(48, 0, 48, 96),
+	VehicleType.MICRO: Rect2(96, 0, 48, 96),
+	VehicleType.SPORT: Rect2(144, 0, 48, 96),
+	VehicleType.PICKUP: Rect2(192, 0, 48, 96),
+	VehicleType.JEEPNEY: Rect2(240, 0, 48, 96),
+	VehicleType.MOTORBIKE: Rect2(288, 0, 48, 96)
 }
+
+# Color palettes for vehicles (tint colors applied to sprites)
+const COLOR_PALETTES: Array = [
+	Color(1.0, 1.0, 1.0),       # 0: White (default)
+	Color(1.0, 0.4, 0.4),       # 1: Red
+	Color(0.4, 0.6, 1.0),       # 2: Blue
+	Color(0.4, 1.0, 0.5),       # 3: Green
+	Color(1.0, 0.9, 0.4),       # 4: Yellow
+	Color(1.0, 0.6, 0.3),       # 5: Orange
+	Color(0.9, 0.5, 1.0),       # 6: Purple
+	Color(1.0, 0.6, 0.7),       # 7: Pink
+	Color(0.5, 0.9, 1.0),       # 8: Cyan
+	Color(0.7, 0.7, 0.7),       # 9: Gray
+	Color(0.6, 0.4, 0.3),       # 10: Brown
+	Color(0.3, 0.3, 0.3),       # 11: Dark Gray
+]
+
+# Current color palette index
+var color_palette_index: int = 0
 
 # Wheel positions per vehicle type (relative to center, for 48x96 car sprites)
 const WHEEL_POSITIONS: Dictionary = {
@@ -173,13 +204,25 @@ const WHEEL_POSITIONS: Dictionary = {
 		"BL": Vector2(-16, 30),
 		"BR": Vector2(16, 30)
 	},
-	VehicleType.SUV: {
+	VehicleType.ESTATE: {
 		"FL": Vector2(-16, -30),
 		"FR": Vector2(16, -30),
 		"BL": Vector2(-16, 30),
 		"BR": Vector2(16, 30)
 	},
-	VehicleType.MOTORCYCLE: {
+	VehicleType.MICRO: {
+		"FL": Vector2(-14, -28),
+		"FR": Vector2(14, -28),
+		"BL": Vector2(-14, 28),
+		"BR": Vector2(14, 28)
+	},
+	VehicleType.SPORT: {
+		"FL": Vector2(-16, -32),
+		"FR": Vector2(16, -32),
+		"BL": Vector2(-16, 32),
+		"BR": Vector2(16, 32)
+	},
+	VehicleType.PICKUP: {
 		"FL": Vector2(-16, -30),
 		"FR": Vector2(16, -30),
 		"BL": Vector2(-16, 30),
@@ -191,17 +234,11 @@ const WHEEL_POSITIONS: Dictionary = {
 		"BL": Vector2(-16, 30),
 		"BR": Vector2(16, 30)
 	},
-	VehicleType.TRUCK: {
-		"FL": Vector2(-16, -30),
-		"FR": Vector2(16, -30),
-		"BL": Vector2(-16, 30),
-		"BR": Vector2(16, 30)
-	},
-	VehicleType.TRICYCLE: {
-		"FL": Vector2(-16, -30),
-		"FR": Vector2(16, -30),
-		"BL": Vector2(-16, 30),
-		"BR": Vector2(16, 30)
+	VehicleType.MOTORBIKE: {
+		"FL": Vector2(0, -35),
+		"FR": Vector2(0, -35),
+		"BL": Vector2(0, 35),
+		"BR": Vector2(0, 35)
 	}
 }
 
@@ -235,8 +272,8 @@ func _apply_vehicle_type() -> void:
 		if sprite and vehicle_type in CAR_SPRITE_REGIONS:
 			sprite.region_enabled = true
 			sprite.region_rect = CAR_SPRITE_REGIONS[vehicle_type]
-			# Reset modulate to white (use sprite's actual colors)
-			sprite.modulate = Color.WHITE
+			# Apply color palette tint
+			_apply_color_palette()
 
 		# Apply size scaling
 		scale = Vector2(type_size_mult, type_size_mult)
@@ -289,6 +326,40 @@ func _update_wheel_positions() -> void:
 		wheel_br.position = positions["BR"]
 
 
+## Apply color palette to sprite
+func _apply_color_palette() -> void:
+	var sprite = get_node_or_null("Sprite2D")
+	if sprite:
+		if color_palette_index >= 0 and color_palette_index < COLOR_PALETTES.size():
+			sprite.modulate = COLOR_PALETTES[color_palette_index]
+		else:
+			sprite.modulate = Color.WHITE
+
+
+## Set color palette by index
+func set_color_palette(palette_index: int) -> void:
+	color_palette_index = clampi(palette_index, 0, COLOR_PALETTES.size() - 1)
+	_apply_color_palette()
+
+
+## Set random color palette
+func set_random_color() -> void:
+	color_palette_index = randi() % COLOR_PALETTES.size()
+	# Defer if not in tree yet (will be applied in _ready via _apply_vehicle_type)
+	if is_inside_tree():
+		_apply_color_palette()
+
+
+## Get current color palette index
+func get_color_palette() -> int:
+	return color_palette_index
+
+
+## Get total number of color palettes
+static func get_palette_count() -> int:
+	return COLOR_PALETTES.size()
+
+
 ## Set vehicle type and apply configuration
 func set_vehicle_type(new_type: VehicleType) -> void:
 	vehicle_type = new_type
@@ -306,11 +377,12 @@ func get_vehicle_type_name() -> String:
 static func get_random_type() -> VehicleType:
 	var types = [
 		VehicleType.SEDAN,
-		VehicleType.SUV,
-		VehicleType.MOTORCYCLE,
+		VehicleType.ESTATE,
+		VehicleType.MICRO,
+		VehicleType.SPORT,
+		VehicleType.PICKUP,
 		VehicleType.JEEPNEY,
-		VehicleType.TRUCK,
-		VehicleType.TRICYCLE
+		VehicleType.MOTORBIKE
 	]
 	return types[randi() % types.size()]
 
@@ -367,7 +439,7 @@ func _physics_process(delta: float) -> void:
 
 func _move(_delta: float) -> void:
 	# Check if car is on a road tile
-	if _tile_map_layer != null:
+	if _road_checker != null:
 		if not _is_on_road():
 			_on_off_road_crash()
 			return
@@ -588,7 +660,7 @@ func _exec_move(tiles: int) -> void:
 
 ## Check if there's a road in front of the car (short name)
 func front_road() -> bool:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return false
 	var front_offset = direction.normalized() * 64
 	var front_pos = global_position + front_offset
@@ -602,7 +674,7 @@ func is_front_road() -> bool:
 
 ## Check if there's a road to the left of the car (short name)
 func left_road() -> bool:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return false
 	var left_direction = direction.rotated(-PI / 2)
 	var left_offset = left_direction.normalized() * 64
@@ -617,7 +689,7 @@ func is_left_road() -> bool:
 
 ## Check if there's a road to the right of the car (short name)
 func right_road() -> bool:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return false
 	var right_direction = direction.rotated(PI / 2)
 	var right_offset = right_direction.normalized() * 64
@@ -656,7 +728,7 @@ func is_front_crashed_car() -> bool:
 
 ## Check if the car is at a dead end (no road in any direction) (short name)
 func dead_end() -> bool:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return false
 	return not front_road() and not left_road() and not right_road()
 
@@ -678,7 +750,7 @@ func set_auto_navigate(enabled: bool) -> void:
 
 ## Check road ahead and turn if needed (called during auto-navigate)
 func _auto_navigate_check() -> void:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return
 
 	# If road ahead, keep going
@@ -752,10 +824,12 @@ func distance_to_intersection() -> float:
 
 
 ## Reset vehicle to initial state
+## Note: Car sprites face UP by default, so rotation needs +PI/2 offset
 func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	global_position = start_pos
 	direction = start_dir.normalized()
-	rotation = direction.angle()
+	# Car sprite faces UP, so add PI/2 to make it face the direction
+	rotation = direction.angle() + PI / 2
 	_is_moving = false
 	is_waiting = false
 	wait_timer = 0.0
@@ -900,7 +974,8 @@ func _process_turn(delta: float) -> void:
 
 		# Snap to exact target rotation
 		rotation = _turn_target_rotation
-		direction = Vector2.RIGHT.rotated(rotation)
+		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
+		direction = Vector2.UP.rotated(rotation)
 
 		# Turn command completed - process next command
 		_command_completed()
@@ -908,7 +983,8 @@ func _process_turn(delta: float) -> void:
 		# Interpolate rotation smoothly (ease in-out)
 		var t = _ease_in_out(_turn_progress)
 		rotation = lerp(_turn_start_rotation, _turn_target_rotation, t)
-		direction = Vector2.RIGHT.rotated(rotation)
+		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
+		direction = Vector2.UP.rotated(rotation)
 
 
 ## Ease in-out function for smooth animation
@@ -952,32 +1028,31 @@ func is_turning() -> bool:
 # Road Detection
 # ============================================
 
-## Set the TileMapLayer reference for road checking
-func set_tile_map_layer(tilemap: TileMapLayer) -> void:
-	_tile_map_layer = tilemap
+## Set the road checker reference (main scene with road_tiles Dictionary)
+func set_road_checker(checker: Node) -> void:
+	_road_checker = checker
+	# Update tile size from road checker
+	if _road_checker != null and _road_checker.has_method("get_tile_size"):
+		TILE_SIZE = _road_checker.get_tile_size()
 
 
 ## Check if vehicle is currently on a road tile
 func _is_on_road() -> bool:
-	if _tile_map_layer == null:
-		return true  # If no tilemap, assume roads everywhere
+	if _road_checker == null:
+		return true  # If no road checker, assume roads everywhere
 
 	return _is_road_at_position(global_position)
 
 
 ## Check if there's a road at a specific world position
 func _is_road_at_position(world_pos: Vector2) -> bool:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return true
 
-	var tile_pos = _tile_map_layer.local_to_map(_tile_map_layer.to_local(world_pos))
-	var atlas_coords = _tile_map_layer.get_cell_atlas_coords(tile_pos)
+	if _road_checker.has_method("is_road_at_position"):
+		return _road_checker.is_road_at_position(world_pos)
 
-	# Check if tile exists and is a road (columns 1-16 are roads)
-	if atlas_coords == Vector2i(-1, -1):
-		return false  # No tile
-
-	return atlas_coords.x >= ROAD_TILE_COLUMN_START
+	return true
 
 
 ## Check if there's ANY vehicle at a specific world position

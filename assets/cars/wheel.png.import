@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://duollwgxp801i"
-path="res://.godot/imported/car.png-104ea113481bbf7e030301cc87b7410d.ctex"
+uid="uid://ca0hpcr56308o"
+path="res://.godot/imported/wheel.png-3a3c4a045f14f9b1a74ef6854fda8f3c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/cars/car.png"
-dest_files=["res://.godot/imported/car.png-104ea113481bbf7e030301cc87b7410d.ctex"]
+source_file="res://assets/cars/wheel.png"
+dest_files=["res://.godot/imported/wheel.png-3a3c4a045f14f9b1a74ef6854fda8f3c.ctex"]
 
 [params]
 

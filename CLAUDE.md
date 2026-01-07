@@ -688,18 +688,30 @@ Rows are selected based on which diagonal tiles contain roads (for corner decora
 
 ## Implemented Game Mechanics
 
-### TileMapLayer System
-The main game scene uses Godot's modern `TileMapLayer` for rendering roads and terrain:
-- **Grass tiles**: Column 0 in the tileset
-- **Road tiles**: Columns 1-16 in the tileset (auto-connecting)
-- Players can edit the map by placing/removing roads
+### RoadTile Scene System
+The main game scene uses RoadTile scenes for roads with manual connections:
+- **RoadTile scenes**: Each road tile is an Area2D with connection sprites
+- **Manual connections**: Roads only connect when explicitly linked by player
+- **Connection sprites**: 8-directional connection visuals (432x432 each)
+- **Main sprite**: 144x144 road tile at center
+- **Grid size**: 144x144 pixels per tile
+
+### Road Selection and Editing System
+Players edit roads through a selection-based system:
+- **Select mode**: Click on an existing road to select it (yellow highlight)
+- **Preview tile**: When selected, a ghost preview shows where new road will be placed
+- **Place new road**: Click on preview to place road (costs 1 card, auto-connects)
+- **Connect existing**: Click on adjacent road to connect (FREE, no card cost)
+- **Deselect**: Click on selected road again to exit edit mode
+- **Protected roads**: Spawn road (0,3) and destination road (9,3) cannot be removed
+- **Live editing**: Works during gameplay for reactive strategy
 
 ### Road Cards System
 Players have a limited number of road cards to modify the map:
 - **Initial count**: 10 road cards (configurable per level)
-- **Placing a road**: Costs 1 road card (left-click on grass tile)
+- **Placing a road**: Costs 1 road card (click on preview tile)
+- **Connecting roads**: FREE (click adjacent existing road)
 - **Removing a road**: Refunds 1 road card (right-click on road tile)
-- **Live editing**: Map editing works DURING gameplay, allowing reactive strategy
 - **UI Display**: Road card count shown in top-left corner
 
 ### Hearts System
@@ -743,12 +755,30 @@ Cars do NOT disappear when they crash - they become permanent obstacles:
 ### Automatic Car Spawning
 Cars automatically spawn at regular intervals after running code:
 - **Interval**: Every 15 seconds after simulation starts
-- **Location**: Position (100, 300) facing RIGHT
-- **Destination**: Position (700, 300)
+- **Location**: Spawn road tile (0,3), offset up for lane driving
+- **Destination**: Destination road tile (9,3), offset up for lane driving
+- **Vehicle types**: Random selection from 7 types (Sedan, Estate, Micro, Sport, Pickup, Jeepney, Motorbike)
 - **Naming**: car1, car2, car3, car4, etc.
 - **Code Execution**: Each new car automatically runs the current code
 - **Control**: Spawning starts when "Run Code" is pressed, stops on reset
 - **Strategy**: Your code must handle multiple cars and navigate around crashed cars
+
+### Car Color Palettes
+Cars spawn with random colors for visual variety:
+- **12 color options**: White, Red, Blue, Green, Yellow, Orange, Purple, Pink, Cyan, Gray, Brown, Dark Gray
+- **Random assignment**: Each spawned car gets a random color
+- **API functions**:
+  - `set_color_palette(index)` - Set specific color (0-11)
+  - `set_random_color()` - Assign random color
+  - `get_color_palette()` - Get current color index
+  - `get_palette_count()` - Get total number of colors
+
+### Lane Driving System
+Cars drive on the left side of the road to avoid head-on collisions:
+- **Lane offset**: 25 pixels from road center
+- **Direction-based**: Cars going RIGHT are offset UP (negative Y)
+- **Allows passing**: Two cars going opposite directions can share the same road
+- **Smaller hitboxes**: Collision shapes reduced to prevent easy crashes
 
 ### Stoplight Control Panel
 UI panel in top-right corner allows manual stoplight control:
@@ -770,12 +800,18 @@ Cars must stay on road tiles:
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| TileMapLayer System | ✅ | Auto-connecting road tiles |
+| RoadTile Scene System | ✅ | Manual road connections with connection sprites |
+| Road Selection System | ✅ | Click roads to select, click adjacent to place/connect |
+| Preview Tiles | ✅ | Shows ghost preview of where road will be placed |
+| Protected Roads | ✅ | Spawn and destination roads cannot be removed |
 | Road Cards System | ✅ | Consumable resource for map editing |
 | Hearts System | ✅ | Lives with crash penalties |
 | Live Map Editing | ✅ | Edit roads during gameplay |
-| Crashed Cars as Obstacles | ✅ | Cars stay on map when crashed |
+| Crashed Cars as Obstacles | ✅ | Cars stay on map when crashed (darkened) |
 | Automatic Car Spawning | ✅ | New car every 15 seconds |
+| Car Color Palettes | ✅ | 12 random colors for variety |
+| Lane Driving | ✅ | Cars offset to left side of road |
+| Smaller Hitboxes | ✅ | Cars don't collide as easily |
 | Short API Names | ✅ | `front_road()`, `at_end()`, etc. |
 | Stoplight Control Panel | ✅ | Manual stoplight control UI |
 | Red Light Violations | ✅ | Running red lights costs hearts |
@@ -852,8 +888,11 @@ while not car.at_end():
 
 | Action | Input | Notes |
 |--------|-------|-------|
-| Place road | Left-click | Costs 1 road card, **works during gameplay** |
-| Remove road | Right-click | Refunds 1 road card, **works during gameplay** |
+| Select road | Left-click on road | Highlights road yellow, shows preview |
+| Place road | Left-click on preview | Costs 1 road card, auto-connects to selected |
+| Connect roads | Left-click adjacent road | FREE - no card cost, just connects |
+| Deselect | Left-click selected road | Exit edit mode |
+| Remove road | Right-click on road | Refunds 1 road card (except spawn/destination) |
 | Control stoplight | Stoplight panel buttons | Red/Yellow/Green buttons in top-right |
 | Run code | Run Code button or F5 | Starts car spawning every 15 seconds |
 | Pause/Resume | Space | Pauses simulation and spawning |
@@ -861,6 +900,8 @@ while not car.at_end():
 | Speed up | + or = | 2x or 4x speed |
 | Slow down | - | 0.5x speed |
 | Step | F10 | Execute one line |
+| Move camera | WASD or Arrow keys | Pan the camera around |
+| Toggle help | F1 | Show/hide Python commands reference |
 
 ---
 

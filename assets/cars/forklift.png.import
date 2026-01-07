@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://duollwgxp801i"
-path="res://.godot/imported/car.png-104ea113481bbf7e030301cc87b7410d.ctex"
+uid="uid://bxqo54lbl1axy"
+path="res://.godot/imported/forklift.png-89ab8c4a024a2c26ec495f0790553074.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/cars/car.png"
-dest_files=["res://.godot/imported/car.png-104ea113481bbf7e030301cc87b7410d.ctex"]
+source_file="res://assets/cars/forklift.png"
+dest_files=["res://.godot/imported/forklift.png-89ab8c4a024a2c26ec495f0790553074.ctex"]
 
 [params]
 

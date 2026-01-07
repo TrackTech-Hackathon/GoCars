@@ -130,23 +130,15 @@ func update_connection_sprites() -> void:
 
 
 func _should_show_cardinal(has_connection: bool, adjacent1: bool, adjacent2: bool, has_2step: bool) -> bool:
-	if not has_connection:
-		return false
-	if not adjacent1 and not adjacent2:
-		return true
-	if (adjacent1 or adjacent2) and has_2step:
-		return true
-	return false
+	# Simplified: just show the connection if it exists
+	# The complex rules were for auto-tiling, but we use manual connections now
+	return has_connection
 
 
 func _should_show_diagonal(has_connection: bool, adjacent1: bool, adjacent2: bool, has_2step: bool) -> bool:
-	if not has_connection:
-		return false
-	if not adjacent1 and not adjacent2:
-		return true
-	if (adjacent1 or adjacent2) and has_2step:
-		return true
-	return false
+	# Simplified: just show the connection if it exists
+	# The complex rules were for auto-tiling, but we use manual connections now
+	return has_connection
 
 
 # Add a connection in a specific direction
