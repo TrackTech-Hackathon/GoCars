@@ -49,6 +49,11 @@ var road_tiles: Dictionary = {}  # Key: Vector2i grid position, Value: RoadTile 
 
 # Map editing state
 var is_editing_enabled: bool = true
+var selected_road_tile: Vector2i = Vector2i(-1, -1)  # Currently selected road tile (-1,-1 = none)
+var spawn_road_pos: Vector2i = Vector2i(0, 3)  # Protected spawn road position
+var destination_road_pos: Vector2i = Vector2i(9, 3)  # Protected destination road position
+var preview_road_tile: RoadTile = null  # Preview tile that follows mouse
+var preview_grid_pos: Vector2i = Vector2i(-1, -1)  # Current preview position
 
 # Camera movement
 const CAMERA_SPEED: float = 500.0
@@ -62,12 +67,17 @@ const CAMERA_ZOOM_DEFAULT: Vector2 = Vector2(0.5, 0.5)  # Zoomed out to see more
 # Car spawning
 var car_spawn_timer: float = 0.0
 const CAR_SPAWN_INTERVAL: float = 15.0  # Spawn every 15 seconds
+# Lane offset - cars drive on the right side of their lane (right-hand traffic)
+# For cars going RIGHT: offset DOWN (positive Y) to stay in bottom lane
+# For cars going LEFT: offset UP (negative Y) to stay in top lane
+const LANE_OFFSET: float = 25.0
 # Spawn position - will be set from parking spot
 # Road is at row 3, tile center is at y = 3*144 + 72 = 504
-var car_spawn_position: Vector2 = Vector2(72, 504)  # Tile (0,3) center
+# Cars going RIGHT should be offset DOWN (positive Y) for right-hand traffic
+var car_spawn_position: Vector2 = Vector2(72, 504 + LANE_OFFSET)  # Tile (0,3) center, offset down
 var car_spawn_direction: Vector2 = Vector2.RIGHT
 var car_spawn_rotation: float = PI / 2  # 90 degrees - car faces right
-var car_destination: Vector2 = Vector2(1368, 504)  # Tile (9,3) center (9*144+72)
+var car_destination: Vector2 = Vector2(1368, 504 + LANE_OFFSET)  # Tile (9,3) center, offset down
 var is_spawning_cars: bool = false
 var next_car_id: int = 2  # Start from 2 since car1 is the test vehicle
 
@@ -90,6 +100,11 @@ func _ready() -> void:
 
 	# Pass road checker reference to vehicle for road detection
 	test_vehicle.set_road_checker(self)
+
+	# Set destination and connect signals for test vehicle
+	test_vehicle.destination = car_destination
+	test_vehicle.reached_destination.connect(_on_car_reached_destination)
+	test_vehicle.crashed.connect(_on_car_crashed)
 
 	# Register stoplight if it exists
 	if test_stoplight:
@@ -168,6 +183,9 @@ func _process(delta: float) -> void:
 			car_spawn_timer = 0.0
 			_spawn_new_car()
 
+	# Update preview tile position
+	_update_preview_tile()
+
 
 func _create_default_map() -> void:
 	# With 144x144 tiles, create a horizontal road using RoadTile scenes
@@ -179,8 +197,11 @@ func _create_default_map() -> void:
 		var grid_pos = Vector2i(x, 3)
 		_place_road_tile(grid_pos)
 
-	# Connect adjacent road tiles
-	_update_all_road_connections()
+	# Manually connect adjacent road tiles (left-right connections)
+	for x in range(0, 9):
+		var current_pos = Vector2i(x, 3)
+		var next_pos = Vector2i(x + 1, 3)
+		_connect_two_roads(current_pos, next_pos, "right")
 
 
 func _place_road_tile(grid_pos: Vector2i) -> RoadTile:
@@ -198,51 +219,157 @@ func _place_road_tile(grid_pos: Vector2i) -> RoadTile:
 
 func _remove_road_tile(grid_pos: Vector2i) -> void:
 	if road_tiles.has(grid_pos):
-		var road_tile = road_tiles[grid_pos]
+		var road_tile = road_tiles[grid_pos] as RoadTile
+
+		# Remove connections from all neighboring tiles that connect to this one
+		var neighbor_offsets = [
+			Vector2i(0, -1),   # top
+			Vector2i(0, 1),    # bottom
+			Vector2i(-1, 0),   # left
+			Vector2i(1, 0),    # right
+			Vector2i(-1, -1),  # top_left
+			Vector2i(1, -1),   # top_right
+			Vector2i(-1, 1),   # bottom_left
+			Vector2i(1, 1)     # bottom_right
+		]
+
+		for offset in neighbor_offsets:
+			var neighbor_pos = grid_pos + offset
+			if road_tiles.has(neighbor_pos):
+				var neighbor_tile = road_tiles[neighbor_pos] as RoadTile
+				# Get the direction from neighbor to this tile
+				var direction = _get_direction_from_offset(-offset)
+				if direction != "":
+					neighbor_tile.remove_connection(direction)
+
 		road_tile.queue_free()
 		road_tiles.erase(grid_pos)
-		_update_all_road_connections()
 
 
-func _update_all_road_connections() -> void:
-	# Update connections for all road tiles
-	for grid_pos in road_tiles:
-		_update_road_tile_connections(grid_pos)
-
-
-func _update_road_tile_connections(grid_pos: Vector2i) -> void:
-	if not road_tiles.has(grid_pos):
+## Connect two adjacent road tiles manually
+func _connect_two_roads(from_pos: Vector2i, to_pos: Vector2i, direction: String) -> void:
+	if not road_tiles.has(from_pos) or not road_tiles.has(to_pos):
 		return
 
-	var road_tile = road_tiles[grid_pos] as RoadTile
+	var from_tile = road_tiles[from_pos] as RoadTile
+	var to_tile = road_tiles[to_pos] as RoadTile
 
-	# Check all 8 neighbors
-	var directions = {
-		"top": Vector2i(0, -1),
-		"bottom": Vector2i(0, 1),
-		"left": Vector2i(-1, 0),
-		"right": Vector2i(1, 0),
-		"top_left": Vector2i(-1, -1),
-		"top_right": Vector2i(1, -1),
-		"bottom_left": Vector2i(-1, 1),
-		"bottom_right": Vector2i(1, 1)
-	}
+	# Add connection from first tile
+	from_tile.add_connection(direction)
 
-	var conn_dict = {}
-	var extended_dict = {}
+	# Add opposite connection to second tile
+	var opposite = RoadTile.get_opposite_direction(direction)
+	to_tile.add_connection(opposite)
 
-	for dir_name in directions:
-		var offset = directions[dir_name]
-		var neighbor_pos = grid_pos + offset
-		conn_dict[dir_name] = road_tiles.has(neighbor_pos)
 
-		# Check 2-step connections for extended visibility rules
-		var two_step_pos = grid_pos + offset * 2
-		var extended_key = dir_name + "_" + dir_name
-		if road_tile.extended_connections.has(extended_key):
-			extended_dict[extended_key] = road_tiles.has(two_step_pos)
+## Get direction string from offset vector
+func _get_direction_from_offset(offset: Vector2i) -> String:
+	match offset:
+		Vector2i(0, -1): return "top"
+		Vector2i(0, 1): return "bottom"
+		Vector2i(-1, 0): return "left"
+		Vector2i(1, 0): return "right"
+		Vector2i(-1, -1): return "top_left"
+		Vector2i(1, -1): return "top_right"
+		Vector2i(-1, 1): return "bottom_left"
+		Vector2i(1, 1): return "bottom_right"
+	return ""
 
-	road_tile.set_all_connections(conn_dict, extended_dict)
+
+## Check if two grid positions are adjacent (including diagonals)
+func _is_adjacent(pos1: Vector2i, pos2: Vector2i) -> bool:
+	var diff = pos2 - pos1
+	return abs(diff.x) <= 1 and abs(diff.y) <= 1 and diff != Vector2i.ZERO
+
+
+## Select a road tile and show selection indicator
+func _select_road(grid_pos: Vector2i) -> void:
+	# Deselect previous
+	if selected_road_tile != Vector2i(-1, -1) and road_tiles.has(selected_road_tile):
+		var prev_tile = road_tiles[selected_road_tile] as RoadTile
+		prev_tile.modulate = Color.WHITE
+
+	selected_road_tile = grid_pos
+
+	# Highlight selected tile
+	if road_tiles.has(grid_pos):
+		var tile = road_tiles[grid_pos] as RoadTile
+		tile.modulate = Color(1.0, 1.0, 0.5, 1.0)  # Yellow tint for selection
+		_update_status("Road selected at %s - Click adjacent to place/connect" % grid_pos)
+
+
+## Deselect current road tile
+func _deselect_road() -> void:
+	if selected_road_tile != Vector2i(-1, -1) and road_tiles.has(selected_road_tile):
+		var tile = road_tiles[selected_road_tile] as RoadTile
+		tile.modulate = Color.WHITE
+
+	selected_road_tile = Vector2i(-1, -1)
+	_hide_preview_tile()
+	_update_status("Road deselected")
+
+
+## Update preview tile position based on mouse
+func _update_preview_tile() -> void:
+	# Only show preview when a road is selected and editing is enabled
+	if not is_editing_enabled or selected_road_tile == Vector2i(-1, -1):
+		_hide_preview_tile()
+		return
+
+	var mouse_pos = get_global_mouse_position()
+	var mouse_grid_pos = _get_grid_pos_from_world(mouse_pos)
+
+	# Check if mouse is on the selected tile - hide preview
+	if mouse_grid_pos == selected_road_tile:
+		_hide_preview_tile()
+		return
+
+	# Check if mouse is adjacent to selected tile
+	if not _is_adjacent(selected_road_tile, mouse_grid_pos):
+		_hide_preview_tile()
+		return
+
+	# Don't show preview on existing roads
+	if road_tiles.has(mouse_grid_pos):
+		_hide_preview_tile()
+		return
+
+	# Show preview at this position
+	_show_preview_tile(mouse_grid_pos)
+
+
+## Show preview tile at grid position
+func _show_preview_tile(grid_pos: Vector2i) -> void:
+	# Create preview tile if it doesn't exist
+	if preview_road_tile == null:
+		preview_road_tile = road_tile_scene.instantiate()
+		preview_road_tile.set_preview(true)
+		$GameWorld/Roads.add_child(preview_road_tile)
+
+	# Update position if changed
+	if preview_grid_pos != grid_pos:
+		preview_grid_pos = grid_pos
+		preview_road_tile.position = Vector2(grid_pos.x * TILE_SIZE, grid_pos.y * TILE_SIZE)
+		preview_road_tile.visible = true
+
+		# Show preview connection to the selected road
+		var offset = grid_pos - selected_road_tile
+		var direction = _get_direction_from_offset(offset)
+		if direction != "":
+			# Clear all connections first
+			for dir in preview_road_tile.connections:
+				preview_road_tile.connections[dir] = false
+			# Add connection back to selected road
+			var opposite = RoadTile.get_opposite_direction(direction)
+			preview_road_tile.connections[opposite] = true
+			preview_road_tile.update_connection_sprites()
+
+
+## Hide preview tile
+func _hide_preview_tile() -> void:
+	if preview_road_tile != null:
+		preview_road_tile.visible = false
+	preview_grid_pos = Vector2i(-1, -1)
 
 
 ## Check if there's a road tile at the given world position (public API for vehicles)
@@ -575,37 +702,75 @@ func _input(event: InputEvent) -> void:
 				# F1 - Toggle help panel
 				_on_toggle_help_pressed()
 
-	# Handle tile editing (only when not running simulation)
+	# Handle tile editing (only when editing is enabled)
 	if is_editing_enabled:
 		if event is InputEventMouseButton and event.pressed:
 			if event.button_index == MOUSE_BUTTON_LEFT:
-				_place_road_at_mouse()
+				_handle_road_click()
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
-				_remove_road_at_mouse()
+				_handle_road_remove()
 
 
-func _place_road_at_mouse() -> void:
-	if road_cards <= 0:
-		_update_status("No road cards left!")
-		return
-
+## Handle left click for road selection/placement/connection
+func _handle_road_click() -> void:
 	var mouse_pos = get_global_mouse_position()
 	var grid_pos = _get_grid_pos_from_world(mouse_pos)
 
-	# Check if tile is not already a road
-	if road_tiles.has(grid_pos):
-		_update_status("Road already exists here")
+	# Case 1: No road selected - click on existing road to select it
+	if selected_road_tile == Vector2i(-1, -1):
+		if road_tiles.has(grid_pos):
+			_select_road(grid_pos)
+		else:
+			_update_status("Click on a road to select it first")
 		return
 
-	# Place road and consume a card
-	_place_road_tile(grid_pos)
-	_update_all_road_connections()
-	road_cards -= 1
-	_update_road_cards_label()
-	_update_status("Road placed at %s" % grid_pos)
+	# Case 2: Clicked on the same selected road - deselect
+	if grid_pos == selected_road_tile:
+		_deselect_road()
+		return
+
+	# Case 3: Clicked on an existing road adjacent to selected - connect them (FREE)
+	if road_tiles.has(grid_pos):
+		if _is_adjacent(selected_road_tile, grid_pos):
+			var offset = grid_pos - selected_road_tile
+			var direction = _get_direction_from_offset(offset)
+			if direction != "":
+				_connect_two_roads(selected_road_tile, grid_pos, direction)
+				_update_status("Connected roads at %s and %s" % [selected_road_tile, grid_pos])
+				# Move selection to newly connected road
+				_select_road(grid_pos)
+		else:
+			# Not adjacent, just select the new road
+			_select_road(grid_pos)
+		return
+
+	# Case 4: Clicked on empty space adjacent to selected - place new road (COSTS 1 CARD)
+	if _is_adjacent(selected_road_tile, grid_pos):
+		if road_cards <= 0:
+			_update_status("No road cards left!")
+			return
+
+		# Place new road
+		_place_road_tile(grid_pos)
+
+		# Connect it to the selected road
+		var offset = grid_pos - selected_road_tile
+		var direction = _get_direction_from_offset(offset)
+		if direction != "":
+			_connect_two_roads(selected_road_tile, grid_pos, direction)
+
+		road_cards -= 1
+		_update_road_cards_label()
+		_update_status("Road placed and connected at %s (-1 card)" % grid_pos)
+
+		# Move selection to the new road
+		_select_road(grid_pos)
+	else:
+		_update_status("Can only place roads adjacent to selected road")
 
 
-func _remove_road_at_mouse() -> void:
+## Handle right click to remove roads
+func _handle_road_remove() -> void:
 	var mouse_pos = get_global_mouse_position()
 	var grid_pos = _get_grid_pos_from_world(mouse_pos)
 
@@ -614,11 +779,23 @@ func _remove_road_at_mouse() -> void:
 		_update_status("No road here to remove")
 		return
 
+	# Check if it's a protected road (spawn or destination)
+	if grid_pos == spawn_road_pos:
+		_update_status("Cannot remove spawn road!")
+		return
+	if grid_pos == destination_road_pos:
+		_update_status("Cannot remove destination road!")
+		return
+
+	# If removing the selected road, deselect first
+	if grid_pos == selected_road_tile:
+		_deselect_road()
+
 	# Remove road and gain a card back
 	_remove_road_tile(grid_pos)
 	road_cards += 1
 	_update_road_cards_label()
-	_update_status("Road removed at %s" % grid_pos)
+	_update_status("Road removed at %s (+1 card)" % grid_pos)
 
 
 # ============================================
@@ -694,6 +871,9 @@ func _spawn_new_car() -> void:
 
 	# Set destination
 	new_car.destination = car_destination
+
+	# Assign random color palette
+	new_car.set_random_color()
 
 	# Note: Vehicle type is already set in the scene file
 
@@ -778,6 +958,9 @@ func _respawn_test_vehicle() -> void:
 
 	# Set destination
 	test_vehicle.destination = car_destination
+
+	# Assign random color palette
+	test_vehicle.set_random_color()
 
 	# Add to scene
 	$GameWorld.add_child(test_vehicle)

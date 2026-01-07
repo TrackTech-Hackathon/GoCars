@@ -131,6 +131,9 @@ var _turn_start_direction: Vector2 = Vector2.ZERO
 # Distance threshold for reaching destination
 const DESTINATION_THRESHOLD: float = 10.0
 
+# Lane offset - cars drive on the left side of their direction (pixels from center)
+const LANE_OFFSET: float = 25.0
+
 # Distance at which vehicle detects stoplights (in pixels)
 const STOPLIGHT_DETECTION_RANGE: float = 100.0
 
@@ -173,6 +176,25 @@ const CAR_SPRITE_REGIONS: Dictionary = {
 	VehicleType.JEEPNEY: Rect2(240, 0, 48, 96),
 	VehicleType.MOTORBIKE: Rect2(288, 0, 48, 96)
 }
+
+# Color palettes for vehicles (tint colors applied to sprites)
+const COLOR_PALETTES: Array = [
+	Color(1.0, 1.0, 1.0),       # 0: White (default)
+	Color(1.0, 0.4, 0.4),       # 1: Red
+	Color(0.4, 0.6, 1.0),       # 2: Blue
+	Color(0.4, 1.0, 0.5),       # 3: Green
+	Color(1.0, 0.9, 0.4),       # 4: Yellow
+	Color(1.0, 0.6, 0.3),       # 5: Orange
+	Color(0.9, 0.5, 1.0),       # 6: Purple
+	Color(1.0, 0.6, 0.7),       # 7: Pink
+	Color(0.5, 0.9, 1.0),       # 8: Cyan
+	Color(0.7, 0.7, 0.7),       # 9: Gray
+	Color(0.6, 0.4, 0.3),       # 10: Brown
+	Color(0.3, 0.3, 0.3),       # 11: Dark Gray
+]
+
+# Current color palette index
+var color_palette_index: int = 0
 
 # Wheel positions per vehicle type (relative to center, for 48x96 car sprites)
 const WHEEL_POSITIONS: Dictionary = {
@@ -250,8 +272,8 @@ func _apply_vehicle_type() -> void:
 		if sprite and vehicle_type in CAR_SPRITE_REGIONS:
 			sprite.region_enabled = true
 			sprite.region_rect = CAR_SPRITE_REGIONS[vehicle_type]
-			# Reset modulate to white (use sprite's actual colors)
-			sprite.modulate = Color.WHITE
+			# Apply color palette tint
+			_apply_color_palette()
 
 		# Apply size scaling
 		scale = Vector2(type_size_mult, type_size_mult)
@@ -302,6 +324,40 @@ func _update_wheel_positions() -> void:
 		wheel_bl.position = positions["BL"]
 	if wheel_br:
 		wheel_br.position = positions["BR"]
+
+
+## Apply color palette to sprite
+func _apply_color_palette() -> void:
+	var sprite = get_node_or_null("Sprite2D")
+	if sprite:
+		if color_palette_index >= 0 and color_palette_index < COLOR_PALETTES.size():
+			sprite.modulate = COLOR_PALETTES[color_palette_index]
+		else:
+			sprite.modulate = Color.WHITE
+
+
+## Set color palette by index
+func set_color_palette(palette_index: int) -> void:
+	color_palette_index = clampi(palette_index, 0, COLOR_PALETTES.size() - 1)
+	_apply_color_palette()
+
+
+## Set random color palette
+func set_random_color() -> void:
+	color_palette_index = randi() % COLOR_PALETTES.size()
+	# Defer if not in tree yet (will be applied in _ready via _apply_vehicle_type)
+	if is_inside_tree():
+		_apply_color_palette()
+
+
+## Get current color palette index
+func get_color_palette() -> int:
+	return color_palette_index
+
+
+## Get total number of color palettes
+static func get_palette_count() -> int:
+	return COLOR_PALETTES.size()
 
 
 ## Set vehicle type and apply configuration
@@ -604,7 +660,7 @@ func _exec_move(tiles: int) -> void:
 
 ## Check if there's a road in front of the car (short name)
 func front_road() -> bool:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return false
 	var front_offset = direction.normalized() * 64
 	var front_pos = global_position + front_offset
@@ -618,7 +674,7 @@ func is_front_road() -> bool:
 
 ## Check if there's a road to the left of the car (short name)
 func left_road() -> bool:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return false
 	var left_direction = direction.rotated(-PI / 2)
 	var left_offset = left_direction.normalized() * 64
@@ -633,7 +689,7 @@ func is_left_road() -> bool:
 
 ## Check if there's a road to the right of the car (short name)
 func right_road() -> bool:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return false
 	var right_direction = direction.rotated(PI / 2)
 	var right_offset = right_direction.normalized() * 64
@@ -672,7 +728,7 @@ func is_front_crashed_car() -> bool:
 
 ## Check if the car is at a dead end (no road in any direction) (short name)
 func dead_end() -> bool:
-	if _tile_map_layer == null:
+	if _road_checker == null:
 		return false
 	return not front_road() and not left_road() and not right_road()
 
@@ -768,10 +824,12 @@ func distance_to_intersection() -> float:
 
 
 ## Reset vehicle to initial state
+## Note: Car sprites face UP by default, so rotation needs +PI/2 offset
 func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	global_position = start_pos
 	direction = start_dir.normalized()
-	rotation = direction.angle()
+	# Car sprite faces UP, so add PI/2 to make it face the direction
+	rotation = direction.angle() + PI / 2
 	_is_moving = false
 	is_waiting = false
 	wait_timer = 0.0
@@ -916,7 +974,8 @@ func _process_turn(delta: float) -> void:
 
 		# Snap to exact target rotation
 		rotation = _turn_target_rotation
-		direction = Vector2.RIGHT.rotated(rotation)
+		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
+		direction = Vector2.UP.rotated(rotation)
 
 		# Turn command completed - process next command
 		_command_completed()
@@ -924,7 +983,8 @@ func _process_turn(delta: float) -> void:
 		# Interpolate rotation smoothly (ease in-out)
 		var t = _ease_in_out(_turn_progress)
 		rotation = lerp(_turn_start_rotation, _turn_target_rotation, t)
-		direction = Vector2.RIGHT.rotated(rotation)
+		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
+		direction = Vector2.UP.rotated(rotation)
 
 
 ## Ease in-out function for smooth animation
