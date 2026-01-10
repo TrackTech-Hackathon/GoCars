@@ -520,6 +520,13 @@ func is_road_connected(from_grid: Vector2i, connection_dir: String) -> bool:
 	return tile.has_connection(connection_dir)
 
 
+## Get the RoadTile at a grid position (for guideline path following)
+func get_road_tile(grid_pos: Vector2i) -> RoadTile:
+	if road_tiles.has(grid_pos):
+		return road_tiles[grid_pos] as RoadTile
+	return null
+
+
 func _get_grid_pos_from_world(world_pos: Vector2) -> Vector2i:
 	return Vector2i(int(world_pos.x / TILE_SIZE), int(world_pos.y / TILE_SIZE))
 

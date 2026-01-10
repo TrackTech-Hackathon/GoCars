@@ -176,6 +176,13 @@ var _last_move_direction: Vector2 = Vector2.ZERO  # Track where we came from (to
 # Speed multiplier (for car.speed() function)
 var speed_multiplier: float = 1.0
 
+# Guideline path following (new system)
+var _guideline_enabled: bool = true  # Set false to use old reactive movement
+var _current_path: Array = []        # Waypoints to follow (world positions)
+var _path_index: int = 0             # Current waypoint index
+var _current_tile: Vector2i = Vector2i(-1, -1)   # Tile we're currently on
+var _entry_direction: String = ""    # Direction we entered current tile from
+
 # Auto-navigate mode - car automatically follows road
 var auto_navigate: bool = false
 var _nav_check_timer: float = 0.0
@@ -602,10 +609,15 @@ func _physics_process(delta: float) -> void:
 
 	# Handle movement
 	if _is_moving:
-		# Check for queued turn at intersection
-		if queued_turn != "":
-			_check_intersection_for_turn()
-		_move(delta)
+		# Guideline path following (new system)
+		if _guideline_enabled:
+			_follow_guideline_path(delta)
+		else:
+			# Old reactive movement system
+			# Check for queued turn at intersection
+			if queued_turn != "":
+				_check_intersection_for_turn()
+			_move(delta)
 		_check_destination()
 		# Check if we've moved enough tiles (for move(N) command)
 		if _tiles_to_move > 0:
@@ -647,6 +659,163 @@ func _move(_delta: float) -> void:
 				_on_crash()
 				other_vehicle._on_crash()
 				return
+
+
+# ============================================
+# Guideline Path Following System
+# ============================================
+
+## Main guideline path following function
+func _follow_guideline_path(delta: float) -> void:
+	# Check if car is on a road tile
+	if _road_checker != null:
+		if not _is_on_road():
+			_on_off_road_crash()
+			return
+
+	# Check for tile transition - do we need a new path?
+	var current_grid = _get_current_grid_pos()
+	if current_grid != _current_tile:
+		_on_enter_new_tile(current_grid)
+
+	# If no path, get one
+	if _current_path.is_empty():
+		_acquire_path_for_current_tile()
+
+	# If still no path (dead end or error), fall back to old movement
+	if _current_path.is_empty():
+		_move(delta)
+		return
+
+	# Follow the current path
+	_move_along_path(delta)
+
+
+## Called when entering a new tile
+func _on_enter_new_tile(new_tile: Vector2i) -> void:
+	var old_tile = _current_tile
+	_current_tile = new_tile
+
+	# Determine entry direction based on where we came from
+	if old_tile != Vector2i(-1, -1):
+		var diff = old_tile - new_tile
+		_entry_direction = _grid_offset_to_direction(diff)
+	else:
+		# First tile - determine from our current facing direction
+		_entry_direction = _get_opposite_direction(_vector_to_connection_direction(direction))
+
+	# Clear path to force acquisition of new one
+	_current_path.clear()
+	_path_index = 0
+
+
+## Get a path for the current tile
+func _acquire_path_for_current_tile() -> void:
+	if _road_checker == null or not _road_checker.has_method("get_road_tile"):
+		return
+
+	var tile = _road_checker.get_road_tile(_current_tile)
+	if tile == null:
+		return
+
+	# Get available exits from our entry direction
+	var exits = tile.get_available_exits(_entry_direction)
+
+	if exits.is_empty():
+		return  # Dead end
+
+	# Choose exit based on commands
+	var result = _choose_exit(_entry_direction, exits)
+	var chosen_exit = result[0]
+	var turn_was_used = result[1]
+
+	# Get the path
+	_current_path = tile.get_guideline_path(_entry_direction, chosen_exit)
+	_path_index = 0
+
+	# Clear queued turn only if it was actually used
+	if turn_was_used:
+		queued_turn = ""
+
+
+## Choose which exit to take based on queued commands
+## Returns [chosen_exit, turn_was_used] - turn_was_used indicates if queued_turn should be cleared
+func _choose_exit(entry: String, available_exits: Array) -> Array:
+	var opposite = RoadTile.get_opposite_direction(entry)
+
+	# If there's a queued turn command, use it
+	if queued_turn == "left":
+		var left = RoadTile.get_left_of(entry)
+		if left in available_exits:
+			return [left, true]  # Turn used
+	elif queued_turn == "right":
+		var right = RoadTile.get_right_of(entry)
+		if right in available_exits:
+			return [right, true]  # Turn used
+
+	# No turn queued or turn not available - prefer going straight (opposite of entry)
+	if opposite in available_exits:
+		return [opposite, false]  # Turn NOT used (kept for later)
+
+	# Can't go straight - pick first available (usually means corner tile)
+	# Also clear turn since we're forced to take a path
+	return [available_exits[0], true]
+
+
+## Move along the current path toward waypoints
+func _move_along_path(delta: float) -> void:
+	if _path_index >= _current_path.size():
+		# Path complete - clear it so we get a new one on next tile
+		_current_path.clear()
+		_path_index = 0
+		return
+
+	var target = _current_path[_path_index]
+	var to_target = target - global_position
+	var dist = to_target.length()
+
+	# Check if reached waypoint
+	if dist < 10.0:
+		_path_index += 1
+		if _path_index >= _current_path.size():
+			# Path complete
+			_current_path.clear()
+			_path_index = 0
+		return
+
+	# Move toward waypoint
+	var move_dir = to_target.normalized()
+
+	# Update direction and rotation smoothly
+	direction = move_dir
+	rotation = direction.angle() + PI / 2  # Sprite faces UP
+
+	# Apply speed
+	var actual_speed = speed * speed_multiplier * type_speed_mult
+	velocity = direction * actual_speed
+	move_and_slide()
+
+	# Check for collisions
+	for i in range(get_slide_collision_count()):
+		var collision = get_slide_collision(i)
+		if collision.get_collider() is Vehicle:
+			var other_vehicle = collision.get_collider() as Vehicle
+			if other_vehicle.vehicle_state == 0:
+				_on_crash()
+				return
+			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
+				_on_crash()
+				other_vehicle._on_crash()
+				return
+
+
+## Convert grid offset to direction string
+func _grid_offset_to_direction(offset: Vector2i) -> String:
+	if offset == Vector2i(0, -1): return "top"
+	if offset == Vector2i(0, 1): return "bottom"
+	if offset == Vector2i(-1, 0): return "left"
+	if offset == Vector2i(1, 0): return "right"
+	return ""
 
 
 func _check_destination() -> void:
@@ -1097,6 +1266,11 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Reset command queue
 	_command_queue.clear()
 	_current_command = {}
+	# Reset guideline path following
+	_current_path.clear()
+	_path_index = 0
+	_current_tile = Vector2i(-1, -1)
+	_entry_direction = ""
 
 
 # ============================================
