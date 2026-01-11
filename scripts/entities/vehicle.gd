@@ -579,8 +579,8 @@ func _move_along_path(delta: float) -> void:
 	var to_target = target - global_position
 	var dist = to_target.length()
 
-	# Check if reached waypoint
-	if dist < 10.0:
+	# Check if reached waypoint (increased threshold to prevent overshooting)
+	if dist < 20.0:
 		_path_index += 1
 		if _path_index >= _current_path.size():
 			# Path complete
@@ -588,11 +588,26 @@ func _move_along_path(delta: float) -> void:
 			_path_index = 0
 		return
 
-	# Move toward waypoint
+	# Skip waypoints that are behind us (prevents backward jitter)
+	var dot = direction.dot(to_target.normalized())
+	if dot < 0 and dist < 50.0:  # Waypoint is behind us and close
+		_path_index += 1
+		if _path_index >= _current_path.size():
+			_current_path.clear()
+			_path_index = 0
+		return
+
+	# Move toward waypoint with smooth rotation
 	var move_dir = to_target.normalized()
 
-	# Update direction and rotation smoothly
-	direction = move_dir
+	# Smooth direction change (prevents jitter from instant direction flips)
+	var angle_diff = direction.angle_to(move_dir)
+	var max_turn = 8.0 * delta  # Max radians per second for smooth turning
+	if abs(angle_diff) > max_turn:
+		direction = direction.rotated(sign(angle_diff) * max_turn)
+	else:
+		direction = move_dir
+
 	rotation = direction.angle() + PI / 2  # Sprite faces UP
 
 	# Apply speed
@@ -821,10 +836,27 @@ func _exec_move(tiles: int) -> void:
 
 ## Get the grid position of the tile the car is currently on (compensating for lane offset)
 func _get_current_grid_pos() -> Vector2i:
-	# Lane offset is perpendicular to direction (90° clockwise)
-	var offset_dir = direction.rotated(PI / 2)
+	# Use stable direction based on entry, not current rotation (prevents tile flip-flop during turns)
+	var stable_dir = direction
+	if _entry_direction != "":
+		# Use the opposite of entry direction (travel direction)
+		var travel_dir = RoadTile.get_opposite_direction(_entry_direction)
+		stable_dir = _direction_string_to_vector(travel_dir)
+
+	# Lane offset is perpendicular to travel direction (90° clockwise)
+	var offset_dir = stable_dir.rotated(PI / 2)
 	var center_pos = global_position - (offset_dir.normalized() * LANE_OFFSET)
 	return Vector2i(int(center_pos.x / TILE_SIZE), int(center_pos.y / TILE_SIZE))
+
+
+## Convert direction string to Vector2
+func _direction_string_to_vector(dir: String) -> Vector2:
+	match dir:
+		"top": return Vector2(0, -1)
+		"bottom": return Vector2(0, 1)
+		"left": return Vector2(-1, 0)
+		"right": return Vector2(1, 0)
+	return Vector2.RIGHT
 
 
 ## Convert direction vector to RoadTile connection string
