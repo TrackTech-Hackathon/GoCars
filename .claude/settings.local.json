@@ -14,7 +14,10 @@
       "Bash(\"/c/Users/Mist/Downloads/Godot_v4.5.1-stable_win64.exe/Godot_v4.5.1-stable_win64_console.exe\" --path \"C:\\\\Users\\\\Jorge Acidre\\\\Documents\\\\GitHub\\\\go-cars-\" --headless --quit-after 3)",
       "Bash(cmd /c:*)",
       "Bash(dir:*)",
-      "Bash(\"C:/Users/Mist/Downloads/Godot_v4.5.1-stable_win64.exe/Godot_v4.5.1-stable_win64_console.exe\" --path \"C:/Users/Jorge Acidre/Documents/GitHub/go-cars-\" --headless --quit-after 3)"
+      "Bash(\"C:/Users/Mist/Downloads/Godot_v4.5.1-stable_win64.exe/Godot_v4.5.1-stable_win64_console.exe\" --path \"C:/Users/Jorge Acidre/Documents/GitHub/go-cars-\" --headless --quit-after 3)",
+      "Bash(\"C:\\\\Users\\\\Mist\\\\Downloads\\\\Godot_v4.5.1-stable_win64.exe\\\\Godot_v4.5.1-stable_win64_console.exe\" --path . --headless --script tests/python_parser_functions.test.gd)",
+      "Bash(\"C:\\\\Users\\\\Mist\\\\Downloads\\\\Godot_v4.5.1-stable_win64.exe\\\\Godot_v4.5.1-stable_win64_console.exe\" --path . --headless --script tests/python_interpreter_functions.test.gd)",
+      "Bash(bash:*)"
     ]
   }
 }

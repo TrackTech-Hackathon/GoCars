@@ -26,8 +26,13 @@ const MAX_EXECUTION_TIME_MS: int = 10000  # 10 seconds
 # ============================================
 var _variables: Dictionary = {}
 var _game_objects: Dictionary = {}  # name -> object reference
+var _functions: Dictionary = {}  # NEW: user-defined functions (name -> {parameters, body})
+var _modules: Dictionary = {}  # NEW: loaded modules (module_name -> {functions})
+var _module_loader: Variant = null  # NEW: module loader instance (ModuleLoader)
 var _errors: Array = []
 var _break_requested: bool = false
+var _return_value: Variant = null  # NEW: return value from functions
+var _return_requested: bool = false  # NEW: flag for return statement
 var _execution_start_time: int = 0
 var _current_line: int = 0
 var _last_emitted_line: int = -1  # Track last emitted line to avoid duplicate signals
@@ -42,10 +47,11 @@ var _current_ast: Dictionary = {}
 # Execution Context Types
 # ============================================
 enum ContextType {
-	BLOCK,      # Executing a block of statements
-	WHILE_LOOP, # While loop - re-evaluate condition each step
-	FOR_LOOP,   # For loop - iterate through range
-	IF_STMT     # If statement (handled immediately, not pushed)
+	BLOCK,         # Executing a block of statements
+	WHILE_LOOP,    # While loop - re-evaluate condition each step
+	FOR_LOOP,      # For loop - iterate through range
+	IF_STMT,       # If statement (handled immediately, not pushed)
+	FUNCTION_CALL  # NEW: Function call with local scope
 }
 
 # ============================================
@@ -64,11 +70,19 @@ func unregister_object(name: String) -> void:
 func clear_objects() -> void:
 	_game_objects.clear()
 
+## NEW: Set the module loader for import support
+func set_module_loader(loader: Variant) -> void:
+	_module_loader = loader
+
 ## Initialize execution with AST (call once, then call step() repeatedly)
 func start_execution(ast: Dictionary) -> void:
 	_variables.clear()
+	_functions.clear()  # NEW: Clear user functions
+	_modules.clear()  # NEW: Clear loaded modules
 	_errors.clear()
 	_break_requested = false
+	_return_value = null  # NEW: Clear return value
+	_return_requested = false  # NEW: Clear return flag
 	_execution_start_time = Time.get_ticks_msec()
 	_current_line = 0
 	_last_emitted_line = -1  # Reset line tracking
@@ -401,6 +415,12 @@ func _execute_statement_step(stmt: Dictionary) -> void:
 			_execute_for_stmt_init(stmt)
 		PythonParser.ASTType.BREAK_STMT:
 			_break_requested = true
+		PythonParser.ASTType.FUNCTION_DEF:  # NEW
+			_execute_function_def(stmt)
+		PythonParser.ASTType.RETURN_STMT:  # NEW
+			_execute_return_stmt(stmt)
+		PythonParser.ASTType.IMPORT_STMT:  # NEW
+			_execute_import_stmt(stmt)
 		_:
 			_add_error("RuntimeError: unknown statement type", _current_line)
 
@@ -480,6 +500,12 @@ func _execute_statement(stmt: Dictionary) -> void:
 			_execute_for_stmt(stmt)
 		PythonParser.ASTType.BREAK_STMT:
 			_break_requested = true
+		PythonParser.ASTType.FUNCTION_DEF:
+			_execute_function_def(stmt)
+		PythonParser.ASTType.RETURN_STMT:
+			_execute_return_stmt(stmt)
+		PythonParser.ASTType.IMPORT_STMT:
+			_execute_import_stmt(stmt)
 		_:
 			_add_error("RuntimeError: unknown statement type", _current_line)
 
@@ -726,13 +752,16 @@ func _evaluate_call_expr(expr: Dictionary) -> Variant:
 			return null
 		args.append(val)
 
-	# If object is null, it might be a built-in function like range()
+	# If object is null, it might be a built-in function or user-defined function
 	if obj == null:
 		if method == "range":
 			# range() returns array, but we handle it in for loop
 			if args.size() > 0:
 				return args[0]
 			return 0
+		# NEW: Check if it's a user-defined function
+		if _functions.has(method):
+			return _call_user_function(method, args)
 		_add_error("NameError: '%s' is not defined" % method, _current_line)
 		return null
 
@@ -793,6 +822,118 @@ func _call_method(obj: Variant, obj_name: String, method: String, args: Array) -
 			result = obj.call(method, args[0], args[1], args[2])
 		_:
 			result = obj.callv(method, args)
+
+	return result
+
+# ============================================
+# NEW: Function and Import Execution
+# ============================================
+
+## Execute function definition (store it for later calls)
+func _execute_function_def(stmt: Dictionary) -> void:
+	var func_name = stmt["name"]
+	_functions[func_name] = {
+		"parameters": stmt["parameters"],
+		"body": stmt["body"],
+		"line": stmt["line"]
+	}
+
+## Execute return statement
+func _execute_return_stmt(stmt: Dictionary) -> void:
+	_return_requested = true
+	if stmt["value"] != null:
+		_return_value = _evaluate_expression(stmt["value"])
+	else:
+		_return_value = null
+
+## Execute import statement
+func _execute_import_stmt(stmt: Dictionary) -> void:
+	var module_name = stmt["module"]
+	var import_names = stmt["names"]
+
+	# Check if module loader is set
+	if _module_loader == null:
+		_add_error("ImportError: module loader not configured", _current_line)
+		return
+
+	# Load module if not already loaded
+	if not _modules.has(module_name):
+		var module_ast = _module_loader.load_module(module_name)
+		if module_ast == null:
+			_add_error("ModuleNotFoundError: No module named '%s'" % module_name, _current_line)
+			return
+
+		# Execute module to collect its functions
+		_execute_module(module_name, module_ast)
+
+	# Import specific functions into current scope
+	for func_name in import_names:
+		if _modules[module_name]["functions"].has(func_name):
+			_functions[func_name] = _modules[module_name]["functions"][func_name]
+		else:
+			_add_error("ImportError: cannot import name '%s' from '%s'" % [func_name, module_name], _current_line)
+			return
+
+## Execute a module to extract its functions
+func _execute_module(module_name: String, module_ast: Dictionary) -> void:
+	# Create module entry
+	_modules[module_name] = {
+		"functions": {},
+		"ast": module_ast
+	}
+
+	# Extract function definitions from module
+	if module_ast.has("body"):
+		for stmt in module_ast["body"]:
+			if stmt["type"] == PythonParser.ASTType.FUNCTION_DEF:
+				var func_name = stmt["name"]
+				_modules[module_name]["functions"][func_name] = {
+					"parameters": stmt["parameters"],
+					"body": stmt["body"],
+					"line": stmt["line"]
+				}
+
+## Call a user-defined function
+func _call_user_function(func_name: String, args: Array) -> Variant:
+	if not _functions.has(func_name):
+		_add_error("NameError: function '%s' is not defined" % func_name, _current_line)
+		return null
+
+	var func_def = _functions[func_name]
+	var params = func_def["parameters"]
+	var body = func_def["body"]
+
+	# Validate argument count
+	if args.size() != params.size():
+		_add_error("TypeError: %s() takes %d argument(s) but %d were given" % [func_name, params.size(), args.size()], _current_line)
+		return null
+
+	# Save current variable scope
+	var old_vars = _variables.duplicate()
+
+	# Bind parameters to arguments
+	for i in range(params.size()):
+		_variables[params[i]] = args[i]
+
+	# Reset return state
+	var old_return_requested = _return_requested
+	var old_return_value = _return_value
+	_return_requested = false
+	_return_value = null
+
+	# Execute function body
+	for stmt in body:
+		_execute_statement(stmt)
+		if _errors.size() > 0 or _return_requested:
+			break
+
+	# Get return value
+	var result = _return_value
+
+	# Restore previous scope and return state
+	_variables = old_vars
+	_return_requested = old_return_requested
+	_return_value = old_return_value
 
 	return result
 
