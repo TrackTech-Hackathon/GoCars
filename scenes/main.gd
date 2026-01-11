@@ -1022,9 +1022,6 @@ func _spawn_new_car() -> void:
 
 	# Note: Vehicle type is already set in the scene file
 
-	# Apply random color based on rarity weights
-	new_car.set_random_color()
-
 	# Add to scene
 	$GameWorld.add_child(new_car)
 
@@ -1048,7 +1045,7 @@ func _spawn_new_car() -> void:
 	if is_spawning_cars:
 		simulation_engine.execute_code_for_vehicle(code_editor.text, new_car)
 
-	_update_status("Spawned %s %s: %s (%s)" % [new_car.get_color_name(), new_car.get_vehicle_type_name(), new_car.vehicle_id, new_car.get_color_rarity_name()])
+	_update_status("Spawned %s: %s" % [new_car.get_vehicle_type_name(), new_car.vehicle_id])
 
 
 func _clear_all_crashed_cars() -> void:
@@ -1108,9 +1105,6 @@ func _respawn_test_vehicle() -> void:
 	# Set destination
 	test_vehicle.destination = car_destination
 
-	# Apply random color based on rarity weights
-	test_vehicle.set_random_color()
-
 	# Add to scene
 	$GameWorld.add_child(test_vehicle)
 
@@ -1130,4 +1124,4 @@ func _respawn_test_vehicle() -> void:
 	if test_stoplight:
 		test_vehicle.add_stoplight(test_stoplight)
 
-	_update_status("Spawned %s %s (%s)" % [test_vehicle.get_color_name(), test_vehicle.get_vehicle_type_name(), test_vehicle.get_color_rarity_name()])
+	_update_status("Spawned %s" % test_vehicle.get_vehicle_type_name())
