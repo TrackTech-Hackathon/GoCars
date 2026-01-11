@@ -341,9 +341,19 @@ func _create_default_map() -> void:
 
 	# Add "left" connection to spawn tile for car entry
 	# This creates a virtual entry point since cars spawn ON this tile facing right
+	# Also add left_left extended connection to make road extend straight
 	var spawn_tile = road_tiles.get(Vector2i(0, 3))
 	if spawn_tile:
 		spawn_tile.add_connection("left")
+		spawn_tile.set_extended_connection("left_left", true)
+
+	# Add "right" connection to destination tile for car exit
+	# This creates a virtual exit point so cars can leave the screen
+	# Also add right_right extended connection to make road extend straight
+	var dest_tile = road_tiles.get(Vector2i(9, 3))
+	if dest_tile:
+		dest_tile.add_connection("right")
+		dest_tile.set_extended_connection("right_right", true)
 
 
 func _place_road_tile(grid_pos: Vector2i) -> RoadTile:
@@ -1201,11 +1211,11 @@ func _on_window_manager_pause() -> void:
 	simulation_engine.toggle_pause()
 
 func _on_window_manager_reset() -> void:
-	"""Handle reset request from new UI"""
-	simulation_engine.reset()
-	_respawn_test_vehicle()
+	"""Handle reset request from new UI - same as fast retry"""
+	_do_fast_retry()
 
 func _on_window_manager_speed_changed(speed: float) -> void:
-	"""Handle speed change from new UI"""
+	"""Handle speed change from new UI - instant update"""
 	simulation_engine.speed_multiplier = speed
+	Engine.time_scale = speed  # Apply immediately
 	_update_speed_label()
