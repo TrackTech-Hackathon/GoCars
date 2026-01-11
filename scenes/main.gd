@@ -1167,6 +1167,9 @@ func _setup_new_ui() -> void:
 	add_child(window_manager)
 	window_manager.setup($UI)
 	window_manager.code_execution_requested.connect(_on_window_manager_code_run)
+	window_manager.pause_requested.connect(_on_window_manager_pause)
+	window_manager.reset_requested.connect(_on_window_manager_reset)
+	window_manager.speed_changed.connect(_on_window_manager_speed_changed)
 
 	# Setup module loader in simulation engine
 	var module_loader = window_manager.get_module_loader()
@@ -1192,3 +1195,17 @@ func _on_window_manager_code_run(code: String) -> void:
 
 	# Execute the code
 	simulation_engine.execute_code(code)
+
+func _on_window_manager_pause() -> void:
+	"""Handle pause request from new UI"""
+	simulation_engine.toggle_pause()
+
+func _on_window_manager_reset() -> void:
+	"""Handle reset request from new UI"""
+	simulation_engine.reset()
+	_respawn_test_vehicle()
+
+func _on_window_manager_speed_changed(speed: float) -> void:
+	"""Handle speed change from new UI"""
+	simulation_engine.speed_multiplier = speed
+	_update_speed_label()

@@ -57,6 +57,22 @@ func _ready() -> void:
 	size = default_size
 	position = default_position
 
+	# Add stylish panel with rounded corners and shadow
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.15, 0.15, 0.18, 0.98)  # Dark background
+	style.border_color = Color(0.3, 0.3, 0.35, 1.0)  # Subtle border
+	style.border_width_left = 1
+	style.border_width_right = 1
+	style.border_width_top = 1
+	style.border_width_bottom = 1
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	style.shadow_size = 8
+	style.shadow_color = Color(0, 0, 0, 0.3)
+	add_theme_stylebox_override("panel", style)
+
 	# Setup window structure
 	_setup_window_structure()
 
@@ -75,41 +91,67 @@ func _setup_window_structure() -> void:
 	# Title bar
 	title_bar = PanelContainer.new()
 	title_bar.name = "TitleBar"
-	title_bar.custom_minimum_size = Vector2(0, 32)
+	title_bar.custom_minimum_size = Vector2(0, 36)
+
+	# Style title bar
+	var title_style = StyleBoxFlat.new()
+	title_style.bg_color = Color(0.2, 0.2, 0.24, 1.0)  # Slightly lighter than window
+	title_style.corner_radius_top_left = 7
+	title_style.corner_radius_top_right = 7
+	title_bar.add_theme_stylebox_override("panel", title_style)
 	vbox.add_child(title_bar)
 
 	var title_hbox = HBoxContainer.new()
+	title_hbox.add_theme_constant_override("separation", 8)
 	title_bar.add_child(title_hbox)
+
+	# Add spacer for padding
+	var spacer_left = Control.new()
+	spacer_left.custom_minimum_size = Vector2(8, 0)
+	title_hbox.add_child(spacer_left)
 
 	# Title label
 	title_label = Label.new()
 	title_label.name = "TitleLabel"
 	title_label.text = window_title
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.95, 1.0))
+	title_label.add_theme_font_size_override("font_size", 14)
 	title_hbox.add_child(title_label)
 
 	# Minimize button
 	minimize_button = Button.new()
 	minimize_button.name = "MinimizeButton"
 	minimize_button.text = "−"
-	minimize_button.custom_minimum_size = Vector2(24, 24)
+	minimize_button.custom_minimum_size = Vector2(28, 28)
+	minimize_button.flat = true
+	minimize_button.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75, 1.0))
+	minimize_button.add_theme_font_size_override("font_size", 18)
 	title_hbox.add_child(minimize_button)
 
 	# Close button
 	close_button = Button.new()
 	close_button.name = "CloseButton"
 	close_button.text = "×"
-	close_button.custom_minimum_size = Vector2(24, 24)
+	close_button.custom_minimum_size = Vector2(28, 28)
+	close_button.flat = true
+	close_button.add_theme_color_override("font_color", Color(0.9, 0.4, 0.4, 1.0))
+	close_button.add_theme_font_size_override("font_size", 20)
 	title_hbox.add_child(close_button)
+
+	# Add spacer for padding
+	var spacer_right = Control.new()
+	spacer_right.custom_minimum_size = Vector2(4, 0)
+	title_hbox.add_child(spacer_right)
 
 	# Content container
 	content_container = MarginContainer.new()
 	content_container.name = "ContentContainer"
 	content_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content_container.add_theme_constant_override("margin_left", 4)
-	content_container.add_theme_constant_override("margin_right", 4)
-	content_container.add_theme_constant_override("margin_top", 4)
-	content_container.add_theme_constant_override("margin_bottom", 4)
+	content_container.add_theme_constant_override("margin_left", 8)
+	content_container.add_theme_constant_override("margin_right", 8)
+	content_container.add_theme_constant_override("margin_top", 8)
+	content_container.add_theme_constant_override("margin_bottom", 8)
 	vbox.add_child(content_container)
 
 func _connect_signals() -> void:

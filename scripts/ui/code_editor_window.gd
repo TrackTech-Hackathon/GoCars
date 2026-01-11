@@ -150,11 +150,10 @@ func _input(event: InputEvent) -> void:
 			_save_file()
 			get_viewport().set_input_as_handled()
 
-		# F2: Rename file (if file explorer supports it)
+		# F2: Rename file
 		elif event.keycode == KEY_F2:
-			# Trigger rename on selected file
 			if file_explorer:
-				print("F2 pressed - rename functionality not yet implemented")
+				file_explorer._on_rename_pressed()
 			get_viewport().set_input_as_handled()
 
 		# F5 or Ctrl+Enter: Run code

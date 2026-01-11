@@ -8,6 +8,9 @@ class_name WindowManager
 
 ## Signals
 signal code_execution_requested(code: String)
+signal pause_requested()
+signal reset_requested()
+signal speed_changed(speed: float)
 
 ## Window references
 var toolbar: Variant = null
@@ -75,6 +78,9 @@ func setup(parent_canvas_layer: CanvasLayer) -> void:
 
 	# Connect code editor signals
 	code_editor_window.code_run_requested.connect(_on_code_run_requested)
+	code_editor_window.code_pause_requested.connect(_on_pause_requested)
+	code_editor_window.code_reset_requested.connect(_on_reset_requested)
+	code_editor_window.speed_changed.connect(_on_speed_changed)
 	code_editor_window.window_closed.connect(func():
 		code_editor_window.visible = false
 		save_window_state()
@@ -139,6 +145,15 @@ func _on_skill_tree_requested() -> void:
 
 func _on_code_run_requested(code: String) -> void:
 	code_execution_requested.emit(code)
+
+func _on_pause_requested() -> void:
+	pause_requested.emit()
+
+func _on_reset_requested() -> void:
+	reset_requested.emit()
+
+func _on_speed_changed(speed: float) -> void:
+	speed_changed.emit(speed)
 
 ## Get current code from editor
 func get_current_code() -> String:
