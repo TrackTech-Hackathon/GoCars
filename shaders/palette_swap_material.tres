@@ -1,7 +1,0 @@
-[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://c7p6w8xvyh5qk"]
-
-[ext_resource type="Shader" path="res://shaders/palette_swap.gdshader" id="1_shader"]
-
-[resource]
-shader = ExtResource("1_shader")
-shader_parameter/enabled = true
