@@ -331,6 +331,12 @@ func _create_default_map() -> void:
 		if road_tiles.has(current_pos) and road_tiles.has(next_pos):
 			_connect_two_roads(current_pos, next_pos, "right")
 
+	# Add "left" connection to spawn tile for car entry
+	# This creates a virtual entry point since cars spawn ON this tile facing right
+	var spawn_tile = road_tiles.get(Vector2i(0, 3))
+	if spawn_tile:
+		spawn_tile.add_connection("left")
+
 
 func _place_road_tile(grid_pos: Vector2i) -> RoadTile:
 	# Check if tile already exists

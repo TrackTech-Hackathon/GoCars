@@ -53,28 +53,37 @@ var extended_connections: Dictionary = {
 var is_preview: bool = false
 
 # Debug mode - show guideline paths visually
-var show_guidelines: bool = true  # Set to true for testing
+var show_guidelines: bool = true  # Disabled - was causing visual clutter
+
+# Lazy path calculation flag - paths recalculated on first access
+var _paths_dirty: bool = true
 
 
 func _ready() -> void:
 	update_connection_sprites()
 	_update_opacity()
-	_update_through_paths()  # Generate initial paths
+	# Don't call _update_through_paths() here - global_position may not be set yet
+	# Paths will be calculated when add_connection() is called
 
 
 func _draw() -> void:
 	if not show_guidelines:
 		return
 
+	# Ensure paths are calculated before drawing
+	if _paths_dirty:
+		_update_through_paths()
+		_paths_dirty = false
+
 	# Draw all through-paths for debugging
 	for entry_dir in through_paths:
 		for exit_dir in through_paths[entry_dir]:
 			var path = through_paths[entry_dir][exit_dir]
 			if path.size() >= 2:
-				# Convert world positions to local
+				# Convert world positions to local for drawing
 				var local_path: Array = []
 				for point in path:
-					local_path.append(point - position)
+					local_path.append(point - global_position)
 
 				# Draw path segments
 				for i in range(local_path.size() - 1):
@@ -187,7 +196,7 @@ func add_connection(direction: String) -> void:
 	if connections.has(direction):
 		connections[direction] = true
 		update_connection_sprites()
-		_update_through_paths()
+		_paths_dirty = true  # Mark for lazy recalculation
 		queue_redraw()  # Redraw guidelines
 
 
@@ -196,7 +205,7 @@ func remove_connection(direction: String) -> void:
 	if connections.has(direction):
 		connections[direction] = false
 		update_connection_sprites()
-		_update_through_paths()
+		_paths_dirty = true  # Mark for lazy recalculation
 		queue_redraw()  # Redraw guidelines
 
 
@@ -221,7 +230,7 @@ func set_all_connections(conn_dict: Dictionary, extended_dict: Dictionary = {}) 
 		if extended_connections.has(dir):
 			extended_connections[dir] = extended_dict[dir]
 	update_connection_sprites()
-	_update_through_paths()
+	_paths_dirty = true  # Mark for lazy recalculation
 	queue_redraw()  # Redraw guidelines
 
 
@@ -255,6 +264,9 @@ const LANE_OFFSET: float = 25.0  # Offset from center for lane driving
 
 ## Get available exit directions when entering from a given direction
 func get_available_exits(entry_dir: String) -> Array:
+	if _paths_dirty:
+		_update_through_paths()
+		_paths_dirty = false
 	if entry_dir in through_paths:
 		return through_paths[entry_dir].keys()
 	return []
@@ -263,6 +275,9 @@ func get_available_exits(entry_dir: String) -> Array:
 ## Get the waypoint path for a specific entry -> exit traversal
 ## Returns world positions (not relative to tile)
 func get_guideline_path(entry_dir: String, exit_dir: String) -> Array:
+	if _paths_dirty:
+		_update_through_paths()
+		_paths_dirty = false
 	if entry_dir in through_paths and exit_dir in through_paths[entry_dir]:
 		return through_paths[entry_dir][exit_dir]
 	return []
@@ -289,80 +304,136 @@ func _update_through_paths() -> void:
 
 
 ## Calculate waypoint path from entry to exit direction
-## Waypoints are in world coordinates (based on tile position)
+## Waypoints are in world coordinates (based on tile global position)
 func _calculate_path_waypoints(entry: String, exit_dir: String) -> Array:
 	var points: Array = []
-	var tile_center = position + Vector2(HALF_TILE, HALF_TILE)
+	# Use global_position to ensure waypoints are in world coordinates
+	# (position is local to parent, which may have an offset)
+	var tile_center = global_position + Vector2(HALF_TILE, HALF_TILE)
 
-	# Entry point (at edge of tile, offset for lane)
-	var entry_point = _get_edge_point(entry, tile_center)
-	points.append(entry_point)
+	# Check if this is a straight path or a turn
+	var is_straight = _get_axis(entry) == _get_axis(exit_dir)
 
-	# Check if turning (entry and exit on different axes)
-	var entry_axis = _get_axis(entry)
-	var exit_axis = _get_axis(exit_dir)
-
-	if entry_axis != exit_axis:  # Turning
-		# Add corner waypoint for smooth curve
+	if is_straight:
+		# Straight path - both points have SAME lane offset for straight travel
+		var lane_offset = _get_straight_lane_offset(entry, exit_dir)
+		var entry_point = _get_edge_center(entry, tile_center) + lane_offset
+		var exit_point = _get_edge_center(exit_dir, tile_center) + lane_offset
+		points.append(entry_point)
+		points.append(exit_point)
+	else:
+		# Turn - need different lane offsets and a corner point
+		var entry_point = _get_turn_edge_point(entry, exit_dir, tile_center, true)
 		var corner = _get_corner_point(entry, exit_dir, tile_center)
+		var exit_point = _get_turn_edge_point(entry, exit_dir, tile_center, false)
+		points.append(entry_point)
 		points.append(corner)
-
-	# Exit point (at edge of tile, offset for lane)
-	var exit_point = _get_edge_point(exit_dir, tile_center)
-	points.append(exit_point)
+		points.append(exit_point)
 
 	return points
 
 
-## Get edge point with lane offset for a direction
-func _get_edge_point(dir: String, tile_center: Vector2) -> Vector2:
-	# Lane offset is perpendicular to movement direction
-	# For cars moving RIGHT, offset is UP (negative Y) - driving on the left
-	# For cars moving LEFT, offset is DOWN (positive Y)
-	# etc.
-
+## Get the center of an edge (no lane offset)
+func _get_edge_center(dir: String, tile_center: Vector2) -> Vector2:
 	match dir:
-		"top":
-			# Entering/exiting from top, car moves vertically
-			# Lane offset: left side of road = negative X
-			return tile_center + Vector2(-LANE_OFFSET, -HALF_TILE)
-		"bottom":
-			# Lane offset: right side when going down = positive X
-			return tile_center + Vector2(LANE_OFFSET, HALF_TILE)
-		"left":
-			# Lane offset: top side when going left = negative Y
-			return tile_center + Vector2(-HALF_TILE, -LANE_OFFSET)
-		"right":
-			# Lane offset: bottom side when going right = positive Y
-			return tile_center + Vector2(HALF_TILE, LANE_OFFSET)
-
+		"top": return tile_center + Vector2(0, -HALF_TILE)
+		"bottom": return tile_center + Vector2(0, HALF_TILE)
+		"left": return tile_center + Vector2(-HALF_TILE, 0)
+		"right": return tile_center + Vector2(HALF_TILE, 0)
 	return tile_center
+
+
+## Get lane offset for straight paths based on travel direction
+func _get_straight_lane_offset(entry: String, exit_dir: String) -> Vector2:
+	# For straight paths, lane offset depends on direction of travel
+	# Right-hand driving: offset to the RIGHT of travel direction
+	match entry + "_" + exit_dir:
+		"left_right":  # Traveling RIGHT -> right side is DOWN (+Y)
+			return Vector2(0, LANE_OFFSET)
+		"right_left":  # Traveling LEFT -> right side is UP (-Y)
+			return Vector2(0, -LANE_OFFSET)
+		"top_bottom":  # Traveling DOWN -> right side is LEFT (-X)
+			return Vector2(-LANE_OFFSET, 0)
+		"bottom_top":  # Traveling UP -> right side is RIGHT (+X)
+			return Vector2(LANE_OFFSET, 0)
+	return Vector2.ZERO
+
+
+## Get edge point for turns (entry or exit)
+func _get_turn_edge_point(entry: String, exit_dir: String, tile_center: Vector2, is_entry: bool) -> Vector2:
+	var edge = entry if is_entry else exit_dir
+	var edge_center = _get_edge_center(edge, tile_center)
+
+	# For turns, calculate offset based on which part of the turn we're on
+	# Right-hand driving: offset to the RIGHT of travel direction
+	if is_entry:
+		# Entry point - offset based on entry direction's travel
+		match entry:
+			"left":  # Entering from left, traveling right -> right side is DOWN (+Y)
+				return edge_center + Vector2(0, LANE_OFFSET)
+			"right":  # Entering from right, traveling left -> right side is UP (-Y)
+				return edge_center + Vector2(0, -LANE_OFFSET)
+			"top":  # Entering from top, traveling down -> right side is LEFT (-X)
+				return edge_center + Vector2(-LANE_OFFSET, 0)
+			"bottom":  # Entering from bottom, traveling up -> right side is RIGHT (+X)
+				return edge_center + Vector2(LANE_OFFSET, 0)
+	else:
+		# Exit point - offset based on exit direction's travel
+		match exit_dir:
+			"left":  # Exiting left, traveling left -> right side is UP (-Y)
+				return edge_center + Vector2(0, -LANE_OFFSET)
+			"right":  # Exiting right, traveling right -> right side is DOWN (+Y)
+				return edge_center + Vector2(0, LANE_OFFSET)
+			"top":  # Exiting top, traveling up -> right side is RIGHT (+X)
+				return edge_center + Vector2(LANE_OFFSET, 0)
+			"bottom":  # Exiting bottom, traveling down -> right side is LEFT (-X)
+				return edge_center + Vector2(-LANE_OFFSET, 0)
+
+	return edge_center
 
 
 ## Get corner waypoint for turns
+## The corner connects the entry lane to the exit lane (lane-aware)
 func _get_corner_point(entry: String, exit_dir: String, tile_center: Vector2) -> Vector2:
-	# Corner point is near the intersection of entry and exit paths
-	# Offset inward from the corner for smooth curve
+	# Get the lane offsets for entry and exit
+	var entry_offset = _get_entry_lane_offset(entry)
+	var exit_offset = _get_exit_lane_offset(exit_dir)
 
-	var corner_offset = LANE_OFFSET * 0.7  # Slightly inside the lane
-
-	# Determine which corner based on entry/exit combination
+	# Corner is where the extended lanes would meet
+	# For horizontal entry: use entry's Y offset, exit's X offset
+	# For vertical entry: use entry's X offset, exit's Y offset
 	match entry + "_" + exit_dir:
-		"right_top", "bottom_left":
-			# Top-left area of tile
-			return tile_center + Vector2(-corner_offset, -corner_offset)
-		"right_bottom", "top_left":
-			# Bottom-left area
-			return tile_center + Vector2(-corner_offset, corner_offset)
-		"left_top", "bottom_right":
-			# Top-right area
-			return tile_center + Vector2(corner_offset, -corner_offset)
-		"left_bottom", "top_right":
-			# Bottom-right area
-			return tile_center + Vector2(corner_offset, corner_offset)
+		# Entering horizontally (left/right), exiting vertically (top/bottom)
+		"left_top", "left_bottom", "right_top", "right_bottom":
+			return tile_center + Vector2(exit_offset.x, entry_offset.y)
+		# Entering vertically (top/bottom), exiting horizontally (left/right)
+		"top_left", "top_right", "bottom_left", "bottom_right":
+			return tile_center + Vector2(entry_offset.x, exit_offset.y)
 
 	# Fallback to center
 	return tile_center
+
+
+## Get lane offset for entry direction (where car enters the tile)
+func _get_entry_lane_offset(entry: String) -> Vector2:
+	# Right-hand driving: car is on RIGHT side of travel direction
+	match entry:
+		"left":   return Vector2(0, LANE_OFFSET)    # Traveling right, right side is DOWN (+Y)
+		"right":  return Vector2(0, -LANE_OFFSET)   # Traveling left, right side is UP (-Y)
+		"top":    return Vector2(-LANE_OFFSET, 0)   # Traveling down, right side is LEFT (-X)
+		"bottom": return Vector2(LANE_OFFSET, 0)    # Traveling up, right side is RIGHT (+X)
+	return Vector2.ZERO
+
+
+## Get lane offset for exit direction (where car exits the tile)
+func _get_exit_lane_offset(exit_dir: String) -> Vector2:
+	# Right-hand driving: car is on RIGHT side of travel direction
+	match exit_dir:
+		"left":   return Vector2(0, -LANE_OFFSET)   # Traveling left, right side is UP (-Y)
+		"right":  return Vector2(0, LANE_OFFSET)    # Traveling right, right side is DOWN (+Y)
+		"top":    return Vector2(LANE_OFFSET, 0)    # Traveling up, right side is RIGHT (+X)
+		"bottom": return Vector2(-LANE_OFFSET, 0)   # Traveling down, right side is LEFT (-X)
+	return Vector2.ZERO
 
 
 ## Get axis for a direction (0 = horizontal, 1 = vertical)

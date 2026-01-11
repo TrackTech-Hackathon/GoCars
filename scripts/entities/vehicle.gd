@@ -729,6 +729,10 @@ func _acquire_path_for_current_tile() -> void:
 	var chosen_exit = result[0]
 	var turn_was_used = result[1]
 
+	# If no valid exit, car will fall back to old movement and crash
+	if chosen_exit == "":
+		return
+
 	# Get the path
 	_current_path = tile.get_guideline_path(_entry_direction, chosen_exit)
 	_path_index = 0
@@ -740,6 +744,7 @@ func _acquire_path_for_current_tile() -> void:
 
 ## Choose which exit to take based on queued commands
 ## Returns [chosen_exit, turn_was_used] - turn_was_used indicates if queued_turn should be cleared
+## Returns ["", false] if no valid path (car should crash)
 func _choose_exit(entry: String, available_exits: Array) -> Array:
 	var opposite = RoadTile.get_opposite_direction(entry)
 
@@ -753,13 +758,25 @@ func _choose_exit(entry: String, available_exits: Array) -> Array:
 		if right in available_exits:
 			return [right, true]  # Turn used
 
-	# No turn queued or turn not available - prefer going straight (opposite of entry)
+	# Try to go straight (opposite of entry)
 	if opposite in available_exits:
 		return [opposite, false]  # Turn NOT used (kept for later)
 
-	# Can't go straight - pick first available (usually means corner tile)
-	# Also clear turn since we're forced to take a path
-	return [available_exits[0], true]
+	# Can't go straight - only turn if a turn was actually queued
+	if queued_turn != "":
+		# Turn was queued but preferred direction not available
+		# Try the other direction as fallback
+		if queued_turn == "left":
+			var right = RoadTile.get_right_of(entry)
+			if right in available_exits:
+				return [right, true]
+		elif queued_turn == "right":
+			var left = RoadTile.get_left_of(entry)
+			if left in available_exits:
+				return [left, true]
+
+	# No valid path - car should crash (no turn queued and can't go straight)
+	return ["", false]
 
 
 ## Move along the current path toward waypoints
@@ -986,8 +1003,14 @@ func _exec_stop() -> void:
 
 func _exec_turn(turn_direction: String) -> void:
 	if turn_direction == "left" or turn_direction == "right":
-		_execute_turn(turn_direction)
-		# Turn completion is handled in _process_turn()
+		if _guideline_enabled:
+			# With guidelines, just queue the turn - it will be used when acquiring next path
+			queued_turn = turn_direction
+			_command_completed()
+		else:
+			# Old system: execute turn immediately
+			_execute_turn(turn_direction)
+			# Turn completion is handled in _process_turn()
 	else:
 		_command_completed()
 
@@ -1060,88 +1083,110 @@ func _get_opposite_direction(dir: String) -> String:
 	return ""
 
 
-## Check if there's a CONNECTED road in front of the car (short name)
-## Checks if the ADJACENT tile ahead exists and has a connection back to current tile
+## Check if there's a road in front of the car (short name)
+## With guidelines: checks if current tile has a straight-through exit
+## Without guidelines: checks adjacent tile for connection
 func front_road() -> bool:
 	if _road_checker == null:
 		return false
 
+	# With guideline system, check available exits from current tile
+	if _guideline_enabled and _entry_direction != "":
+		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
+		if tile != null:
+			var exits = tile.get_available_exits(_entry_direction)
+			# "Front" means continuing straight (opposite of entry)
+			var straight_exit = RoadTile.get_opposite_direction(_entry_direction)
+			return straight_exit in exits
+
+	# Fallback to old behavior
 	var grid_pos = _get_current_grid_pos()
 	var conn_dir = _vector_to_connection_direction(direction)
 
 	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
-		# Get the adjacent tile in the direction we're facing
 		var adjacent_offset = _get_grid_offset_from_direction(conn_dir)
 		var adjacent_grid = grid_pos + adjacent_offset
-		# Check if adjacent tile has connection BACK to us
 		var opposite_dir = _get_opposite_direction(conn_dir)
 		return _road_checker.is_road_connected(adjacent_grid, opposite_dir)
 
-	# Fallback to old behavior
 	var front_offset = direction.normalized() * TILE_SIZE
 	var front_pos = global_position + front_offset
 	return _is_road_at_position(front_pos)
 
 
-## Check if there's a CONNECTED road to the left of the car (short name)
-## Checks if the ADJACENT tile to the left exists and has a connection back to current tile
-## Does NOT detect the road we came from (to avoid turning back)
+## Check if there's a road to the left of the car (short name)
+## With guidelines: checks if current tile has a left turn exit
+## Without guidelines: checks adjacent tile for connection
 func left_road() -> bool:
 	if _road_checker == null:
 		return false
 
+	# With guideline system, check available exits from current tile
+	if _guideline_enabled and _entry_direction != "":
+		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
+		if tile != null:
+			var exits = tile.get_available_exits(_entry_direction)
+			# "Left" is relative to our travel direction (opposite of entry)
+			var left_exit = RoadTile.get_left_of(_entry_direction)
+			return left_exit in exits
+
+	# Fallback to old behavior
 	var grid_pos = _get_current_grid_pos()
 	var left_dir = direction.rotated(-PI / 2)
 	var conn_dir = _vector_to_connection_direction(left_dir)
 
-	# Don't detect the road we came from (prevents turning back after corner)
+	# Don't detect the road we came from
 	if _last_move_direction != Vector2.ZERO:
 		var came_from_dir = -_last_move_direction
 		var came_from_conn = _vector_to_connection_direction(came_from_dir)
 		if conn_dir == came_from_conn:
-			return false  # This would be turning back to where we came from
+			return false
 
 	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
-		# Get the adjacent tile in the left direction
 		var adjacent_offset = _get_grid_offset_from_direction(conn_dir)
 		var adjacent_grid = grid_pos + adjacent_offset
-		# Check if adjacent tile has connection BACK to us
 		var opposite_dir = _get_opposite_direction(conn_dir)
 		return _road_checker.is_road_connected(adjacent_grid, opposite_dir)
 
-	# Fallback to old behavior
 	var left_offset = left_dir.normalized() * TILE_SIZE
 	var left_pos = global_position + left_offset
 	return _is_road_at_position(left_pos)
 
 
-## Check if there's a CONNECTED road to the right of the car (short name)
-## Checks if the ADJACENT tile to the right exists and has a connection back to current tile
-## Does NOT detect the road we came from (to avoid turning back)
+## Check if there's a road to the right of the car (short name)
+## With guidelines: checks if current tile has a right turn exit
+## Without guidelines: checks adjacent tile for connection
 func right_road() -> bool:
 	if _road_checker == null:
 		return false
 
+	# With guideline system, check available exits from current tile
+	if _guideline_enabled and _entry_direction != "":
+		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
+		if tile != null:
+			var exits = tile.get_available_exits(_entry_direction)
+			# "Right" is relative to our travel direction (opposite of entry)
+			var right_exit = RoadTile.get_right_of(_entry_direction)
+			return right_exit in exits
+
+	# Fallback to old behavior
 	var grid_pos = _get_current_grid_pos()
 	var right_dir = direction.rotated(PI / 2)
 	var conn_dir = _vector_to_connection_direction(right_dir)
 
-	# Don't detect the road we came from (prevents turning back after corner)
+	# Don't detect the road we came from
 	if _last_move_direction != Vector2.ZERO:
 		var came_from_dir = -_last_move_direction
 		var came_from_conn = _vector_to_connection_direction(came_from_dir)
 		if conn_dir == came_from_conn:
-			return false  # This would be turning back to where we came from
+			return false
 
 	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
-		# Get the adjacent tile in the right direction
 		var adjacent_offset = _get_grid_offset_from_direction(conn_dir)
 		var adjacent_grid = grid_pos + adjacent_offset
-		# Check if adjacent tile has connection BACK to us
 		var opposite_dir = _get_opposite_direction(conn_dir)
 		return _road_checker.is_road_connected(adjacent_grid, opposite_dir)
 
-	# Fallback to old behavior
 	var right_offset = right_dir.normalized() * TILE_SIZE
 	var right_pos = global_position + right_offset
 	return _is_road_at_position(right_pos)
@@ -1269,8 +1314,10 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Reset guideline path following
 	_current_path.clear()
 	_path_index = 0
-	_current_tile = Vector2i(-1, -1)
-	_entry_direction = ""
+	# Initialize current tile and entry direction for guideline system
+	# This ensures front_road(), left_road(), right_road() work immediately
+	_current_tile = _get_current_grid_pos()
+	_entry_direction = _get_opposite_direction(_vector_to_connection_direction(direction))
 
 
 # ============================================
