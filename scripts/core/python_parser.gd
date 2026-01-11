@@ -48,7 +48,8 @@ enum TokenType {
 # Keywords
 const KEYWORDS: Array = [
 	"if", "elif", "else", "while", "for", "in", "range",
-	"and", "or", "not", "True", "False", "break"
+	"and", "or", "not", "True", "False", "break",
+	"def", "return", "from", "import"  # NEW: Function and import support
 ]
 
 # ============================================
@@ -81,6 +82,9 @@ enum ASTType {
 	WHILE_STMT,
 	FOR_STMT,
 	BREAK_STMT,
+	FUNCTION_DEF,     # NEW: def function_name(params): body
+	RETURN_STMT,      # NEW: return value
+	IMPORT_STMT,      # NEW: from module import names
 	# Expressions
 	BINARY_EXPR,
 	UNARY_EXPR,
@@ -483,6 +487,14 @@ func _parse_statement() -> Variant:
 	if _check_keyword("break"):
 		return _parse_break_statement()
 
+	# NEW: Function and module statements
+	if _check_keyword("def"):
+		return _parse_function_def()
+	if _check_keyword("return"):
+		return _parse_return_stmt()
+	if _check_keyword("from"):
+		return _parse_import_stmt()
+
 	# Simple statement (assignment or expression)
 	return _parse_simple_statement()
 
@@ -642,6 +654,132 @@ func _parse_break_statement() -> Dictionary:
 	_match([TokenType.NEWLINE])
 	return {
 		"type": ASTType.BREAK_STMT,
+		"line": line
+	}
+
+# ============================================
+# NEW: Function and Import Parsing
+# ============================================
+
+func _parse_function_def() -> Variant:
+	## Parse function definition: def func_name(param1, param2): body
+	var line = _peek().line
+	_consume_keyword("def", "SyntaxError: expected 'def'")
+
+	# Function name
+	if not _check(TokenType.IDENTIFIER):
+		_add_error("SyntaxError: expected function name after 'def'")
+		return null
+	var func_name = _advance_token().value
+
+	# Parameters
+	if not _consume(TokenType.LPAREN, "SyntaxError: expected '(' after function name"):
+		return null
+
+	var parameters: Array = []
+	if not _check(TokenType.RPAREN):
+		# Parse first parameter
+		if not _check(TokenType.IDENTIFIER):
+			_add_error("SyntaxError: expected parameter name")
+			return null
+		parameters.append(_advance_token().value)
+
+		# Parse additional parameters
+		while _match([TokenType.COMMA]):
+			if not _check(TokenType.IDENTIFIER):
+				_add_error("SyntaxError: expected parameter name after ','")
+				return null
+			parameters.append(_advance_token().value)
+
+	if not _consume(TokenType.RPAREN, "SyntaxError: expected ')' after parameters"):
+		return null
+
+	# Colon
+	if not _consume(TokenType.COLON, "SyntaxError: expected ':' after function signature"):
+		return null
+
+	_consume(TokenType.NEWLINE, "SyntaxError: expected newline after ':'")
+
+	# Body
+	if not _consume(TokenType.INDENT, "IndentationError: expected an indented block after 'def'"):
+		return null
+
+	var body = _parse_block()
+
+	return {
+		"type": ASTType.FUNCTION_DEF,
+		"name": func_name,
+		"parameters": parameters,
+		"body": body,
+		"line": line
+	}
+
+func _parse_return_stmt() -> Dictionary:
+	## Parse return statement: return value
+	var line = _peek().line
+	_consume_keyword("return", "SyntaxError: expected 'return'")
+
+	# Optional return value
+	var value = null
+	if not _check(TokenType.NEWLINE) and not _is_at_end():
+		value = _parse_expression()
+
+	_match([TokenType.NEWLINE])
+
+	return {
+		"type": ASTType.RETURN_STMT,
+		"value": value,
+		"line": line
+	}
+
+func _parse_import_stmt() -> Variant:
+	## Parse import statement: from module import name1, name2
+	var line = _peek().line
+	_consume_keyword("from", "SyntaxError: expected 'from'")
+
+	# Module name (can be dotted: modules.helpers)
+	if not _check(TokenType.IDENTIFIER):
+		_add_error("SyntaxError: expected module name after 'from'")
+		return null
+
+	var module_parts: Array = []
+	module_parts.append(_advance_token().value)
+
+	# Handle dotted module names (e.g., modules.navigation)
+	while _match([TokenType.DOT]):
+		if not _check(TokenType.IDENTIFIER):
+			_add_error("SyntaxError: expected identifier after '.'")
+			return null
+		module_parts.append(_advance_token().value)
+
+	var module_name = ".".join(module_parts)
+
+	# 'import' keyword
+	if not _consume_keyword("import", "SyntaxError: expected 'import' after module name"):
+		return null
+
+	# Import names
+	var import_names: Array = []
+
+	if not _check(TokenType.IDENTIFIER):
+		_add_error("SyntaxError: expected import name after 'import'")
+		return null
+
+	import_names.append(_advance_token().value)
+
+	# Additional import names
+	while _match([TokenType.COMMA]):
+		if not _check(TokenType.IDENTIFIER):
+			_add_error("SyntaxError: expected import name after ','")
+			return null
+		import_names.append(_advance_token().value)
+
+	_match([TokenType.NEWLINE])
+
+	return {
+		"type": ASTType.IMPORT_STMT,
+		"module": module_name,
+		"names": import_names,
 		"line": line
 	}
 

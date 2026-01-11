@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://bq3m5x8y7h1k2"]
+
+[ext_resource type="Script" path="res://scripts/ui/floating_window.gd" id="1_floatingwindow"]
+
+[node name="FloatingWindow" type="PanelContainer"]
+offset_right = 600.0
+offset_bottom = 400.0
+script = ExtResource("1_floatingwindow")

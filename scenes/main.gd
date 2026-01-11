@@ -22,6 +22,10 @@ enum BackgroundTile {
 @onready var test_stoplight: Stoplight = $GameWorld/TestStoplight
 @onready var roads_container: Node2D = $GameWorld/Roads
 
+# New UI system
+var window_manager: Variant = null  # WindowManager instance
+var use_new_ui: bool = true  # Set to true to enable new floating windows (Ctrl+1 to toggle)
+
 # Result popup elements
 @onready var result_popup: Panel = $UI/ResultPopup
 @onready var result_title: Label = $UI/ResultPopup/ResultTitle
@@ -174,6 +178,10 @@ func _ready() -> void:
 	# Note: If using CodeEdit, uncomment these:
 	# code_editor.gutters_draw_line_numbers = true
 	# code_editor.highlight_current_line = true
+
+	# Setup new UI system if enabled
+	if use_new_ui:
+		_setup_new_ui()
 
 	_update_status("Ready - Enter code and press 'Run Code' (F5)")
 	_update_speed_label()
@@ -333,9 +341,19 @@ func _create_default_map() -> void:
 
 	# Add "left" connection to spawn tile for car entry
 	# This creates a virtual entry point since cars spawn ON this tile facing right
+	# Also add left_left extended connection to make road extend straight
 	var spawn_tile = road_tiles.get(Vector2i(0, 3))
 	if spawn_tile:
 		spawn_tile.add_connection("left")
+		spawn_tile.set_extended_connection("left_left", true)
+
+	# Add "right" connection to destination tile for car exit
+	# This creates a virtual exit point so cars can leave the screen
+	# Also add right_right extended connection to make road extend straight
+	var dest_tile = road_tiles.get(Vector2i(9, 3))
+	if dest_tile:
+		dest_tile.add_connection("right")
+		dest_tile.set_extended_connection("right_right", true)
 
 
 func _place_road_tile(grid_pos: Vector2i) -> RoadTile:
@@ -1146,3 +1164,58 @@ func _respawn_test_vehicle() -> void:
 		test_vehicle.add_stoplight(test_stoplight)
 
 	_update_status("Spawned %s" % test_vehicle.get_vehicle_type_name())
+
+## ============================================
+## NEW UI SYSTEM INTEGRATION (Phase 9)
+## ============================================
+
+func _setup_new_ui() -> void:
+	"""Setup floating window UI system"""
+	var WindowManagerClass = load("res://scripts/ui/window_manager.gd")
+	window_manager = WindowManagerClass.new()
+	window_manager.name = "WindowManager"
+	add_child(window_manager)
+	window_manager.setup($UI)
+	window_manager.code_execution_requested.connect(_on_window_manager_code_run)
+	window_manager.pause_requested.connect(_on_window_manager_pause)
+	window_manager.reset_requested.connect(_on_window_manager_reset)
+	window_manager.speed_changed.connect(_on_window_manager_speed_changed)
+
+	# Setup module loader in simulation engine
+	var module_loader = window_manager.get_module_loader()
+	if simulation_engine and simulation_engine._python_interpreter:
+		simulation_engine._python_interpreter.call("set_module_loader", module_loader)
+
+	print("New UI system enabled - Press Ctrl+1 for Code Editor, Ctrl+2 for README, Ctrl+3 for Skill Tree")
+
+func _on_window_manager_code_run(code: String) -> void:
+	"""Handle code execution from new floating window UI"""
+	if code.strip_edges().is_empty():
+		_update_status("Error: No code entered")
+		return
+
+	# Reset vehicle position before running
+	if is_instance_valid(test_vehicle):
+		if test_vehicle.vehicle_state == 1:
+			test_vehicle.reset(car_spawn_position, Vector2.RIGHT)
+		else:
+			_respawn_test_vehicle()
+	else:
+		_respawn_test_vehicle()
+
+	# Execute the code
+	simulation_engine.execute_code(code)
+
+func _on_window_manager_pause() -> void:
+	"""Handle pause request from new UI"""
+	simulation_engine.toggle_pause()
+
+func _on_window_manager_reset() -> void:
+	"""Handle reset request from new UI - same as fast retry"""
+	_do_fast_retry()
+
+func _on_window_manager_speed_changed(speed: float) -> void:
+	"""Handle speed change from new UI - instant update"""
+	simulation_engine.speed_multiplier = speed
+	Engine.time_scale = speed  # Apply immediately
+	_update_speed_label()
