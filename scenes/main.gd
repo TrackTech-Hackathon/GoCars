@@ -548,6 +548,10 @@ func _on_run_button_pressed() -> void:
 		_update_status("Error: No code entered")
 		return
 
+	# Force all road tiles to recalculate paths (fixes guideline bug on subsequent runs)
+	for grid_pos in road_tiles:
+		road_tiles[grid_pos].mark_paths_dirty()
+
 	# Reset vehicle position before running (check if vehicle still exists)
 	if is_instance_valid(test_vehicle):
 		if test_vehicle.vehicle_state == 1:  # Only reset if not crashed
@@ -803,6 +807,10 @@ func _do_fast_retry() -> void:
 	simulation_engine.reset()
 	is_spawning_cars = false
 	_clear_line_highlight()
+
+	# Force all road tiles to recalculate paths (fixes guideline bug on subsequent runs)
+	for grid_pos in road_tiles:
+		road_tiles[grid_pos].mark_paths_dirty()
 
 	# Clear ALL spawned cars (crashed and active) except we'll respawn test vehicle
 	_clear_all_spawned_cars()

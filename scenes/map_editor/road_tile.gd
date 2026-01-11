@@ -209,6 +209,12 @@ func remove_connection(direction: String) -> void:
 		queue_redraw()  # Redraw guidelines
 
 
+# Mark paths as dirty (forces recalculation on next access)
+func mark_paths_dirty() -> void:
+	_paths_dirty = true
+	queue_redraw()
+
+
 # Check if connected in a direction
 func has_connection(direction: String) -> bool:
 	return connections.get(direction, false)

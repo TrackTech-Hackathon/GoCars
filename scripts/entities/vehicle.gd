@@ -1102,6 +1102,8 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Reset guideline path following
 	_current_path.clear()
 	_path_index = 0
+	# Reset last move direction tracking (used in fallback road detection)
+	_last_move_direction = Vector2.ZERO
 	# Initialize current tile and entry direction for guideline system
 	# This ensures front_road(), left_road(), right_road() work immediately
 	_current_tile = _get_current_grid_pos()
