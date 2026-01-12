@@ -7,8 +7,8 @@ class_name IntelliSenseManager
 extends Node
 
 # Static class references
-static var GameCommands = preload("res://scripts/ui/game_commands.gd")
-static var EditorConfig = preload("res://scripts/ui/editor_config.gd")
+static var _GameCommandsClass = preload("res://scripts/ui/game_commands.gd")
+static var _EditorConfigClass = preload("res://scripts/ui/editor_config.gd")
 
 var code_edit: CodeEdit
 var auto_pair_handler: Variant
@@ -48,9 +48,16 @@ func setup_popups(parent: Control) -> void:
 
 func handle_input(event: InputEvent) -> bool:
 	if event is InputEventKey and event.pressed:
-		# Tab handling
+		# Tab handling - also completes autocomplete if visible
 		if event.keycode == KEY_TAB:
-			get_viewport().set_input_as_handled()
+			# Check if autocomplete is open - Tab completes it like VSCode
+			if autocomplete_popup and autocomplete_popup.visible and not event.shift_pressed:
+				autocomplete_popup.confirm_selection()
+				if code_edit:
+					code_edit.get_viewport().set_input_as_handled()
+				return true
+			if code_edit:
+				code_edit.get_viewport().set_input_as_handled()
 			return indent_handler.handle_tab(event.shift_pressed)
 
 		# Enter handling
@@ -58,54 +65,64 @@ func handle_input(event: InputEvent) -> bool:
 			# Check if autocomplete is open
 			if autocomplete_popup and autocomplete_popup.visible:
 				autocomplete_popup.confirm_selection()
-				get_viewport().set_input_as_handled()
+				if code_edit:
+					code_edit.get_viewport().set_input_as_handled()
 				return true
 			else:
 				var handled = indent_handler.handle_enter()
-				if handled:
-					get_viewport().set_input_as_handled()
+				if handled and code_edit:
+					code_edit.get_viewport().set_input_as_handled()
 				return handled
 
 		# Ctrl+Space - manual trigger
 		if event.keycode == KEY_SPACE and event.ctrl_pressed:
 			_trigger_suggestions()
-			get_viewport().set_input_as_handled()
+			if code_edit:
+				code_edit.get_viewport().set_input_as_handled()
 			return true
 
 		# Escape - hide popups
 		if event.keycode == KEY_ESCAPE:
 			var was_visible = false
 			if autocomplete_popup and autocomplete_popup.visible:
-				autocomplete_popup.hide()
+				autocomplete_popup.visible = false
 				was_visible = true
 			if signature_popup and signature_popup.visible:
-				signature_popup.hide()
+				signature_popup.visible = false
 				was_visible = true
-			if was_visible:
-				get_viewport().set_input_as_handled()
+			if was_visible and code_edit:
+				code_edit.get_viewport().set_input_as_handled()
 			return was_visible
 
 		# Navigation when popup is visible
 		if autocomplete_popup and autocomplete_popup.visible:
 			if event.keycode == KEY_UP:
 				autocomplete_popup.select_previous()
-				get_viewport().set_input_as_handled()
+				if code_edit:
+					code_edit.get_viewport().set_input_as_handled()
 				return true
 			if event.keycode == KEY_DOWN:
 				autocomplete_popup.select_next()
-				get_viewport().set_input_as_handled()
+				if code_edit:
+					code_edit.get_viewport().set_input_as_handled()
 				return true
 
 		# Auto-pairing
 		if auto_pair_handler.handle_input(event):
-			get_viewport().set_input_as_handled()
+			if code_edit:
+				code_edit.get_viewport().set_input_as_handled()
 			# After inserting pair, trigger signature help if it was '('
 			if char(event.unicode) == "(":
-				await get_tree().process_frame
-				on_text_changed()
+				# Defer to next frame to let text update
+				if code_edit and code_edit.get_tree():
+					code_edit.get_tree().process_frame.connect(_deferred_text_changed, CONNECT_ONE_SHOT)
 			return true
 
 	return false
+
+func _deferred_text_changed() -> void:
+	# Called after one frame to update IntelliSense
+	on_text_changed()
 
 func on_text_changed() -> void:
 	# Called when CodeEdit text changes
@@ -124,28 +141,26 @@ func on_text_changed() -> void:
 	var word_start = _find_word_start(line_text, caret_col)
 	var current_word = line_text.substr(word_start, caret_col - word_start)
 
-	# Check for signature help (inside function call)
-	var func_context = _get_function_context(line_text, caret_col)
-	if func_context.function_name != "":
-		var func_data = GameCommands.find_by_name(func_context.function_name)
-		if not func_data.is_empty():
-			var pos = code_edit.get_caret_draw_pos()
-			pos = code_edit.global_position + pos
-			signature_popup.show_signature(func_data, func_context.param_index, pos)
-	else:
-		if signature_popup:
-			signature_popup.hide()
+	# Signature help disabled - VSCode style (only show autocomplete)
+	# Hide signature popup if it's showing
+	if signature_popup:
+		signature_popup.hide()
 
 	# Show suggestions if typing
-	if current_word.length() >= EditorConfig.autocomplete_trigger_length:
+	if current_word.length() >= _EditorConfigClass.autocomplete_trigger_length:
 		_show_suggestions_for(current_word)
 	elif current_word.length() == 0:
+		# Hide popup when no word is being typed
 		if autocomplete_popup:
-			autocomplete_popup.hide()
+			autocomplete_popup.visible = false
 	else:
-		# Update filter if already showing
+		# Update filter if already showing, or hide if too short
 		if autocomplete_popup and autocomplete_popup.visible:
 			autocomplete_popup.update_filter(current_word)
+		else:
+			# Hide if popup is visible but word is too short
+			if autocomplete_popup:
+				autocomplete_popup.visible = false
 
 func _trigger_suggestions() -> void:
 	if not code_edit:
@@ -168,7 +183,7 @@ func _show_suggestions_for(prefix: String) -> void:
 	var suggestions: Array[Dictionary] = []
 
 	# Get game commands
-	suggestions.append_array(GameCommands.get_by_prefix(prefix))
+	suggestions.append_array(_GameCommandsClass.get_by_prefix(prefix))
 
 	# Get user-defined symbols
 	for symbol in user_symbols.get(current_file, []):
@@ -180,10 +195,15 @@ func _show_suggestions_for(prefix: String) -> void:
 			autocomplete_popup.hide()
 		return
 
-	var pos = code_edit.get_caret_draw_pos()
-	pos = code_edit.global_position + pos
-	pos.y += code_edit.get_line_height()
-	autocomplete_popup.show_suggestions(suggestions, prefix, pos)
+	# Get caret screen position (VSCode style - position UNDER current line)
+	var caret_draw = code_edit.get_caret_draw_pos()
+	var line_height = code_edit.get_line_height()
+
+	# Position is caret X, but Y is moved down by one line height
+	var local_pos = Vector2(caret_draw.x, caret_draw.y + line_height)
+	var global_pos = code_edit.get_global_transform() * local_pos
+
+	autocomplete_popup.show_suggestions(suggestions, prefix, global_pos)
 
 func _find_word_start(line: String, col: int) -> int:
 	var start = col
@@ -243,9 +263,10 @@ func _on_suggestion_selected(text: String) -> void:
 		var new_col = code_edit.get_caret_column()
 		code_edit.set_caret_column(new_col - 1)
 
-		# Trigger signature help
-		await get_tree().process_frame
-		on_text_changed()
+		# Trigger signature help (use code_edit's tree since we're not in scene tree)
+		if code_edit and code_edit.get_tree():
+			await code_edit.get_tree().process_frame
+			on_text_changed()
 
 func parse_file_symbols(filename: String, content: String) -> void:
 	# Parse file for variable and function definitions
@@ -286,12 +307,12 @@ func _parse_function_def(line: String) -> Dictionary:
 	var result = regex.search(line)
 
 	if result:
-		var name = result.get_string(1)
+		var func_name = result.get_string(1)
 		var params = result.get_string(2)
 		return {
-			"name": name,
+			"name": func_name,
 			"type": "function",
-			"signature": "def %s(%s)" % [name, params],
+			"signature": "def %s(%s)" % [func_name, params],
 			"doc": "User-defined function"
 		}
 

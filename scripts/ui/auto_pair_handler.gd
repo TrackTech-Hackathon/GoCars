@@ -6,7 +6,7 @@
 class_name AutoPairHandler
 
 # Static class reference
-static var EditorConfig = preload("res://scripts/ui/editor_config.gd")
+static var _EditorConfigClass = preload("res://scripts/ui/editor_config.gd")
 
 const PAIRS = {
 	"(": ")",
@@ -25,7 +25,7 @@ func handle_input(event: InputEventKey) -> bool:
 	if not event.pressed or event.echo:
 		return false
 
-	if not EditorConfig.enable_auto_pairing:
+	if not _EditorConfigClass.enable_auto_pairing:
 		return false
 
 	var char_typed = char(event.unicode)
@@ -51,11 +51,11 @@ func _handle_open_pair(open_char: String, col: int, line: int, line_text: String
 	var close_char = PAIRS[open_char]
 
 	# Don't pair brackets if disabled
-	if open_char in ["(", "[", "{"] and not EditorConfig.auto_pair_brackets:
+	if open_char in ["(", "[", "{"] and not _EditorConfigClass.auto_pair_brackets:
 		return false
 
 	# Don't pair quotes if disabled
-	if open_char in ["'", '"'] and not EditorConfig.auto_pair_quotes:
+	if open_char in ["'", '"'] and not _EditorConfigClass.auto_pair_quotes:
 		return false
 
 	# Don't pair if inside string/comment (simplified check)

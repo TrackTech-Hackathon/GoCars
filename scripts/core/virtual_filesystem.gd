@@ -379,9 +379,9 @@ You must code: `if stoplight.is_red(): car.stop()`
 ```python
 def smart_turn(vehicle):
     if vehicle.left_road():
-        vehicle.turn("left")
+		vehicle.turn("left")
     elif vehicle.right_road():
-        vehicle.turn("right")
+		vehicle.turn("right")
 ```
 
 ### main.py

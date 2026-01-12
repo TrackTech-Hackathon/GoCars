@@ -6,7 +6,7 @@
 class_name IndentHandler
 
 # Static class reference
-static var EditorConfig = preload("res://scripts/ui/editor_config.gd")
+static var _EditorConfigClass = preload("res://scripts/ui/editor_config.gd")
 
 const INDENT_TRIGGERS = [":", "{", "[", "("]
 const DEDENT_KEYWORDS = ["return", "pass", "break", "continue", "raise"]
@@ -20,8 +20,8 @@ func _init(editor: CodeEdit) -> void:
 	_update_indent_string()
 
 func _update_indent_string() -> void:
-	if EditorConfig.use_spaces:
-		indent_string = " ".repeat(EditorConfig.indent_size)
+	if _EditorConfigClass.use_spaces:
+		indent_string = " ".repeat(_EditorConfigClass.indent_size)
 	else:
 		indent_string = "\t"
 
@@ -38,7 +38,7 @@ func handle_tab(shift_pressed: bool) -> bool:
 	return true
 
 func handle_enter() -> bool:
-	if not EditorConfig.auto_indent:
+	if not _EditorConfigClass.auto_indent:
 		return false
 
 	var caret_line = code_edit.get_caret_line()
@@ -121,7 +121,7 @@ func _dedent_selection() -> void:
 		elif line.begins_with(" "):
 			# Remove up to indent_size spaces
 			var spaces_to_remove = 0
-			for j in range(min(EditorConfig.indent_size, line.length())):
+			for j in range(min(_EditorConfigClass.indent_size, line.length())):
 				if line[j] == " ":
 					spaces_to_remove += 1
 				else:
