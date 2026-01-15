@@ -33,6 +33,15 @@ var debugger: Variant = null  # Debugger instance
 ## IntelliSense manager
 var intellisense: Variant = null
 
+## Advanced editor features
+var linter: Variant = null  # Linter instance
+var snippet_handler: Variant = null  # SnippetHandler instance
+var fold_manager: Variant = null  # FoldManager instance
+var fold_gutter: Variant = null  # FoldGutter instance
+var execution_tracer: Variant = null  # ExecutionTracer instance
+var execution_highlighter: Variant = null  # ExecutionHighlighter instance
+var metrics_tracker: Variant = null  # MetricsTracker instance
+
 ## Current file
 var current_file: String = "main.py"
 var is_modified: bool = false
@@ -150,6 +159,37 @@ func _setup_editor_ui() -> void:
 	intellisense.setup_popups(content)
 	intellisense.set_current_file(current_file)
 
+	# Setup Linter
+	var LinterClass = load("res://scripts/ui/linter.gd")
+	linter = LinterClass.new()
+	add_child(linter.get_timer())  # Add timer to scene tree
+	linter.diagnostics_updated.connect(_on_diagnostics_updated)
+
+	# Setup Snippet Handler
+	var SnippetHandlerClass = load("res://scripts/ui/snippet_handler.gd")
+	snippet_handler = SnippetHandlerClass.new(code_edit)
+
+	# Setup Fold Manager
+	var FoldManagerClass = load("res://scripts/ui/fold_manager.gd")
+	fold_manager = FoldManagerClass.new(code_edit)
+
+	var FoldGutterClass = load("res://scripts/ui/fold_gutter.gd")
+	fold_gutter = FoldGutterClass.new(code_edit, fold_manager)
+
+	# Setup Execution Tracer
+	var ExecutionTracerClass = load("res://scripts/core/execution_tracer.gd")
+	execution_tracer = ExecutionTracerClass.new()
+	add_child(execution_tracer)
+
+	# Setup Execution Highlighter
+	var ExecutionHighlighterClass = load("res://scripts/ui/execution_highlighter.gd")
+	execution_highlighter = ExecutionHighlighterClass.new(code_edit, execution_tracer)
+
+	# Setup Metrics Tracker
+	var MetricsTrackerClass = load("res://scripts/core/metrics_tracker.gd")
+	metrics_tracker = MetricsTrackerClass.new(execution_tracer)
+	add_child(metrics_tracker)
+
 	# Connect signals
 	run_button.pressed.connect(_on_run_pressed)
 	pause_button.pressed.connect(_on_pause_pressed)
@@ -167,6 +207,47 @@ func _input(event: InputEvent) -> void:
 	# Let IntelliSense handle input first
 	if intellisense and intellisense.handle_input(event):
 		return
+
+	# Let Snippet Handler handle Tab key
+	if snippet_handler and snippet_handler.is_active():
+		if event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode == KEY_TAB and not event.shift_pressed:
+				snippet_handler.next_tab_stop()
+				get_viewport().set_input_as_handled()
+				return
+			elif event.keycode == KEY_TAB and event.shift_pressed:
+				snippet_handler.prev_tab_stop()
+				get_viewport().set_input_as_handled()
+				return
+			elif event.keycode == KEY_ESCAPE:
+				snippet_handler.cancel()
+				get_viewport().set_input_as_handled()
+				return
+
+	# Handle folding shortcuts
+	if fold_manager and event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_BRACKETLEFT and event.ctrl_pressed and event.shift_pressed:
+			var line = code_edit.get_caret_line()
+			var region = fold_manager.get_fold_at_line(line)
+			if region:
+				fold_manager.fold(region)
+			get_viewport().set_input_as_handled()
+			return
+		elif event.keycode == KEY_BRACKETRIGHT and event.ctrl_pressed and event.shift_pressed:
+			var line = code_edit.get_caret_line()
+			var region = fold_manager.get_fold_at_line(line)
+			if region:
+				fold_manager.unfold(region)
+			get_viewport().set_input_as_handled()
+			return
+		elif event.keycode == KEY_0 and event.ctrl_pressed and event.shift_pressed:
+			fold_manager.fold_all()
+			get_viewport().set_input_as_handled()
+			return
+		elif event.keycode == KEY_9 and event.ctrl_pressed and event.shift_pressed:
+			fold_manager.unfold_all()
+			get_viewport().set_input_as_handled()
+			return
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		# Ctrl+N: New file
@@ -274,16 +355,48 @@ func _on_text_changed() -> void:
 	if intellisense:
 		intellisense.on_text_changed()
 
+	# Trigger Linter
+	if linter:
+		linter.lint(code_edit.text)
+
+	# Update Fold Regions
+	if fold_manager:
+		fold_manager.analyze_folds(code_edit.text)
+
+	# Analyze code for metrics
+	if metrics_tracker:
+		metrics_tracker.analyze_code(code_edit.text)
+
 func _update_status_bar() -> void:
 	var line = code_edit.get_caret_line() + 1
 	var col = code_edit.get_caret_column() + 1
 	var saved_text = "✓ Saved" if not is_modified else "● Modified"
 	status_label.text = "Ln %d, Col %d | %s | %s" % [line, col, current_file, saved_text]
 
+func _on_diagnostics_updated(diagnostics: Array) -> void:
+	# Clear all previous error highlights
+	for i in range(code_edit.get_line_count()):
+		code_edit.set_line_background_color(i, Color.TRANSPARENT)
+
+	# Apply error highlights - RED for errors, YELLOW for warnings
+	for diag in diagnostics:
+		var LinterRulesClass = load("res://scripts/ui/linter_rules.gd")
+		if diag.severity == LinterRulesClass.Severity.ERROR:
+			# Red highlight for errors
+			code_edit.set_line_background_color(diag.line, Color(1.0, 0.2, 0.2, 0.3))
+		elif diag.severity == LinterRulesClass.Severity.WARNING:
+			# Yellow highlight for warnings
+			code_edit.set_line_background_color(diag.line, Color(1.0, 0.8, 0.2, 0.2))
+
 func _on_run_pressed() -> void:
 	# Auto-save before running
 	if is_modified:
 		_save_file()
+
+	# Start execution tracing
+	if execution_tracer:
+		execution_tracer.start_execution(code_edit.text)
+
 	code_run_requested.emit(code_edit.text)
 
 func _on_pause_pressed() -> void:
