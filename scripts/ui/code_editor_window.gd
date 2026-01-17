@@ -49,7 +49,8 @@ func _init() -> void:
 	window_title = "Code Editor"
 	min_size = Vector2(700, 500)
 	default_size = Vector2(900, 600)
-	default_position = Vector2(50, 50)
+	# Center the window - will be calculated in _ready based on viewport size
+	default_position = Vector2.ZERO  # Will be set to center in _ready
 
 func _ready() -> void:
 	super._ready()

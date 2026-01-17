@@ -55,7 +55,13 @@ func _ready() -> void:
 	# Set initial size and position
 	custom_minimum_size = min_size
 	size = default_size
-	position = default_position
+
+	# Center window if default_position is zero
+	if default_position == Vector2.ZERO:
+		var viewport_size = get_viewport_rect().size
+		position = (viewport_size - default_size) / 2
+	else:
+		position = default_position
 
 	# Add stylish panel with rounded corners and shadow
 	var style = StyleBoxFlat.new()
