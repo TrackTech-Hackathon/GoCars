@@ -1186,6 +1186,16 @@ func _setup_new_ui() -> void:
 	if simulation_engine and simulation_engine._python_interpreter:
 		simulation_engine._python_interpreter.call("set_module_loader", module_loader)
 
+	# Hide old UI elements when using new floating window system
+	if code_editor and is_instance_valid(code_editor):
+		code_editor.visible = false
+	if run_button and is_instance_valid(run_button):
+		run_button.visible = false
+	# Also hide the instructions/examples label
+	var instructions_label = $UI.get_node_or_null("InstructionsLabel")
+	if instructions_label:
+		instructions_label.visible = false
+
 	print("New UI system enabled - Press Ctrl+1 for Code Editor, Ctrl+2 for README, Ctrl+3 for Skill Tree")
 
 func _on_window_manager_code_run(code: String) -> void:
