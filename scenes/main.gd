@@ -1051,9 +1051,6 @@ func _spawn_new_car() -> void:
 	new_car.vehicle_id = "car%d" % next_car_id
 	next_car_id += 1
 
-	# Set random color based on vehicle type and rarity
-	new_car.set_random_color()
-
 	# Set position and direction (car sprite faces UP, so rotation PI/2 makes it face RIGHT)
 	new_car.global_position = car_spawn_position
 	new_car.direction = car_spawn_direction
@@ -1138,9 +1135,6 @@ func _respawn_test_vehicle() -> void:
 	# Create new vehicle instance
 	test_vehicle = vehicle_scene.instantiate()
 	test_vehicle.vehicle_id = "car1"
-
-	# Set random color based on vehicle type and rarity
-	test_vehicle.set_random_color()
 
 	# Set position and direction (car sprite faces UP, so rotation PI/2 makes it face RIGHT)
 	test_vehicle.global_position = car_spawn_position

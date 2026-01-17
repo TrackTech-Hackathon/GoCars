@@ -22,18 +22,6 @@ class_name RoadTile
 	"bottom_right": $ConnectionSprites/BottomRight
 }
 
-# References to connection collision shapes (8 directions)
-@onready var connection_collisions: Dictionary = {
-	"top_left": $MainCollision/TopLeftCollision,
-	"top": $MainCollision/TopCollision,
-	"top_right": $MainCollision/TopRightCollision,
-	"left": $MainCollision/LeftCollision,
-	"right": $MainCollision/RightCollision,
-	"bottom_left": $MainCollision/BottomLeftCollision,
-	"bottom": $MainCollision/BottomCollision,
-	"bottom_right": $MainCollision/BottomRightCollision
-}
-
 @onready var main_sprite: Sprite2D = $MainSprite
 
 # Manual connections - which directions this tile is connected to
@@ -72,23 +60,10 @@ var _paths_dirty: bool = true
 
 
 func _ready() -> void:
-	# Initialize all connection collisions to enabled (blocking) by default
-	_initialize_connection_collisions()
 	update_connection_sprites()
 	_update_opacity()
 	# Don't call _update_through_paths() here - global_position may not be set yet
 	# Paths will be calculated when add_connection() is called
-
-
-## Initialize all connection collisions to enabled (not disabled) by default
-## This ensures cars are blocked from leaving roads where there's no connection
-func _initialize_connection_collisions() -> void:
-	for direction in connection_collisions:
-		var collision = connection_collisions[direction]
-		if collision != null:
-			# Start with all collisions ENABLED (disabled = false)
-			# They will be disabled when connections are made
-			collision.disabled = false
 
 
 func _draw() -> void:
@@ -160,70 +135,54 @@ func update_connection_sprites() -> void:
 	# Apply visibility rules for each sprite
 
 	# Cardinal sprites - check adjacent diagonals and 2-step cardinal
-	var top_visible = _should_show_cardinal(
+	connection_sprites["top"].visible = _should_show_cardinal(
 		connections["top"],
 		connections["top_left"], connections["top_right"],
 		extended_connections["top_top"]
 	)
-	connection_sprites["top"].visible = top_visible
-	_update_collision_disabled("top", top_visible)
 
-	var bottom_visible = _should_show_cardinal(
+	connection_sprites["bottom"].visible = _should_show_cardinal(
 		connections["bottom"],
 		connections["bottom_left"], connections["bottom_right"],
 		extended_connections["bottom_bottom"]
 	)
-	connection_sprites["bottom"].visible = bottom_visible
-	_update_collision_disabled("bottom", bottom_visible)
 
-	var left_visible = _should_show_cardinal(
+	connection_sprites["left"].visible = _should_show_cardinal(
 		connections["left"],
 		connections["top_left"], connections["bottom_left"],
 		extended_connections["left_left"]
 	)
-	connection_sprites["left"].visible = left_visible
-	_update_collision_disabled("left", left_visible)
 
-	var right_visible = _should_show_cardinal(
+	connection_sprites["right"].visible = _should_show_cardinal(
 		connections["right"],
 		connections["top_right"], connections["bottom_right"],
 		extended_connections["right_right"]
 	)
-	connection_sprites["right"].visible = right_visible
-	_update_collision_disabled("right", right_visible)
 
 	# Diagonal sprites - check adjacent cardinals and 2-step diagonal
-	var top_left_visible = _should_show_diagonal(
+	connection_sprites["top_left"].visible = _should_show_diagonal(
 		connections["top_left"],
 		connections["top"], connections["left"],
 		extended_connections["top_left_top_left"]
 	)
-	connection_sprites["top_left"].visible = top_left_visible
-	_update_collision_disabled("top_left", top_left_visible)
 
-	var top_right_visible = _should_show_diagonal(
+	connection_sprites["top_right"].visible = _should_show_diagonal(
 		connections["top_right"],
 		connections["top"], connections["right"],
 		extended_connections["top_right_top_right"]
 	)
-	connection_sprites["top_right"].visible = top_right_visible
-	_update_collision_disabled("top_right", top_right_visible)
 
-	var bottom_left_visible = _should_show_diagonal(
+	connection_sprites["bottom_left"].visible = _should_show_diagonal(
 		connections["bottom_left"],
 		connections["bottom"], connections["left"],
 		extended_connections["bottom_left_bottom_left"]
 	)
-	connection_sprites["bottom_left"].visible = bottom_left_visible
-	_update_collision_disabled("bottom_left", bottom_left_visible)
 
-	var bottom_right_visible = _should_show_diagonal(
+	connection_sprites["bottom_right"].visible = _should_show_diagonal(
 		connections["bottom_right"],
 		connections["bottom"], connections["right"],
 		extended_connections["bottom_right_bottom_right"]
 	)
-	connection_sprites["bottom_right"].visible = bottom_right_visible
-	_update_collision_disabled("bottom_right", bottom_right_visible)
 
 
 func _should_show_cardinal(has_connection: bool, _adjacent1: bool, _adjacent2: bool, _has_2step: bool) -> bool:
@@ -236,18 +195,6 @@ func _should_show_diagonal(has_connection: bool, _adjacent1: bool, _adjacent2: b
 	# Simplified: just show the connection if it exists
 	# The complex rules were for auto-tiling, but we use manual connections now
 	return has_connection
-
-
-## Update collision shape disabled state based on connection visibility
-## When connection is visible (road connects there), collision is DISABLED (cars can pass)
-## When connection is hidden (no road), collision is ENABLED (blocks cars)
-func _update_collision_disabled(direction: String, is_connected: bool) -> void:
-	if connection_collisions.has(direction):
-		var collision = connection_collisions[direction]
-		if collision != null:
-			# Collision is DISABLED when there's a connection (cars can pass through)
-			# Collision is ENABLED when there's no connection (blocks cars from leaving road)
-			collision.disabled = is_connected
 
 
 # Add a connection in a specific direction

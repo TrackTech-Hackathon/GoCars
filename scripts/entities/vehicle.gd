@@ -26,90 +26,6 @@ enum VehicleType {
 	BUS         # Bus - Speed 0.6x, Size 1.8
 }
 
-# ============================================
-# Color Palette System
-# ============================================
-enum VehicleColor {
-	WHITE,      # Common
-	GRAY,       # Common
-	BLACK,      # Common
-	RED,        # Common
-	BEIGE,      # Common
-	GREEN,      # Uncommon
-	BLUE,       # Uncommon
-	CYAN,       # Uncommon
-	ORANGE,     # Uncommon
-	BROWN,      # Uncommon
-	LIME,       # Rare
-	MAGENTA,    # Rare
-	PINK,       # Rare
-	PURPLE,     # Rare
-	YELLOW      # Rare
-}
-
-enum ColorRarity {
-	COMMON,
-	UNCOMMON,
-	RARE
-}
-
-# Color palette file names (maps to res://assets/cars/Cars Color Palette/gocars palette-*.png)
-const COLOR_PALETTE_FILES: Dictionary = {
-	VehicleColor.WHITE: "WHITE",
-	VehicleColor.GRAY: "GRAY",
-	VehicleColor.BLACK: "BLACK",
-	VehicleColor.RED: "RED",
-	VehicleColor.BEIGE: "BEIGE",
-	VehicleColor.GREEN: "GREEN",
-	VehicleColor.BLUE: "BLUE",
-	VehicleColor.CYAN: "CYAN",
-	VehicleColor.ORANGE: "ORANGE",
-	VehicleColor.BROWN: "BROWN",
-	VehicleColor.LIME: "LIME",
-	VehicleColor.MAGENTA: "MAGENTA",
-	VehicleColor.PINK: "PINK",
-	VehicleColor.PURPLE: "PURPLE",
-	VehicleColor.YELLOW: "YELLOW"
-}
-
-# Color rarity mapping for regular cars
-const CAR_COLOR_RARITY: Dictionary = {
-	VehicleColor.WHITE: ColorRarity.COMMON,
-	VehicleColor.GRAY: ColorRarity.COMMON,
-	VehicleColor.BLACK: ColorRarity.COMMON,
-	VehicleColor.RED: ColorRarity.COMMON,
-	VehicleColor.BEIGE: ColorRarity.COMMON,
-	VehicleColor.GREEN: ColorRarity.UNCOMMON,
-	VehicleColor.BLUE: ColorRarity.UNCOMMON,
-	VehicleColor.CYAN: ColorRarity.UNCOMMON,
-	VehicleColor.ORANGE: ColorRarity.UNCOMMON,
-	VehicleColor.BROWN: ColorRarity.UNCOMMON,
-	VehicleColor.LIME: ColorRarity.RARE,
-	VehicleColor.MAGENTA: ColorRarity.RARE,
-	VehicleColor.PINK: ColorRarity.RARE,
-	VehicleColor.PURPLE: ColorRarity.RARE,
-	VehicleColor.YELLOW: ColorRarity.RARE
-}
-
-# Colors by rarity tier for cars
-const COMMON_COLORS: Array = [VehicleColor.WHITE, VehicleColor.GRAY, VehicleColor.BLACK, VehicleColor.RED, VehicleColor.BEIGE]
-const UNCOMMON_COLORS: Array = [VehicleColor.GREEN, VehicleColor.BLUE, VehicleColor.CYAN, VehicleColor.ORANGE, VehicleColor.BROWN]
-const RARE_COLORS: Array = [VehicleColor.LIME, VehicleColor.MAGENTA, VehicleColor.PINK, VehicleColor.PURPLE, VehicleColor.YELLOW]
-
-# All colors (for jeepneys - equal rarity)
-const ALL_COLORS: Array = [
-	VehicleColor.WHITE, VehicleColor.GRAY, VehicleColor.BLACK, VehicleColor.RED, VehicleColor.BEIGE,
-	VehicleColor.GREEN, VehicleColor.BLUE, VehicleColor.CYAN, VehicleColor.ORANGE, VehicleColor.BROWN,
-	VehicleColor.LIME, VehicleColor.MAGENTA, VehicleColor.PINK, VehicleColor.PURPLE, VehicleColor.YELLOW
-]
-
-# Rarity weights for car spawns (percentages)
-const RARITY_WEIGHTS: Dictionary = {
-	ColorRarity.COMMON: 60,    # 60% chance
-	ColorRarity.UNCOMMON: 30,  # 30% chance
-	ColorRarity.RARE: 10       # 10% chance
-}
-
 # Vehicle type configuration
 const VEHICLE_CONFIG: Dictionary = {
 	VehicleType.SEDAN: {
@@ -178,9 +94,6 @@ const VEHICLE_CONFIG: Dictionary = {
 
 # Vehicle state (0 = crashed, 1 = normal/active)
 var vehicle_state: int = 1
-
-# Color palette (set via set_color_palette or set_random_color)
-var current_color_palette: VehicleColor = VehicleColor.WHITE
 
 # Type-based properties (set in _ready based on vehicle_type)
 var type_speed_mult: float = 1.0
@@ -350,7 +263,6 @@ func _ready() -> void:
 	# Set up collision
 	set_collision_layer_value(1, true)  # Layer 1 for vehicles
 	set_collision_mask_value(1, true)   # Detect other vehicles
-	set_collision_mask_value(4, true)   # Detect road edges (layer 4)
 
 	# Apply vehicle type configuration
 	_apply_vehicle_type()
@@ -1503,124 +1415,3 @@ func _is_crashed_vehicle_at_position(world_pos: Vector2) -> bool:
 			if distance < 32:  # Within half a tile (64/2)
 				return true
 	return false
-
-
-# ============================================
-# Color Palette Functions
-# ============================================
-
-## Set the color palette and update the sprite shader
-func set_color_palette(color: VehicleColor) -> void:
-	current_color_palette = color
-	_apply_color_palette()
-
-
-## Set color palette by index (0-14)
-func set_color_palette_index(index: int) -> void:
-	if index >= 0 and index < ALL_COLORS.size():
-		set_color_palette(ALL_COLORS[index])
-
-
-## Get current color palette
-func get_color_palette() -> VehicleColor:
-	return current_color_palette
-
-
-## Get current color palette as index (0-14)
-func get_color_palette_index() -> int:
-	return current_color_palette
-
-
-## Get total number of colors available
-func get_palette_count() -> int:
-	return ALL_COLORS.size()
-
-
-## Get color name string
-func get_color_name() -> String:
-	if current_color_palette in COLOR_PALETTE_FILES:
-		return COLOR_PALETTE_FILES[current_color_palette]
-	return "WHITE"
-
-
-## Get color rarity
-func get_color_rarity() -> ColorRarity:
-	if current_color_palette in CAR_COLOR_RARITY:
-		return CAR_COLOR_RARITY[current_color_palette]
-	return ColorRarity.COMMON
-
-
-## Get color rarity name string
-func get_color_rarity_name() -> String:
-	var rarity = get_color_rarity()
-	match rarity:
-		ColorRarity.COMMON: return "Common"
-		ColorRarity.UNCOMMON: return "Uncommon"
-		ColorRarity.RARE: return "Rare"
-	return "Common"
-
-
-## Set a random color based on vehicle type and rarity weights
-func set_random_color() -> void:
-	var chosen_color: VehicleColor
-
-	# Different rarity rules per vehicle type
-	if vehicle_type == VehicleType.BUS:
-		# Bus: Always white
-		chosen_color = VehicleColor.WHITE
-	elif vehicle_type == VehicleType.JEEPNEY_1 or vehicle_type == VehicleType.JEEPNEY_2:
-		# Jeepneys: All colors have equal rarity
-		chosen_color = ALL_COLORS[randi() % ALL_COLORS.size()]
-	else:
-		# Regular cars: Use rarity weights
-		chosen_color = _roll_color_by_rarity()
-
-	set_color_palette(chosen_color)
-
-
-## Roll a color based on rarity weights (for regular cars)
-func _roll_color_by_rarity() -> VehicleColor:
-	var roll = randi() % 100
-
-	if roll < RARITY_WEIGHTS[ColorRarity.COMMON]:
-		# Common (0-59)
-		return COMMON_COLORS[randi() % COMMON_COLORS.size()]
-	elif roll < RARITY_WEIGHTS[ColorRarity.COMMON] + RARITY_WEIGHTS[ColorRarity.UNCOMMON]:
-		# Uncommon (60-89)
-		return UNCOMMON_COLORS[randi() % UNCOMMON_COLORS.size()]
-	else:
-		# Rare (90-99)
-		return RARE_COLORS[randi() % RARE_COLORS.size()]
-
-
-## Apply the color palette to the sprite shader
-func _apply_color_palette() -> void:
-	var sprite = get_node_or_null("Sprite2D")
-	if sprite == null:
-		return
-
-	# Get the color name for the palette file
-	var color_name = get_color_name()
-	var palette_path = "res://assets/cars/Cars Color Palette/gocars palette-%s.png" % color_name
-
-	# Load the palette texture
-	var palette_texture = load(palette_path)
-	if palette_texture == null:
-		push_warning("Could not load palette texture: %s" % palette_path)
-		return
-
-	# Get the shader material - duplicate it if not already unique
-	var material = sprite.material as ShaderMaterial
-	if material == null:
-		push_warning("Sprite does not have a ShaderMaterial")
-		return
-
-	# Make a unique copy of the material so each vehicle can have its own color
-	# Check if we already duplicated it by looking for our marker
-	if not sprite.has_meta("material_duplicated"):
-		sprite.material = material.duplicate()
-		sprite.set_meta("material_duplicated", true)
-		material = sprite.material as ShaderMaterial
-
-	# Set the new_palette shader parameter
-	material.set_shader_parameter("new_palette", palette_texture)

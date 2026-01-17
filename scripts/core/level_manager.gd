@@ -238,9 +238,6 @@ func _spawn_vehicle(data: Dictionary) -> Vehicle:
 
 	var vehicle: Vehicle = _vehicle_scene.instantiate()
 
-	# Set random color based on vehicle type and rarity
-	vehicle.set_random_color()
-
 	# Configure vehicle
 	if data.has("id"):
 		vehicle.vehicle_id = data["id"]

@@ -10,7 +10,7 @@
 shader = ExtResource("2_a1xih")
 shader_parameter/colors_count = 0
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_aos6x"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ikx3a"]
 shader = ExtResource("2_a1xih")
 shader_parameter/original_palette = ExtResource("4_ticv6")
 shader_parameter/new_palette = ExtResource("4_ticv6")
@@ -28,36 +28,32 @@ z_index = -1
 material = SubResource("ShaderMaterial_ticv6")
 
 [node name="WheelFL" type="Sprite2D" parent="Wheels"]
-texture_filter = 1
 position = Vector2(-16, -30)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("3_wheelsprite")
 
 [node name="WheelFR" type="Sprite2D" parent="Wheels"]
-texture_filter = 1
 position = Vector2(16, -30)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("3_wheelsprite")
 
 [node name="WheelBL" type="Sprite2D" parent="Wheels"]
-texture_filter = 1
 position = Vector2(-16, 30)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("3_wheelsprite")
 
 [node name="WheelBR" type="Sprite2D" parent="Wheels"]
-texture_filter = 1
 position = Vector2(16, 30)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("3_wheelsprite")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-texture_filter = 1
-material = SubResource("ShaderMaterial_aos6x")
+material = SubResource("ShaderMaterial_ikx3a")
 texture = ExtResource("2_gocars")
 region_enabled = true
 region_rect = Rect2(192, 0, 48, 96)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+visible = false
 position = Vector2(0, 0.5)
 shape = SubResource("RectangleShape2D_gddnk")

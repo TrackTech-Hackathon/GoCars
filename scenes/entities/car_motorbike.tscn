@@ -1,13 +1,13 @@
-[gd_scene load_steps=5 format=3 uid="uid://car_jeepney_2"]
+[gd_scene load_steps=5 format=3 uid="uid://dx3vyclxtf45b"]
 
 [ext_resource type="Script" uid="uid://c2xn0chj2i2d4" path="res://scripts/entities/vehicle.gd" id="1_vehicle"]
 [ext_resource type="Texture2D" uid="uid://ce38qedlya0bo" path="res://assets/cars/gocars.png" id="2_gocars"]
 [ext_resource type="Texture2D" uid="uid://ca0hpcr56308o" path="res://assets/cars/wheel.png" id="3_wheelsprite"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_jeep2"]
-size = Vector2(30, 77)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_car"]
+size = Vector2(16, 50)
 
-[node name="CarJeepney2" type="CharacterBody2D"]
+[node name="CarMotorbike" type="CharacterBody2D"]
 script = ExtResource("1_vehicle")
 vehicle_type = 6
 
@@ -15,23 +15,23 @@ vehicle_type = 6
 z_index = -1
 
 [node name="WheelFL" type="Sprite2D" parent="Wheels"]
-position = Vector2(-16, -30)
-scale = Vector2(0.5, 0.5)
+position = Vector2(0, -35)
+scale = Vector2(0.4, 0.4)
 texture = ExtResource("3_wheelsprite")
 
 [node name="WheelFR" type="Sprite2D" parent="Wheels"]
-position = Vector2(16, -30)
-scale = Vector2(0.5, 0.5)
+position = Vector2(0, -35)
+scale = Vector2(0.4, 0.4)
 texture = ExtResource("3_wheelsprite")
 
 [node name="WheelBL" type="Sprite2D" parent="Wheels"]
-position = Vector2(-16, 30)
-scale = Vector2(0.5, 0.5)
+position = Vector2(0, 35)
+scale = Vector2(0.4, 0.4)
 texture = ExtResource("3_wheelsprite")
 
 [node name="WheelBR" type="Sprite2D" parent="Wheels"]
-position = Vector2(16, 30)
-scale = Vector2(0.5, 0.5)
+position = Vector2(0, 35)
+scale = Vector2(0.4, 0.4)
 texture = ExtResource("3_wheelsprite")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
@@ -40,5 +40,4 @@ region_enabled = true
 region_rect = Rect2(288, 0, 48, 96)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -0.5)
-shape = SubResource("RectangleShape2D_jeep2")
+shape = SubResource("RectangleShape2D_car")
