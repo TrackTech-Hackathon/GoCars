@@ -634,7 +634,7 @@ func _move_along_path(delta: float) -> void:
 
 	# Update direction and rotation
 	direction = move_dir
-	rotation = direction.angle() + PI / 2  # Sprite faces UP
+	rotation = lerp_angle(rotation, direction.angle() + PI / 2, 0.3)  # Smooth visual rotation
 
 	# Apply speed
 	var actual_speed = speed * speed_multiplier * type_speed_mult
