@@ -550,42 +550,59 @@ func _acquire_path_for_current_tile() -> void:
 
 ## Choose which exit to take based on queued commands
 ## Returns [chosen_exit, turn_was_used] - turn_was_used indicates if queued_turn should be cleared
-## Returns ["", false] if no valid path - car will use simple movement
+## Returns ["", false] if no valid path available
 func _choose_exit(entry: String, available_exits: Array) -> Array:
 	var opposite = RoadTile.get_opposite_direction(entry)
 
-	# No turn queued - must go straight
-	if queued_turn == "":
-		if opposite in available_exits:
-			return [opposite, false]
-		return ["", false]  # No straight path - will crash
-
-	# Turn left queued
+	# If there's a queued turn command, try to use it first
 	if queued_turn == "left":
 		# First try cardinal left
 		var left = RoadTile.get_left_of(entry)
 		if left in available_exits:
-			return [left, true]
+			return [left, true]  # Turn used
 		# Then try diagonal lefts
 		var diagonal_lefts = _get_diagonal_lefts(entry)
 		for diag in diagonal_lefts:
 			if diag in available_exits:
-				return [diag, true]
-		return ["", false]  # No left path - will crash
-
-	# Turn right queued
-	if queued_turn == "right":
+				return [diag, true]  # Turn used
+	elif queued_turn == "right":
 		# First try cardinal right
 		var right = RoadTile.get_right_of(entry)
 		if right in available_exits:
-			return [right, true]
+			return [right, true]  # Turn used
 		# Then try diagonal rights
 		var diagonal_rights = _get_diagonal_rights(entry)
 		for diag in diagonal_rights:
 			if diag in available_exits:
-				return [diag, true]
-		return ["", false]  # No right path - will crash
+				return [diag, true]  # Turn used
 
+	# Try to go straight (opposite of entry)
+	if opposite in available_exits:
+		return [opposite, false]  # Turn NOT used (kept for later)
+
+	# Can't go straight - if a turn was queued but not available, try other directions
+	if queued_turn != "":
+		# Turn was queued but preferred direction not available
+		# Try the other direction as fallback
+		if queued_turn == "left":
+			var right = RoadTile.get_right_of(entry)
+			if right in available_exits:
+				return [right, true]
+			var diagonal_rights = _get_diagonal_rights(entry)
+			for diag in diagonal_rights:
+				if diag in available_exits:
+					return [diag, true]
+		elif queued_turn == "right":
+			var left = RoadTile.get_left_of(entry)
+			if left in available_exits:
+				return [left, true]
+			var diagonal_lefts = _get_diagonal_lefts(entry)
+			for diag in diagonal_lefts:
+				if diag in available_exits:
+					return [diag, true]
+
+	# No turn queued and can't go straight - no valid path (don't auto-turn)
+	# Player must explicitly call turn() to change direction
 	return ["", false]
 
 
@@ -858,8 +875,14 @@ func _exec_move(tiles: int) -> void:
 func _get_current_grid_pos() -> Vector2i:
 	# Lane offset is perpendicular to direction (90° clockwise)
 	var offset_dir = direction.rotated(PI / 2)
-	var center_pos = global_position - (offset_dir.normalized() * LANE_OFFSET)
+	var center_pos = global_position + (offset_dir.normalized() * LANE_OFFSET)
 	return Vector2i(int(center_pos.x / TILE_SIZE), int(center_pos.y / TILE_SIZE))
+
+
+## Get grid position without lane offset (for road detection)
+## Lane offset is for visual positioning, but road detection needs actual tile
+func _get_raw_grid_pos() -> Vector2i:
+	return Vector2i(int(global_position.x / TILE_SIZE), int(global_position.y / TILE_SIZE))
 
 
 ## Convert direction vector to RoadTile connection string
@@ -936,7 +959,8 @@ func front_road() -> bool:
 		return false
 
 	# With guideline system, check available exits from current tile
-	if _guideline_enabled and _entry_direction != "":
+	# Skip this when using simple movement (after turning) - entry direction won't match tile's paths
+	if _guideline_enabled and _entry_direction != "" and not _use_simple_movement:
 		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
 		if tile != null:
 			var exits = tile.get_available_exits(_entry_direction)
@@ -944,8 +968,8 @@ func front_road() -> bool:
 			var straight_exit = RoadTile.get_opposite_direction(_entry_direction)
 			return straight_exit in exits
 
-	# Fallback to old behavior
-	var grid_pos = _get_current_grid_pos()
+	# Fallback: check adjacent tile based on facing direction
+	var grid_pos = _get_raw_grid_pos()
 	var conn_dir = _vector_to_connection_direction(direction)
 
 	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
@@ -967,7 +991,8 @@ func left_road() -> bool:
 		return false
 
 	# With guideline system, check available exits from current tile
-	if _guideline_enabled and _entry_direction != "":
+	# Skip this when using simple movement (after turning) - entry direction won't match tile's paths
+	if _guideline_enabled and _entry_direction != "" and not _use_simple_movement:
 		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
 		if tile != null:
 			var exits = tile.get_available_exits(_entry_direction)
@@ -982,8 +1007,8 @@ func left_road() -> bool:
 					return true
 			return false
 
-	# Fallback to old behavior
-	var grid_pos = _get_current_grid_pos()
+	# Fallback: check adjacent tile based on facing direction
+	var grid_pos = _get_raw_grid_pos()
 	var left_dir = direction.rotated(-PI / 2)
 	var conn_dir = _vector_to_connection_direction(left_dir)
 
@@ -1013,7 +1038,8 @@ func right_road() -> bool:
 		return false
 
 	# With guideline system, check available exits from current tile
-	if _guideline_enabled and _entry_direction != "":
+	# Skip this when using simple movement (after turning) - entry direction won't match tile's paths
+	if _guideline_enabled and _entry_direction != "" and not _use_simple_movement:
 		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
 		if tile != null:
 			var exits = tile.get_available_exits(_entry_direction)
@@ -1028,8 +1054,8 @@ func right_road() -> bool:
 					return true
 			return false
 
-	# Fallback to old behavior
-	var grid_pos = _get_current_grid_pos()
+	# Fallback: check adjacent tile based on facing direction
+	var grid_pos = _get_raw_grid_pos()
 	var right_dir = direction.rotated(PI / 2)
 	var conn_dir = _vector_to_connection_direction(right_dir)
 
@@ -1297,13 +1323,27 @@ func _process_turn(delta: float) -> void:
 		_turn_progress = 1.0
 		_is_turning = false
 
+		# Store old direction before updating (for lane offset adjustment)
+		var old_direction = direction
+
 		# Snap to exact target rotation
 		rotation = _turn_target_rotation
 		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
 		direction = Vector2.UP.rotated(rotation)
 
+		# Adjust position for new lane offset
+		# Lane offset is perpendicular to direction (90° clockwise)
+		# When direction changes, we need to move from old lane to new lane
+		var old_offset = old_direction.rotated(PI / 2).normalized() * LANE_OFFSET
+		var new_offset = direction.rotated(PI / 2).normalized() * LANE_OFFSET
+		global_position = global_position - old_offset + new_offset
+
 		# Update exit direction to match new facing - critical for correct entry detection on next tile
 		_last_exit_direction = _vector_to_connection_direction(direction)
+
+		# Update entry direction for correct road detection (front_road, left_road, etc.)
+		# After turning, pretend we "entered" from behind our new facing direction
+		_entry_direction = RoadTile.get_opposite_direction(_last_exit_direction)
 
 		# Use simple movement until we enter a new tile
 		# Guideline paths are based on entry direction which doesn't match after turning

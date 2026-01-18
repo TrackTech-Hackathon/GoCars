@@ -489,13 +489,13 @@ func _get_axis(dir: String) -> int:
 
 ## Get the direction to the left of the given entry direction
 static func get_left_of(entry: String) -> String:
-	# When entering from a direction, left is relative to movement
+	# When entering from a direction, left is relative to movement (turn left = 90° counter-clockwise)
 	match entry:
-		# Cardinals
-		"right": return "top"    # Moving left, left is up
-		"left": return "bottom"  # Moving right, left is down
-		"top": return "left"     # Moving down, left is left
-		"bottom": return "right" # Moving up, left is right
+		# Cardinals - entry is where car CAME FROM, so travel direction is opposite
+		"right": return "bottom" # Traveling left (west), turn left → go south
+		"left": return "top"     # Traveling right (east), turn left → go north
+		"top": return "right"    # Traveling down (south), turn left → go east
+		"bottom": return "left"  # Traveling up (north), turn left → go west
 		# Diagonals - 90° counter-clockwise from travel direction
 		"bottom_right": return "bottom_left"  # Travel NW, left is SW
 		"top_left": return "top_right"        # Travel SE, left is NE
@@ -506,13 +506,13 @@ static func get_left_of(entry: String) -> String:
 
 ## Get the direction to the right of the given entry direction
 static func get_right_of(entry: String) -> String:
-	# When entering from a direction, right is relative to movement
+	# When entering from a direction, right is relative to movement (turn right = 90° clockwise)
 	match entry:
-		# Cardinals
-		"right": return "bottom" # Moving left, right is down
-		"left": return "top"     # Moving right, right is up
-		"top": return "right"    # Moving down, right is right
-		"bottom": return "left"  # Moving up, right is left
+		# Cardinals - entry is where car CAME FROM, so travel direction is opposite
+		"right": return "top"    # Traveling left (west), turn right → go north
+		"left": return "bottom"  # Traveling right (east), turn right → go south
+		"top": return "left"     # Traveling down (south), turn right → go west
+		"bottom": return "right" # Traveling up (north), turn right → go east
 		# Diagonals - 90° clockwise from travel direction
 		"bottom_right": return "top_right"    # Travel NW, right is NE
 		"top_left": return "bottom_left"      # Travel SE, right is SW
