@@ -10,8 +10,8 @@ signal suggestion_selected(text: String)
 var panel: PanelContainer
 var item_list: ItemList
 
-var suggestions: Array[Dictionary] = []
-var filtered_suggestions: Array[Dictionary] = []
+var suggestions: Array = []
+var filtered_suggestions: Array = []
 var current_prefix: String = ""
 var selected_index: int = 0
 
@@ -45,7 +45,7 @@ func _ready() -> void:
 	item_list.item_selected.connect(_on_item_clicked)
 	item_list.item_activated.connect(_on_item_clicked)
 
-func show_suggestions(items: Array[Dictionary], prefix: String, global_pos: Vector2) -> void:
+func show_suggestions(items: Array, prefix: String, global_pos: Vector2) -> void:
 	suggestions = items
 	current_prefix = prefix
 

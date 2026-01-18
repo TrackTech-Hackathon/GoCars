@@ -5,7 +5,7 @@
 
 class_name GameCommands
 
-static var commands: Array[Dictionary] = [
+static var commands: Array = [
 	# Car Movement Commands (Short API)
 	{"name": "go", "type": "function", "signature": "car.go()", "doc": "Start moving forward", "category": "movement"},
 	{"name": "stop", "type": "function", "signature": "car.stop()", "doc": "Stop immediately", "category": "movement"},
@@ -66,19 +66,19 @@ static var commands: Array[Dictionary] = [
 	{"name": "bool", "type": "builtin", "signature": "bool(x) -> bool", "doc": "Convert to boolean", "category": "utility"},
 ]
 
-static var keywords: Array[String] = [
+static var keywords: Array = [
 	"if", "else", "elif", "while", "for", "def", "return", "class",
 	"import", "from", "as", "try", "except", "finally", "with",
 	"lambda", "yield", "pass", "break", "continue", "and", "or",
 	"not", "in", "is", "True", "False", "None", "global", "nonlocal"
 ]
 
-static var objects: Array[String] = [
+static var objects: Array = [
 	"car", "stoplight", "boat"
 ]
 
-static func get_by_prefix(prefix: String) -> Array[Dictionary]:
-	var results: Array[Dictionary] = []
+static func get_by_prefix(prefix: String) -> Array:
+	var results: Array = []
 	var prefix_lower = prefix.to_lower()
 
 	# Skip if prefix is empty
@@ -130,8 +130,8 @@ static func find_by_name(name: String) -> Dictionary:
 	return {}
 
 ## Get methods available for a specific game object
-static func get_methods_for_object(obj_name: String, prefix: String = "") -> Array[Dictionary]:
-	var results: Array[Dictionary] = []
+static func get_methods_for_object(obj_name: String, prefix: String = "") -> Array:
+	var results: Array = []
 	var prefix_lower = prefix.to_lower()
 
 	# Define which categories belong to which object

@@ -5,15 +5,15 @@ extends RefCounted
 var prefix: String           # Trigger text (e.g., "fori")
 var name: String             # Display name
 var description: String      # Help text
-var body: Array[String]      # Lines of code
-var tab_stops: Array[Dictionary] = []  # {index, line, column, placeholder, linked_to}
+var body: Array = []         # Lines of code
+var tab_stops: Array = []  # {index, line, column, placeholder, linked_to}
 var scope: String = "python" # Language scope
 
 func _init(p: String = "", n: String = "", desc: String = "", b: Array = []) -> void:
 	prefix = p
 	name = n
 	description = desc
-	body.assign(b)
+	body = b.duplicate()
 	_parse_tab_stops()
 
 func _parse_tab_stops() -> void:
@@ -48,7 +48,7 @@ func _parse_tab_stops() -> void:
 	tab_stops.sort_custom(func(a, b): return a.index < b.index)
 
 func get_expanded_text(indent: String = "") -> String:
-	var result: Array[String] = []
+	var result: Array = []
 
 	for i in range(body.size()):
 		var line = body[i]

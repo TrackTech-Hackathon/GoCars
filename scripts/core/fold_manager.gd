@@ -5,7 +5,7 @@ extends RefCounted
 signal folds_updated()
 
 var code_edit: CodeEdit
-var fold_regions: Array[FoldRegion] = []
+var fold_regions: Array = []
 var folded_lines: Dictionary = {}  # start_line -> FoldRegion
 
 const FOLD_STARTERS = {
@@ -33,7 +33,7 @@ func analyze_folds(content: String) -> void:
 	fold_regions.clear()
 	var lines = content.split("\n")
 
-	var region_stack: Array[Dictionary] = []  # {line, indent, type}
+	var region_stack: Array = []  # {line, indent, type}
 
 	for i in range(lines.size()):
 		var line = lines[i]

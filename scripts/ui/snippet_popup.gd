@@ -2,12 +2,16 @@
 extends PopupPanel
 class_name SnippetPopup
 
-signal snippet_selected(snippet: Snippet)
+signal snippet_selected(snippet)
 
-@onready var item_list: ItemList = $VBox/ItemList
-@onready var preview_label: RichTextLabel = $VBox/Preview
+var item_list: ItemList
+var preview_label: RichTextLabel
 
-var filtered_snippets: Array[Snippet] = []
+var filtered_snippets: Array = []
+
+func _ready() -> void:
+	item_list = get_node_or_null("VBox/ItemList")
+	preview_label = get_node_or_null("VBox/Preview")
 
 func show_snippets(prefix: String, position: Vector2) -> void:
 	filtered_snippets = SnippetLibrary.get_by_prefix(prefix)
@@ -31,7 +35,7 @@ func _populate_list() -> void:
 	item_list.clear()
 
 	for snippet in filtered_snippets:
-		var display = "%s  →  %s" % [snippet.prefix, snippet.name]
+		var display = "%s -> %s" % [snippet.prefix, snippet.name]
 		item_list.add_item(display)
 
 func _update_preview(index: int) -> void:

@@ -1,7 +1,7 @@
 # snippet_library.gd
 class_name SnippetLibrary
 
-static var snippets: Array[Snippet] = []
+static var snippets: Array = []
 
 static func _static_init() -> void:
 	# Control Flow
@@ -104,8 +104,8 @@ static func _static_init() -> void:
 		["if car.front_crash():", "\tif car.left_road():", "\t\tcar.turn(\"left\")", "\telif car.right_road():", "\t\tcar.turn(\"right\")", "else:", "\tcar.go()"]
 	))
 
-static func get_by_prefix(prefix: String) -> Array[Snippet]:
-	var result: Array[Snippet] = []
+static func get_by_prefix(prefix: String) -> Array:
+	var result: Array = []
 	var prefix_lower = prefix.to_lower()
 
 	for snippet in snippets:
@@ -114,7 +114,7 @@ static func get_by_prefix(prefix: String) -> Array[Snippet]:
 
 	return result
 
-static func get_exact(prefix: String) -> Snippet:
+static func get_exact(prefix: String):
 	for snippet in snippets:
 		if snippet.prefix == prefix:
 			return snippet
