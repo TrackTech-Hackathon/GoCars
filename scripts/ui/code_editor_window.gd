@@ -325,9 +325,10 @@ func connect_to_simulation(sim_engine: Variant) -> void:
 		sim_engine.execution_started.connect(func(): execution_tracer.start_execution(code_edit.text))
 		sim_engine.execution_ended.connect(func(success): execution_tracer.stop_execution())
 
-	# Connect execution line highlighting
-	if sim_engine.has_signal("execution_line"):
-		sim_engine.execution_line.connect(_on_execution_line_changed)
+	# Connect execution line highlighting (signal is execution_line_changed)
+	if sim_engine.has_signal("execution_line_changed"):
+		sim_engine.execution_line_changed.connect(_on_execution_line_changed)
+		print("CodeEditorWindow: Connected execution_line_changed signal")
 
 	print("CodeEditorWindow: Connected to simulation engine")
 
@@ -396,9 +397,8 @@ func _on_run_pressed() -> void:
 	if is_modified:
 		_save_file()
 
-	# Visual feedback: highlight first line when execution starts
-	if code_edit.get_line_count() > 0:
-		_highlight_execution_line(0)
+	# Clear any previous execution highlight
+	_clear_execution_line()
 
 	# Update metrics to show execution started
 	on_execution_started()

@@ -220,7 +220,7 @@ func _show_signature_help(func_data: Dictionary, param_index: int) -> void:
 	signature_popup.show_signature(func_data, param_index, global_pos)
 
 func _show_object_methods(obj_name: String, prefix: String = "") -> void:
-	var suggestions: Array[Dictionary] = []
+	var suggestions: Array = []
 
 	# Get methods for this object
 	suggestions.append_array(_GameCommandsClass.get_methods_for_object(obj_name, prefix))
@@ -241,7 +241,7 @@ func _show_object_methods(obj_name: String, prefix: String = "") -> void:
 	autocomplete_popup.show_suggestions(suggestions, prefix, global_pos)
 
 func _show_suggestions_for(prefix: String) -> void:
-	var suggestions: Array[Dictionary] = []
+	var suggestions: Array = []
 
 	# Get game commands
 	suggestions.append_array(_GameCommandsClass.get_by_prefix(prefix))
@@ -331,7 +331,7 @@ func _on_suggestion_selected(text: String) -> void:
 
 func parse_file_symbols(filename: String, content: String) -> void:
 	# Parse file for variable and function definitions
-	var symbols: Array[Dictionary] = []
+	var symbols: Array = []
 	var lines = content.split("\n")
 
 	for i in range(lines.size()):
