@@ -1,5 +1,6 @@
 {
 	"id": "W2",
+	"level_type": "CODE_ONLY",
 	"name": "Ortiz Wharf",
 	"description": "Combine while loops with conditions! Stop at red lights while driving.",
 	"location": "Ortiz Wharf, Iloilo",

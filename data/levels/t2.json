@@ -1,5 +1,6 @@
 {
 	"id": "T2",
+	"level_type": "CODE_ONLY",
 	"name": "Stop Sign",
 	"description": "Learn to stop your car at the right moment using car.stop().",
 	"available_functions": ["car.go", "car.stop", "car.wait"],

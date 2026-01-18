@@ -1,5 +1,6 @@
 {
 	"id": "T4",
+	"level_type": "CODE_ONLY",
 	"name": "Red Light, Green Light",
 	"description": "Learn to control traffic lights to let your car pass safely.",
 	"available_functions": ["car.go", "car.stop", "stoplight.set_green", "stoplight.set_red"],

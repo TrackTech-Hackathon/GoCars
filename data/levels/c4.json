@@ -1,5 +1,6 @@
 {
 	"id": "C4",
+	"level_type": "CODE_ONLY",
 	"name": "La Paz Market",
 	"description": "Learn logical operators! Combine conditions with 'and', 'or', and 'not'.",
 	"location": "La Paz, Iloilo City",

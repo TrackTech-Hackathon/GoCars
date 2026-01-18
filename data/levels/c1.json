@@ -1,5 +1,6 @@
 {
 	"id": "C1",
+	"level_type": "CODE_ONLY",
 	"name": "Smallville Plaza",
 	"description": "Learn to use variables! Store a speed value and use it to control your car.",
 	"location": "Smallville, Iloilo",

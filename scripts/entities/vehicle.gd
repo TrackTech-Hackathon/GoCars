@@ -119,6 +119,7 @@ var _path_index: int = 0             # Current waypoint index
 var _current_tile: Vector2i = Vector2i(-1, -1)   # Tile we're currently on
 var _entry_direction: String = ""    # Direction we entered current tile from
 var _last_exit_direction: String = "" # Direction we exited the previous tile (for diagonal transitions)
+var _use_simple_movement: bool = false # After turning, use simple movement until entering new tile
 
 # Auto-navigate mode - car automatically follows road
 var auto_navigate: bool = false
@@ -467,6 +468,11 @@ func _follow_guideline_path(delta: float) -> void:
 	if current_grid != _current_tile:
 		_on_enter_new_tile(current_grid)
 
+	# After turning, use simple movement until entering a new tile
+	if _use_simple_movement:
+		_move(delta)
+		return
+
 	# If no path, get one
 	if _current_path.is_empty():
 		_acquire_path_for_current_tile()
@@ -484,6 +490,9 @@ func _follow_guideline_path(delta: float) -> void:
 func _on_enter_new_tile(new_tile: Vector2i) -> void:
 	var old_tile = _current_tile
 	_current_tile = new_tile
+
+	# Resume guideline movement on new tile
+	_use_simple_movement = false
 
 	# Determine entry direction based on where we came from
 	if _last_exit_direction != "":
@@ -522,7 +531,8 @@ func _acquire_path_for_current_tile() -> void:
 	var chosen_exit = result[0]
 	var turn_was_used = result[1]
 
-	# If no valid exit, car will fall back to old movement and crash
+	# If no valid exit, just return - let simple movement handle it
+	# Crash will happen naturally if the car moves off-road
 	if chosen_exit == "":
 		return
 
@@ -540,60 +550,42 @@ func _acquire_path_for_current_tile() -> void:
 
 ## Choose which exit to take based on queued commands
 ## Returns [chosen_exit, turn_was_used] - turn_was_used indicates if queued_turn should be cleared
-## Returns ["", false] if no valid path (car should crash)
+## Returns ["", false] if no valid path - car will use simple movement
 func _choose_exit(entry: String, available_exits: Array) -> Array:
 	var opposite = RoadTile.get_opposite_direction(entry)
 
-	# If there's a queued turn command, use it
+	# No turn queued - must go straight
+	if queued_turn == "":
+		if opposite in available_exits:
+			return [opposite, false]
+		return ["", false]  # No straight path - will crash
+
+	# Turn left queued
 	if queued_turn == "left":
 		# First try cardinal left
 		var left = RoadTile.get_left_of(entry)
 		if left in available_exits:
-			return [left, true]  # Turn used
+			return [left, true]
 		# Then try diagonal lefts
 		var diagonal_lefts = _get_diagonal_lefts(entry)
 		for diag in diagonal_lefts:
 			if diag in available_exits:
-				return [diag, true]  # Turn used
-	elif queued_turn == "right":
+				return [diag, true]
+		return ["", false]  # No left path - will crash
+
+	# Turn right queued
+	if queued_turn == "right":
 		# First try cardinal right
 		var right = RoadTile.get_right_of(entry)
 		if right in available_exits:
-			return [right, true]  # Turn used
+			return [right, true]
 		# Then try diagonal rights
 		var diagonal_rights = _get_diagonal_rights(entry)
 		for diag in diagonal_rights:
 			if diag in available_exits:
-				return [diag, true]  # Turn used
+				return [diag, true]
+		return ["", false]  # No right path - will crash
 
-	# Try to go straight (opposite of entry)
-	if opposite in available_exits:
-		return [opposite, false]  # Turn NOT used (kept for later)
-
-	# Can't go straight - only turn if a turn was actually queued
-	if queued_turn != "":
-		# Turn was queued but preferred direction not available
-		# Try the other direction as fallback
-		if queued_turn == "left":
-			var right = RoadTile.get_right_of(entry)
-			if right in available_exits:
-				return [right, true]
-			# Also try diagonal rights as fallback
-			var diagonal_rights = _get_diagonal_rights(entry)
-			for diag in diagonal_rights:
-				if diag in available_exits:
-					return [diag, true]
-		elif queued_turn == "right":
-			var left = RoadTile.get_left_of(entry)
-			if left in available_exits:
-				return [left, true]
-			# Also try diagonal lefts as fallback
-			var diagonal_lefts = _get_diagonal_lefts(entry)
-			for diag in diagonal_lefts:
-				if diag in available_exits:
-					return [diag, true]
-
-	# No valid path - car should crash (no turn queued and can't go straight)
 	return ["", false]
 
 
@@ -839,14 +831,9 @@ func _exec_stop() -> void:
 
 func _exec_turn(turn_direction: String) -> void:
 	if turn_direction == "left" or turn_direction == "right":
-		if _guideline_enabled:
-			# With guidelines, just queue the turn - it will be used when acquiring next path
-			queued_turn = turn_direction
-			_command_completed()
-		else:
-			# Old system: execute turn immediately
-			_execute_turn(turn_direction)
-			# Turn completion is handled in _process_turn()
+		# ALWAYS rotate immediately - bad code will crash, good code checked first
+		_execute_turn(turn_direction)
+		# Turn completion is handled in _process_turn()
 	else:
 		_command_completed()
 
@@ -1187,6 +1174,7 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	_current_path.clear()
 	_path_index = 0
 	_last_exit_direction = ""
+	_use_simple_movement = false
 	# Reset last move direction tracking (used in fallback road detection)
 	_last_move_direction = Vector2.ZERO
 	# Initialize current tile and entry direction for guideline system
@@ -1313,6 +1301,15 @@ func _process_turn(delta: float) -> void:
 		rotation = _turn_target_rotation
 		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
 		direction = Vector2.UP.rotated(rotation)
+
+		# Update exit direction to match new facing - critical for correct entry detection on next tile
+		_last_exit_direction = _vector_to_connection_direction(direction)
+
+		# Use simple movement until we enter a new tile
+		# Guideline paths are based on entry direction which doesn't match after turning
+		_use_simple_movement = true
+		_current_path.clear()
+		_path_index = 0
 
 		# Turn command completed - process next command
 		_command_completed()

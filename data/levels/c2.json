@@ -1,5 +1,6 @@
 {
 	"id": "C2",
+	"level_type": "CODE_ONLY",
 	"name": "Esplanade Evening",
 	"description": "Learn if statements! Check if the stoplight is green before going.",
 	"location": "Iloilo Esplanade",

@@ -1,5 +1,6 @@
 {
 	"id": "T1",
+	"level_type": "CODE_ONLY",
 	"name": "First Drive",
 	"description": "Learn to make your car go! Just type car.go() to start moving.",
 	"available_functions": ["car.go"],

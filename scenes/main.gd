@@ -463,8 +463,8 @@ func _deselect_road() -> void:
 
 ## Update preview tile position based on mouse
 func _update_preview_tile() -> void:
-	# Only show preview when a road is selected and editing is enabled
-	if not is_editing_enabled or selected_road_tile == Vector2i(-1, -1):
+	# Only show preview when a road is selected and editing is allowed
+	if not _is_editing_allowed() or selected_road_tile == Vector2i(-1, -1):
 		_hide_preview_tile()
 		return
 
@@ -710,6 +710,24 @@ func _update_road_cards_label() -> void:
 	road_cards_label.text = "Road Cards: %d" % road_cards
 
 
+## Check if road editing is allowed based on level type
+func _is_editing_allowed() -> bool:
+	if level_manager == null or not level_manager.is_level_loaded():
+		return is_editing_enabled  # Sandbox mode - use manual setting
+	return level_manager.get_level_type() == LevelManager.LevelType.BUILD_AND_CODE
+
+
+## Update road cards UI visibility and value based on level type
+func _update_road_cards_ui() -> void:
+	var editing_allowed = _is_editing_allowed()
+	if road_cards_label:
+		road_cards_label.visible = editing_allowed
+	if editing_allowed and level_manager != null and level_manager.is_level_loaded():
+		road_cards = level_manager.get_initial_road_cards()
+		initial_road_cards = road_cards
+		_update_road_cards_label()
+
+
 func _lose_heart() -> void:
 	hearts -= 1
 	_update_hearts_label()
@@ -897,6 +915,10 @@ func _input(event: InputEvent) -> void:
 
 ## Handle left click for road selection/placement/connection
 func _handle_road_click() -> void:
+	# Check if editing is allowed (CODE_ONLY levels disable editing)
+	if not _is_editing_allowed():
+		return
+
 	var mouse_pos = get_global_mouse_position()
 	var grid_pos = _get_grid_pos_from_world(mouse_pos)
 
@@ -960,6 +982,10 @@ func _handle_road_click() -> void:
 
 ## Handle right click to remove roads
 func _handle_road_remove() -> void:
+	# Check if editing is allowed (CODE_ONLY levels disable editing)
+	if not _is_editing_allowed():
+		return
+
 	var mouse_pos = get_global_mouse_position()
 	var grid_pos = _get_grid_pos_from_world(mouse_pos)
 

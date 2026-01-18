@@ -1,5 +1,6 @@
 {
 	"id": "W4",
+	"level_type": "CODE_ONLY",
 	"name": "Parola Lighthouse",
 	"description": "Master nested loops! Use loops inside loops for complex patterns.",
 	"location": "Parola, Iloilo City",

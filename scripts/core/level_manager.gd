@@ -4,6 +4,12 @@ class_name LevelManager
 ## Manages level loading, entity spawning, win/lose tracking, and level transitions.
 ## Loads level configurations from JSON files in data/levels/
 
+# Level types
+enum LevelType {
+	CODE_ONLY,       # Fixed roads, no building - pure coding puzzle
+	BUILD_AND_CODE   # Limited road cards - building IS part of the puzzle
+}
+
 signal level_loaded(level_id: String)
 signal level_started(level_id: String)
 signal level_completed(level_id: String, stars: int)
@@ -16,6 +22,7 @@ const LEVELS_PATH: String = "res://data/levels/"
 # Current level state
 var current_level_id: String = ""
 var current_level_data: Dictionary = {}
+var current_level_type: LevelType = LevelType.CODE_ONLY
 var _level_start_time: float = 0.0
 var _code_lines_used: int = 0
 
@@ -112,6 +119,18 @@ func load_level(level_id: String) -> bool:
 	if current_level_data.has("star_criteria"):
 		_star_criteria = current_level_data["star_criteria"]
 
+	# Parse level type (default to CODE_ONLY if not specified)
+	if current_level_data.has("level_type"):
+		match current_level_data["level_type"]:
+			"CODE_ONLY":
+				current_level_type = LevelType.CODE_ONLY
+			"BUILD_AND_CODE":
+				current_level_type = LevelType.BUILD_AND_CODE
+			_:
+				current_level_type = LevelType.CODE_ONLY
+	else:
+		current_level_type = LevelType.CODE_ONLY
+
 	level_loaded.emit(level_id)
 	return true
 
@@ -127,6 +146,18 @@ func load_level_from_data(level_data: Dictionary) -> bool:
 
 	if current_level_data.has("star_criteria"):
 		_star_criteria = current_level_data["star_criteria"]
+
+	# Parse level type
+	if current_level_data.has("level_type"):
+		match current_level_data["level_type"]:
+			"CODE_ONLY":
+				current_level_type = LevelType.CODE_ONLY
+			"BUILD_AND_CODE":
+				current_level_type = LevelType.BUILD_AND_CODE
+			_:
+				current_level_type = LevelType.CODE_ONLY
+	else:
+		current_level_type = LevelType.CODE_ONLY
 
 	level_loaded.emit(current_level_id)
 	return true
@@ -616,3 +647,15 @@ func get_time_limit() -> float:
 ## Check if level is loaded
 func is_level_loaded() -> bool:
 	return not current_level_data.is_empty()
+
+
+## Get current level type
+func get_level_type() -> LevelType:
+	return current_level_type
+
+
+## Get initial road cards for current level
+func get_initial_road_cards() -> int:
+	if current_level_type == LevelType.CODE_ONLY:
+		return 0
+	return int(current_level_data.get("road_cards", 10))

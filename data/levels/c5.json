@@ -1,5 +1,6 @@
 {
 	"id": "C5",
+	"level_type": "CODE_ONLY",
 	"name": "Molo Mansion Drive",
 	"description": "Learn comparison operators! Compare distances and values to make decisions.",
 	"location": "Molo, Iloilo City",

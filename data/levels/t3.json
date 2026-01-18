@@ -1,5 +1,6 @@
 {
 	"id": "T3",
+	"level_type": "CODE_ONLY",
 	"name": "Turn Ahead",
 	"description": "Learn to turn at intersections using car.turn_left() and car.turn_right().",
 	"available_functions": ["car.go", "car.stop", "car.turn_left", "car.turn_right"],
