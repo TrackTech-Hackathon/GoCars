@@ -308,6 +308,9 @@ func _spawn_vehicle(data: Dictionary) -> Vehicle:
 	if data.has("speed"):
 		vehicle.speed_multiplier = data["speed"]
 
+	# Set random color based on vehicle type and rarity
+	vehicle.set_random_color()
+
 	# Add to game world
 	_game_world.add_child(vehicle)
 	_spawned_vehicles.append(vehicle)

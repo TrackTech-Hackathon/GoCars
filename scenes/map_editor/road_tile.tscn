@@ -21,6 +21,7 @@ position = Vector2(-144, -144)
 
 [node name="TopLeft" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
+texture_filter = 1
 position = Vector2(216, 216)
 texture = ExtResource("3_connection")
 region_enabled = true
@@ -29,6 +30,7 @@ region_rect = Rect2(0, 0, 432, 432)
 [node name="Top" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
 z_index = -1
+texture_filter = 1
 position = Vector2(216, 216)
 texture = ExtResource("3_connection")
 region_enabled = true
@@ -36,6 +38,7 @@ region_rect = Rect2(432, 0, 432, 432)
 
 [node name="TopRight" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
+texture_filter = 1
 position = Vector2(216, 216)
 texture = ExtResource("3_connection")
 region_enabled = true
@@ -44,6 +47,7 @@ region_rect = Rect2(864, 0, 432, 432)
 [node name="Left" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
 z_index = -1
+texture_filter = 1
 position = Vector2(216, 216)
 texture = ExtResource("3_connection")
 region_enabled = true
@@ -52,6 +56,7 @@ region_rect = Rect2(0, 432, 432, 432)
 [node name="Right" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
 z_index = -1
+texture_filter = 1
 position = Vector2(216, 216)
 texture = ExtResource("3_connection")
 region_enabled = true
@@ -59,6 +64,7 @@ region_rect = Rect2(864, 432, 432, 432)
 
 [node name="BottomLeft" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
+texture_filter = 1
 position = Vector2(216, 216)
 texture = ExtResource("3_connection")
 region_enabled = true
@@ -67,6 +73,7 @@ region_rect = Rect2(0, 864, 432, 432)
 [node name="Bottom" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
 z_index = -1
+texture_filter = 1
 position = Vector2(216, 216)
 texture = ExtResource("3_connection")
 region_enabled = true
@@ -75,6 +82,7 @@ region_rect = Rect2(432, 864, 432, 432)
 [node name="BottomRight" type="Sprite2D" parent="ConnectionSprites"]
 visible = false
 z_as_relative = false
+texture_filter = 1
 position = Vector2(216, 216)
 texture = ExtResource("3_connection")
 region_enabled = true
@@ -82,5 +90,6 @@ region_rect = Rect2(864, 864, 432, 432)
 
 [node name="MainSprite" type="Sprite2D" parent="."]
 z_index = -2
+texture_filter = 1
 position = Vector2(72, 72)
 texture = ExtResource("2_main")

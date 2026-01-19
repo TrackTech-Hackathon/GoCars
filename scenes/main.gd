@@ -1090,6 +1090,9 @@ func _spawn_new_car() -> void:
 
 	# Note: Vehicle type is already set in the scene file
 
+	# Set random color based on vehicle type and rarity
+	new_car.set_random_color()
+
 	# Add to scene
 	$GameWorld.add_child(new_car)
 
@@ -1172,6 +1175,9 @@ func _respawn_test_vehicle() -> void:
 
 	# Set destination
 	test_vehicle.destination = car_destination
+
+	# Set random color based on vehicle type and rarity
+	test_vehicle.set_random_color()
 
 	# Add to scene
 	$GameWorld.add_child(test_vehicle)

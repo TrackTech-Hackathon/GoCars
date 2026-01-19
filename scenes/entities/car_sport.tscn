@@ -1,13 +1,22 @@
-[gd_scene load_steps=5 format=3 uid="uid://car_sport"]
+[gd_scene load_steps=8 format=3 uid="uid://vexukgfahwaj"]
 
 [ext_resource type="Script" uid="uid://c2xn0chj2i2d4" path="res://scripts/entities/vehicle.gd" id="1_vehicle"]
 [ext_resource type="Texture2D" uid="uid://ce38qedlya0bo" path="res://assets/cars/gocars.png" id="2_gocars"]
+[ext_resource type="Shader" uid="uid://cw7qkp1qc7qlg" path="res://shaders/palette_swap.tres" id="3_tryov"]
 [ext_resource type="Texture2D" uid="uid://ca0hpcr56308o" path="res://assets/cars/wheel.png" id="3_wheelsprite"]
+[ext_resource type="Texture2D" uid="uid://cp2slkb4rnwfa" path="res://assets/cars/Cars Color Palette/gocars palette-WHITE.png" id="4_xtokl"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mdwbk"]
+shader = ExtResource("3_tryov")
+shader_parameter/original_palette = ExtResource("4_xtokl")
+shader_parameter/new_palette = ExtResource("4_xtokl")
+shader_parameter/colors_count = 20
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_car"]
-size = Vector2(28, 60)
+size = Vector2(22, 57)
 
 [node name="CarSport" type="CharacterBody2D"]
+z_index = 3
 script = ExtResource("1_vehicle")
 vehicle_type = 2
 
@@ -15,29 +24,36 @@ vehicle_type = 2
 z_index = -1
 
 [node name="WheelFL" type="Sprite2D" parent="Wheels"]
-position = Vector2(-16, -30)
-scale = Vector2(0.5, 0.5)
+texture_filter = 1
+position = Vector2(-9.999999, -18)
+scale = Vector2(0.4, 0.4)
 texture = ExtResource("3_wheelsprite")
 
 [node name="WheelFR" type="Sprite2D" parent="Wheels"]
-position = Vector2(16, -30)
-scale = Vector2(0.5, 0.5)
+texture_filter = 1
+position = Vector2(10, -18)
+scale = Vector2(0.4, 0.4)
 texture = ExtResource("3_wheelsprite")
 
 [node name="WheelBL" type="Sprite2D" parent="Wheels"]
-position = Vector2(-16, 30)
-scale = Vector2(0.5, 0.5)
+texture_filter = 1
+position = Vector2(-9.999999, 18)
+scale = Vector2(0.4, 0.4)
 texture = ExtResource("3_wheelsprite")
 
 [node name="WheelBR" type="Sprite2D" parent="Wheels"]
-position = Vector2(16, 30)
-scale = Vector2(0.5, 0.5)
+texture_filter = 1
+position = Vector2(10, 18)
+scale = Vector2(0.4, 0.4)
 texture = ExtResource("3_wheelsprite")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+material = SubResource("ShaderMaterial_mdwbk")
 texture = ExtResource("2_gocars")
 region_enabled = true
 region_rect = Rect2(96, 0, 48, 96)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 0.5)
 shape = SubResource("RectangleShape2D_car")
