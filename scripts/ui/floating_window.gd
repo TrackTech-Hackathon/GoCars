@@ -1,5 +1,6 @@
 ## Floating Window Base Class for GoCars
 ## Provides draggable, resizable, minimizable window functionality
+## With Windows 11-style snap zones
 ## Author: Claude Code
 ## Date: January 2026
 
@@ -11,6 +12,8 @@ signal window_closed()
 signal window_minimized()
 signal window_restored()
 signal window_focused()
+signal window_maximized()
+signal window_snapped(zone: int)
 
 ## Window state
 var is_minimized: bool = false
@@ -47,9 +50,17 @@ enum ResizeMode {
 var title_bar: PanelContainer
 var title_label: Label
 var minimize_button: Button
+var maximize_button: Button
 var close_button: Button
 var content_container: MarginContainer
 var resize_handle_size: int = 8
+
+## Snap controller for Windows 11-style window snapping
+var snap_controller: Variant = null
+
+## Pre-maximized state
+var pre_maximize_rect: Rect2 = Rect2()
+var is_window_maximized: bool = false
 
 func _ready() -> void:
 	# Set initial size and position
@@ -131,9 +142,21 @@ func _setup_window_structure() -> void:
 	minimize_button.text = "−"
 	minimize_button.custom_minimum_size = Vector2(28, 28)
 	minimize_button.flat = true
+	minimize_button.tooltip_text = "Minimize"
 	minimize_button.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75, 1.0))
 	minimize_button.add_theme_font_size_override("font_size", 18)
 	title_hbox.add_child(minimize_button)
+
+	# Maximize button
+	maximize_button = Button.new()
+	maximize_button.name = "MaximizeButton"
+	maximize_button.text = "□"
+	maximize_button.custom_minimum_size = Vector2(28, 28)
+	maximize_button.flat = true
+	maximize_button.tooltip_text = "Maximize"
+	maximize_button.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75, 1.0))
+	maximize_button.add_theme_font_size_override("font_size", 14)
+	title_hbox.add_child(maximize_button)
 
 	# Close button
 	close_button = Button.new()
@@ -141,6 +164,7 @@ func _setup_window_structure() -> void:
 	close_button.text = "×"
 	close_button.custom_minimum_size = Vector2(28, 28)
 	close_button.flat = true
+	close_button.tooltip_text = "Close"
 	close_button.add_theme_color_override("font_color", Color(0.9, 0.4, 0.4, 1.0))
 	close_button.add_theme_font_size_override("font_size", 20)
 	title_hbox.add_child(close_button)
@@ -161,11 +185,23 @@ func _setup_window_structure() -> void:
 	vbox.add_child(content_container)
 
 func _connect_signals() -> void:
-	# Title bar drag
-	title_bar.gui_input.connect(_on_title_bar_input)
+	# Setup snap controller
+	var SnapWindowControllerClass = load("res://scripts/ui/snap_window_controller.gd")
+	if SnapWindowControllerClass:
+		snap_controller = SnapWindowControllerClass.new()
+		add_child(snap_controller)
+		snap_controller.setup(self, title_bar)
+		snap_controller.window_maximized.connect(_on_snap_maximized)
+		snap_controller.window_restored.connect(_on_snap_restored)
+		snap_controller.window_snapped.connect(_on_window_snapped)
+
+	# Title bar drag (if snap controller not handling it, use fallback)
+	if not snap_controller:
+		title_bar.gui_input.connect(_on_title_bar_input)
 
 	# Buttons
 	minimize_button.pressed.connect(_on_minimize_pressed)
+	maximize_button.pressed.connect(_on_maximize_pressed)
 	close_button.pressed.connect(_on_close_pressed)
 
 	# Window focus
@@ -192,6 +228,10 @@ func _on_window_input(event: InputEvent) -> void:
 			_bring_to_front()
 
 func _input(event: InputEvent) -> void:
+	# Only handle input when this window is visible and focused
+	if not visible:
+		return
+
 	# Handle resize dragging
 	if is_resizing and event is InputEventMouseMotion:
 		_handle_resize(get_global_mouse_position())
@@ -202,6 +242,13 @@ func _input(event: InputEvent) -> void:
 			if not mouse_event.pressed and is_resizing:
 				is_resizing = false
 				resize_mode = ResizeMode.NONE
+
+	# Handle keyboard shortcuts
+	elif event is InputEventKey and event.pressed and not event.echo:
+		# F11: Toggle maximize
+		if event.keycode == KEY_F11:
+			toggle_maximize()
+			get_viewport().set_input_as_handled()
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -312,8 +359,35 @@ func _on_minimize_pressed() -> void:
 	else:
 		minimize()
 
+func _on_maximize_pressed() -> void:
+	toggle_maximize()
+
 func _on_close_pressed() -> void:
 	close()
+
+## Snap controller callbacks
+func _on_snap_maximized() -> void:
+	is_window_maximized = true
+	_update_maximize_button()
+	window_maximized.emit()
+
+func _on_snap_restored() -> void:
+	is_window_maximized = false
+	_update_maximize_button()
+	window_restored.emit()
+
+func _on_window_snapped(zone: int) -> void:
+	window_snapped.emit(zone)
+
+## Update maximize button appearance
+func _update_maximize_button() -> void:
+	if maximize_button:
+		if is_window_maximized:
+			maximize_button.text = "❐"  # Restore icon (overlapping squares)
+			maximize_button.tooltip_text = "Restore"
+		else:
+			maximize_button.text = "□"  # Maximize icon
+			maximize_button.tooltip_text = "Maximize"
 
 ## Public API
 
@@ -330,6 +404,41 @@ func restore() -> void:
 	content_container.visible = true
 	minimize_button.text = "−"
 	window_restored.emit()
+
+## Maximize the window
+func maximize() -> void:
+	if snap_controller:
+		snap_controller.maximize()
+	else:
+		# Fallback maximization without snap controller
+		if not is_window_maximized:
+			pre_maximize_rect = Rect2(global_position, size)
+			var viewport_size = get_viewport_rect().size
+			global_position = Vector2(4, 4)
+			size = viewport_size - Vector2(8, 8)
+			is_window_maximized = true
+			_update_maximize_button()
+			window_maximized.emit()
+
+## Restore from maximized state
+func restore_from_maximize() -> void:
+	if snap_controller:
+		snap_controller.restore()
+	else:
+		# Fallback restoration without snap controller
+		if is_window_maximized and pre_maximize_rect.size != Vector2.ZERO:
+			global_position = pre_maximize_rect.position
+			size = pre_maximize_rect.size
+			is_window_maximized = false
+			_update_maximize_button()
+			window_restored.emit()
+
+## Toggle maximize state
+func toggle_maximize() -> void:
+	if is_window_maximized:
+		restore_from_maximize()
+	else:
+		maximize()
 
 ## Close the window (hide it)
 func close() -> void:

@@ -18,9 +18,11 @@ var run_button: Button
 var pause_button: Button
 var reset_button: Button
 var speed_button: MenuButton
+var main_vsplit: VSplitContainer  # Main vertical split for editor and terminal
 var hsplit: HSplitContainer
 var file_explorer: FileExplorer
 var code_edit: CodeEdit
+var terminal_panel: Variant = null  # Terminal/Output panel
 var status_bar: HBoxContainer
 var status_label: Label
 var metrics_label: Label
@@ -120,11 +122,18 @@ func _setup_editor_ui() -> void:
 		popup.add_item("%.1fx" % speed)
 	popup.index_pressed.connect(_on_speed_selected)
 
+	# Main VSplit for editor area and terminal
+	main_vsplit = VSplitContainer.new()
+	main_vsplit.name = "MainVSplit"
+	main_vsplit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_vsplit.split_offset = -150  # Terminal takes bottom ~150px
+	vbox.add_child(main_vsplit)
+
 	# HSplit for file explorer and editor
 	hsplit = HSplitContainer.new()
 	hsplit.name = "HSplit"
 	hsplit.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(hsplit)
+	main_vsplit.add_child(hsplit)
 
 	# File explorer
 	var FileExplorerClass = load("res://scripts/ui/file_explorer.gd")
@@ -163,6 +172,17 @@ func _setup_editor_ui() -> void:
 	code_edit.set_gutter_type(BREAKPOINT_GUTTER, TextEdit.GUTTER_TYPE_ICON)
 
 	hsplit.add_child(code_edit)
+
+	# Terminal/Output Panel (below the code editor)
+	var TerminalPanelClass = load("res://scripts/ui/terminal_panel.gd")
+	terminal_panel = TerminalPanelClass.new()
+	terminal_panel.name = "TerminalPanel"
+	terminal_panel.custom_minimum_size = Vector2(0, 120)
+	main_vsplit.add_child(terminal_panel)
+
+	# Connect terminal panel signals
+	terminal_panel.error_clicked.connect(_on_terminal_error_clicked)
+	print("CodeEditorWindow: Terminal panel initialized")
 
 	# Status bar
 	status_bar = HBoxContainer.new()
@@ -400,6 +420,10 @@ func _on_run_pressed() -> void:
 	# Clear any previous execution highlight
 	_clear_execution_line()
 
+	# Print to terminal
+	if terminal_panel:
+		terminal_panel.print_execution_started()
+
 	# Update metrics to show execution started
 	on_execution_started()
 
@@ -479,13 +503,16 @@ func on_execution_started() -> void:
 	update_metrics(0, _count_lines_of_code())
 
 ## Called when code execution ends
-func on_execution_ended() -> void:
+func on_execution_ended(success: bool = true) -> void:
 	if performance_metrics:
 		update_metrics(
 			performance_metrics.execution_steps,
 			performance_metrics.lines_of_code,
 			performance_metrics.total_time_ms
 		)
+	# Print completion message to terminal
+	if terminal_panel:
+		terminal_panel.print_execution_completed(success)
 
 ## Count non-empty, non-comment lines
 func _count_lines_of_code() -> int:
@@ -769,3 +796,56 @@ func _on_code_edit_mouse_exited() -> void:
 	if hover_timer:
 		hover_timer.stop()
 	last_hover_word = ""
+
+## Terminal error clicked - navigate to line
+func _on_terminal_error_clicked(line: int) -> void:
+	if code_edit:
+		code_edit.set_caret_line(line - 1)  # Convert 1-indexed to 0-indexed
+		code_edit.set_caret_column(0)
+		code_edit.center_viewport_to_caret()
+		# Highlight the error line briefly
+		_highlight_execution_line(line - 1)
+
+## Terminal API - Print message to terminal
+func terminal_print(message: String) -> void:
+	if terminal_panel:
+		terminal_panel.print_output(message)
+
+## Terminal API - Print info message
+func terminal_info(message: String) -> void:
+	if terminal_panel:
+		terminal_panel.print_info(message)
+
+## Terminal API - Print debug message
+func terminal_debug(message: String) -> void:
+	if terminal_panel:
+		terminal_panel.print_debug(message)
+
+## Terminal API - Print warning message
+func terminal_warning(message: String) -> void:
+	if terminal_panel:
+		terminal_panel.print_warning(message)
+
+## Terminal API - Print error message with optional line number
+func terminal_error(message: String, line_number: int = -1) -> void:
+	if terminal_panel:
+		terminal_panel.print_error(message, line_number)
+
+## Terminal API - Print success message
+func terminal_success(message: String) -> void:
+	if terminal_panel:
+		terminal_panel.print_success(message)
+
+## Terminal API - Clear terminal
+func terminal_clear() -> void:
+	if terminal_panel:
+		terminal_panel.clear()
+
+## Terminal API - Mark execution as complete
+func terminal_execution_complete(success: bool = true) -> void:
+	if terminal_panel:
+		terminal_panel.print_execution_completed(success)
+
+## Get terminal panel reference
+func get_terminal_panel() -> Variant:
+	return terminal_panel
