@@ -19,7 +19,6 @@ var current_file: String = ""
 
 # Popup references
 var autocomplete_popup: Variant
-var signature_popup: Variant
 
 # Trigger tracking
 var last_typed_char: String = ""
@@ -39,12 +38,6 @@ func setup_popups(parent: Control) -> void:
 	autocomplete_popup.name = "AutocompletePopup"
 	parent.add_child(autocomplete_popup)
 	autocomplete_popup.suggestion_selected.connect(_on_suggestion_selected)
-
-	# Create signature help popup
-	var SignatureClass = load("res://scripts/ui/signature_help_popup.gd")
-	signature_popup = SignatureClass.new()
-	signature_popup.name = "SignatureHelpPopup"
-	parent.add_child(signature_popup)
 
 func handle_input(event: InputEvent) -> bool:
 	if event is InputEventKey and event.pressed:
@@ -86,9 +79,6 @@ func handle_input(event: InputEvent) -> bool:
 			var was_visible = false
 			if autocomplete_popup and autocomplete_popup.visible:
 				autocomplete_popup.visible = false
-				was_visible = true
-			if signature_popup and signature_popup.visible:
-				signature_popup.visible = false
 				was_visible = true
 			if was_visible and code_edit:
 				code_edit.get_viewport().set_input_as_handled()
@@ -162,20 +152,6 @@ func on_text_changed() -> void:
 			_show_object_methods(obj_name, current_word)
 			return
 
-	# Check if we're inside a function call for parameter hints
-	var func_context = _get_function_context(line_text, caret_col)
-	if func_context.function_name != "":
-		var func_data = _GameCommandsClass.find_by_name(func_context.function_name)
-		if not func_data.is_empty():
-			_show_signature_help(func_data, func_context.param_index)
-		else:
-			if signature_popup:
-				signature_popup.hide()
-	else:
-		# Hide signature popup if not in function context
-		if signature_popup:
-			signature_popup.hide()
-
 	# Show suggestions if typing
 	if current_word.length() >= _EditorConfigClass.autocomplete_trigger_length:
 		_show_suggestions_for(current_word)
@@ -208,16 +184,6 @@ func _trigger_suggestions() -> void:
 	var current_word = line_text.substr(word_start, caret_col - word_start)
 
 	_show_suggestions_for(current_word if current_word.length() > 0 else "")
-
-func _show_signature_help(func_data: Dictionary, param_index: int) -> void:
-	if not signature_popup:
-		return
-
-	# Get caret screen position (ABOVE the current line)
-	var caret_draw = code_edit.get_caret_draw_pos()
-	var global_pos = code_edit.get_global_transform() * caret_draw
-
-	signature_popup.show_signature(func_data, param_index, global_pos)
 
 func _show_object_methods(obj_name: String, prefix: String = "") -> void:
 	var suggestions: Array = []
@@ -274,35 +240,6 @@ func _find_word_start(line: String, col: int) -> int:
 			break
 		start -= 1
 	return start
-
-func _get_function_context(line: String, col: int) -> Dictionary:
-	# Find if we're inside a function call and which parameter
-	var result = {"function_name": "", "param_index": 0}
-
-	var paren_depth = 0
-	var comma_count = 0
-	var func_start = -1
-
-	for i in range(col - 1, -1, -1):
-		if i >= line.length():
-			continue
-		var c = line[i]
-		if c == ")":
-			paren_depth += 1
-		elif c == "(":
-			if paren_depth == 0:
-				func_start = i
-				break
-			paren_depth -= 1
-		elif c == "," and paren_depth == 0:
-			comma_count += 1
-
-	if func_start > 0:
-		var word_start = _find_word_start(line, func_start)
-		result.function_name = line.substr(word_start, func_start - word_start)
-		result.param_index = comma_count
-
-	return result
 
 func _on_suggestion_selected(text: String) -> void:
 	# Replace the current word with the selected suggestion
