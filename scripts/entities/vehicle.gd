@@ -1087,12 +1087,29 @@ func front_road() -> bool:
 	return _is_road_at_position(front_pos)
 
 
+## Check if car is close enough to tile center for turn detection
+## This prevents early turn detection at tile edges
+func _is_near_turn_point() -> bool:
+	# Get tile center position
+	var tile_center = Vector2(
+		_current_tile.x * TILE_SIZE + TILE_SIZE / 2,
+		_current_tile.y * TILE_SIZE + TILE_SIZE / 2
+	)
+	# Check distance from car to tile center
+	var dist_to_center = global_position.distance_to(tile_center)
+	# Allow turn detection when within 50 pixels of center
+	return dist_to_center < 50.0
+
+
 ## Check if there's a road to the left of the car (short name)
 ## With guidelines: checks if current tile has a left turn exit (cardinal or diagonal)
 ## Without guidelines: checks adjacent tile for connection
 func left_road() -> bool:
 	# Can't evaluate roads while turning - prevents multiple turn queuing
 	if _is_turning:
+		return false
+	# Only detect side roads when near the turn point (prevents early turning)
+	if not _is_near_turn_point():
 		return false
 	if _road_checker == null:
 		return false
@@ -1143,6 +1160,9 @@ func left_road() -> bool:
 func right_road() -> bool:
 	# Can't evaluate roads while turning - prevents multiple turn queuing
 	if _is_turning:
+		return false
+	# Only detect side roads when near the turn point (prevents early turning)
+	if not _is_near_turn_point():
 		return false
 	if _road_checker == null:
 		return false
