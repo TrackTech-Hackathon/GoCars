@@ -10,6 +10,7 @@ class_name TerminalPanel
 ## Signals
 signal terminal_cleared()
 signal error_clicked(line: int)
+signal collapse_toggled(is_collapsed: bool)
 
 ## Message types for coloring
 enum MessageType {
@@ -22,10 +23,13 @@ enum MessageType {
 }
 
 ## Child nodes
+var main_vbox: VBoxContainer
 var header_container: HBoxContainer
 var tab_bar: HBoxContainer
 var clear_button: Button
 var copy_button: Button
+var collapse_button: Button
+var separator: HSeparator
 var scroll_container: ScrollContainer
 var output_text: RichTextLabel
 
@@ -62,20 +66,21 @@ func _ready() -> void:
 
 func _setup_ui() -> void:
 	name = "TerminalPanel"
-	custom_minimum_size = Vector2(0, 100)
+	custom_minimum_size = Vector2(0, 120)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 	# Main VBox container
-	var vbox = VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	add_child(vbox)
+	main_vbox = VBoxContainer.new()
+	main_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	main_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	add_child(main_vbox)
 
 	# Header with tabs and buttons
 	header_container = HBoxContainer.new()
 	header_container.name = "HeaderContainer"
 	header_container.custom_minimum_size = Vector2(0, 28)
-	vbox.add_child(header_container)
+	main_vbox.add_child(header_container)
 
 	# Tab bar (OUTPUT | PROBLEMS | DEBUG CONSOLE)
 	tab_bar = HBoxContainer.new()
@@ -104,13 +109,14 @@ func _setup_ui() -> void:
 	header_container.add_child(spacer)
 
 	# Collapse/Expand toggle
-	var collapse_button = Button.new()
+	collapse_button = Button.new()
 	collapse_button.name = "CollapseButton"
 	collapse_button.text = "▼"
 	collapse_button.flat = true
-	collapse_button.custom_minimum_size = Vector2(24, 24)
+	collapse_button.custom_minimum_size = Vector2(28, 24)
 	collapse_button.tooltip_text = "Collapse/Expand terminal"
 	collapse_button.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	collapse_button.add_theme_color_override("font_hover_color", Color(0.9, 0.9, 0.95))
 	collapse_button.pressed.connect(_on_collapse_pressed)
 	header_container.add_child(collapse_button)
 
@@ -139,9 +145,10 @@ func _setup_ui() -> void:
 	header_container.add_child(copy_button)
 
 	# Separator
-	var separator = HSeparator.new()
+	separator = HSeparator.new()
+	separator.name = "Separator"
 	separator.add_theme_color_override("separation_color", Color(0.25, 0.25, 0.3))
-	vbox.add_child(separator)
+	main_vbox.add_child(separator)
 
 	# Scroll container for output
 	scroll_container = ScrollContainer.new()
@@ -149,7 +156,7 @@ func _setup_ui() -> void:
 	scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll_container.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	vbox.add_child(scroll_container)
+	main_vbox.add_child(scroll_container)
 
 	# Rich text label for colored output
 	output_text = RichTextLabel.new()
@@ -256,21 +263,23 @@ func collapse() -> void:
 	if not is_collapsed:
 		original_height = size.y
 		scroll_container.visible = false
-		custom_minimum_size.y = 28  # Just header height
+		separator.visible = false
+		custom_minimum_size.y = 36  # Just header height with padding
+		size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		is_collapsed = true
-		var collapse_btn = header_container.get_node_or_null("CollapseButton")
-		if collapse_btn:
-			collapse_btn.text = "▲"
+		collapse_button.text = "▲"
+		collapse_toggled.emit(true)
 
 ## Expand/show the terminal content
 func expand() -> void:
 	if is_collapsed:
 		scroll_container.visible = true
-		custom_minimum_size.y = 100
+		separator.visible = true
+		custom_minimum_size.y = 120
+		size_flags_vertical = Control.SIZE_EXPAND_FILL
 		is_collapsed = false
-		var collapse_btn = header_container.get_node_or_null("CollapseButton")
-		if collapse_btn:
-			collapse_btn.text = "▼"
+		collapse_button.text = "▼"
+		collapse_toggled.emit(false)
 
 ## Toggle collapsed state
 func toggle_collapse() -> void:
