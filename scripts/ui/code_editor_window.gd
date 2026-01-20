@@ -337,6 +337,16 @@ func connect_to_simulation(sim_engine: Variant) -> void:
 		sim_engine.execution_line_changed.connect(_on_execution_line_changed)
 		print("CodeEditorWindow: Connected execution_line_changed signal")
 
+	# Connect print output for Python print() statements
+	if sim_engine.has_signal("print_output"):
+		sim_engine.print_output.connect(_on_print_output)
+		print("CodeEditorWindow: Connected print_output signal")
+
+	# Connect execution errors
+	if sim_engine.has_signal("execution_error_occurred"):
+		sim_engine.execution_error_occurred.connect(_on_execution_error)
+		print("CodeEditorWindow: Connected execution_error_occurred signal")
+
 	print("CodeEditorWindow: Connected to simulation engine")
 
 ## Load a file into the editor
@@ -403,8 +413,9 @@ func _on_run_pressed() -> void:
 	# Clear any previous execution highlight
 	_clear_execution_line()
 
-	# Print to terminal
+	# Clear terminal and print execution start
 	if terminal_panel:
+		terminal_panel.clear()
 		terminal_panel.print_execution_started()
 
 	# Update metrics to show execution started
@@ -720,3 +731,23 @@ func terminal_execution_complete(success: bool = true) -> void:
 ## Get terminal panel reference
 func get_terminal_panel() -> Variant:
 	return terminal_panel
+
+## Handle print output from Python code
+func _on_print_output(message: String) -> void:
+	terminal_print(message)
+
+## Handle execution errors from simulation
+func _on_execution_error(error: String, line: int) -> void:
+	# Show detailed error in terminal
+	terminal_error(error, line)
+
+	# Also show the code line that caused the error (if available)
+	if code_edit and line > 0 and line <= code_edit.get_line_count():
+		var error_line = code_edit.get_line(line - 1).strip_edges()  # Convert to 0-indexed
+		if not error_line.is_empty():
+			if terminal_panel:
+				terminal_panel.print_debug("    → " + error_line)
+
+	# Print execution failed message
+	if terminal_panel:
+		terminal_panel.print_execution_completed(false)
