@@ -1,5 +1,4 @@
 [gd_scene load_steps=7 format=3 uid="uid://dpu0r01g08cg3"]
-[gd_scene load_steps=5 format=3 uid="uid://dpu0r01g08cg3"]
 
 [ext_resource type="Script" uid="uid://df74itlomy7yj" path="res://scripts/core/simulation_engine.gd" id="1_sim"]
 [ext_resource type="Script" uid="uid://dqoc4rfbl715i" path="res://scenes/main.gd" id="3_main"]
