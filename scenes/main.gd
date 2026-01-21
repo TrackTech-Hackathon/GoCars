@@ -172,6 +172,7 @@ func _ready() -> void:
 		if level_manager.load_level(GameState.selected_level_id):
 			level_manager.start_level()
 			_update_status("Level %s - Ready" % GameState.selected_level_id)
+			_update_road_cards_ui()  # Update road cards based on level type
 		else:
 			_update_status("Failed to load level")
 	else:
@@ -179,6 +180,9 @@ func _ready() -> void:
 	_update_speed_label()
 	_update_hearts_label()
 	_update_road_cards_label()
+
+	# Spawn initial car so one is visible from the start
+	_spawn_new_car()
 
 
 func _process(delta: float) -> void:
@@ -807,6 +811,9 @@ func _on_retry_pressed() -> void:
 	_update_status("Reset - Ready")
 	run_button.disabled = false
 
+	# Spawn initial car so one is visible after reset
+	_spawn_new_car()
+
 
 func _on_next_pressed() -> void:
 	_hide_result_popup()
@@ -845,6 +852,9 @@ func _do_fast_retry() -> void:
 	_update_hearts_label()
 	_update_status("Reset - Ready")
 	run_button.disabled = false
+
+	# Spawn initial car so one is visible after reset
+	_spawn_new_car()
 
 
 func _input(event: InputEvent) -> void:

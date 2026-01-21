@@ -633,6 +633,18 @@ func _acquire_path_for_current_tile() -> void:
 	_current_path = tile.get_guideline_path(_entry_direction, chosen_exit)
 	_path_index = 0
 
+	# Skip waypoints that are behind the car's current position
+	# This handles spawning at tile center instead of entry edge
+	if _current_path.size() > 1:
+		var forward = direction.normalized()
+		while _path_index < _current_path.size() - 1:
+			var to_waypoint = _current_path[_path_index] - global_position
+			# If waypoint is behind us (negative dot product), skip it
+			if to_waypoint.dot(forward) < 0:
+				_path_index += 1
+			else:
+				break
+
 	# Clear queued turn only if it was actually used
 	if turn_was_used:
 		queued_turn = ""

@@ -1,6 +1,7 @@
 {
 	"id": "T5",
-	"level_type": "CODE_ONLY",
+	"level_type": "BUILD_AND_CODE",
+	"road_cards": 10,
 	"name": "Traffic Jam",
 	"description": "Coordinate multiple cars and traffic lights to avoid crashes!",
 	"available_functions": ["car.go", "car.stop", "car.wait", "car.turn_left", "car.turn_right", "stoplight.set_green", "stoplight.set_red"],

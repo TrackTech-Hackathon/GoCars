@@ -23,7 +23,7 @@ func _ready() -> void:
 
 	# Main panel
 	var panel = Panel.new()
-	panel.custom_minimum_size = Vector2(500, 500)
+	panel.custom_minimum_size = Vector2(500, 750)
 
 	var panel_style = StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.15, 0.15, 0.18, 0.98)
@@ -66,12 +66,19 @@ func _ready() -> void:
 	vbox.add_child(spacer)
 
 	# Level data: [id, name, description]
+	# Levels with [BUILD] have road editing enabled
 	var levels = [
 		["T1", "First Drive", "Learn car.go()"],
 		["T2", "Stop Sign", "Learn car.stop()"],
+		["T3", "Turn Ahead", "Turns [BUILD]"],
+		["T5", "Traffic Jam", "Multi-car [BUILD]"],
 		["C1", "Smallville", "Variables"],
 		["C2", "Red Light", "If statements"],
-		["W1", "Ferry Dock", "While loops"]
+		["C3", "Jaro Crossroads", "elif/else [BUILD]"],
+		["C5", "Molo Mansion", "Comparisons [BUILD]"],
+		["W1", "Ferry Dock", "While loops"],
+		["W3", "Fort San Pedro", "For loops [BUILD]"],
+		["W5", "Guimaras Ferry", "Break [BUILD]"]
 	]
 
 	# Create buttons for each level

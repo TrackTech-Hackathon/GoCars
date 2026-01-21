@@ -1,6 +1,7 @@
 {
 	"id": "W3",
-	"level_type": "CODE_ONLY",
+	"level_type": "BUILD_AND_CODE",
+	"road_cards": 10,
 	"name": "Fort San Pedro Dock",
 	"description": "Learn for loops with range()! Repeat actions a specific number of times.",
 	"location": "Fort San Pedro, Iloilo",

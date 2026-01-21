@@ -111,15 +111,15 @@ func _on_stoplight_state_changed(stoplight_id: String, new_state: String) -> voi
 
 func _process(delta: float) -> void:
 	if current_state == State.RUNNING or current_state == State.STEP:
-		# Update level timer
-		if _timer_active and _level_time_limit > 0:
-			_level_timer += delta
-			if _level_timer >= _level_time_limit:
-				_on_level_failed("Time expired!")
-				return
+		# Time limit disabled - levels no longer fail due to time
+		# if _timer_active and _level_time_limit > 0:
+		# 	_level_timer += delta
+		# 	if _level_timer >= _level_time_limit:
+		# 		_on_level_failed("Time expired!")
+		# 		return
 
-		# Check for out-of-bounds vehicles
-		_check_vehicle_boundaries()
+		# Out-of-bounds check disabled - cars can leave the map
+		# _check_vehicle_boundaries()
 
 		# Step-based code execution (one statement/iteration per interval)
 		_execution_timer += delta
