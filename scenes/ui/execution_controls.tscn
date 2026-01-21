@@ -1,6 +1,12 @@
-[gd_scene load_steps=2 format=3 uid="uid://b3m9k7n2p4qst"]
+[gd_scene load_steps=5 format=3 uid="uid://b3nak7n2p4qst"]
 
-[ext_resource type="Script" path="res://scripts/ui/execution_controls.gd" id="1_exec_controls"]
+[ext_resource type="Script" uid="uid://bfsq2osq8d5se" path="res://scripts/ui/execution_controls.gd" id="1_exec_controls"]
+[ext_resource type="Texture2D" uid="uid://bpp4egpvi1amx" path="res://assets/UI/Untitled19.png" id="2_kux45"]
+
+[sub_resource type="Theme" id="Theme_m3aj8"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_3460w"]
+texture = ExtResource("2_kux45")
 
 [node name="ExecutionControls" type="PanelContainer"]
 custom_minimum_size = Vector2(500, 40)
@@ -13,23 +19,25 @@ layout_mode = 2
 
 [node name="PlayButton" type="Button" parent="HBox"]
 layout_mode = 2
-text = "▶ Play"
 tooltip_text = "Start/Resume Execution (F5)"
+theme = SubResource("Theme_m3aj8")
+theme_override_styles/normal = SubResource("StyleBoxTexture_3460w")
+text = "        "
 
 [node name="PauseButton" type="Button" parent="HBox"]
 layout_mode = 2
-text = "⏸ Pause"
 tooltip_text = "Pause Execution (Space)"
+text = "⏸ Pause"
 
 [node name="StopButton" type="Button" parent="HBox"]
 layout_mode = 2
-text = "⏹ Stop"
 tooltip_text = "Stop Execution"
+text = "⏹ Stop"
 
 [node name="StepButton" type="Button" parent="HBox"]
 layout_mode = 2
-text = "⏭ Step"
 tooltip_text = "Execute One Line (F10)"
+text = "⏭ Step"
 
 [node name="VSeparator" type="VSeparator" parent="HBox"]
 layout_mode = 2
