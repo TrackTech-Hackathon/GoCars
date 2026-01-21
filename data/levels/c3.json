@@ -1,6 +1,7 @@
 {
 	"id": "C3",
-	"level_type": "CODE_ONLY",
+	"level_type": "BUILD_AND_CODE",
+	"road_cards": 10,
 	"name": "Jaro Crossroads",
 	"description": "Learn elif and else! Handle multiple light states with conditional branches.",
 	"location": "Jaro, Iloilo City",

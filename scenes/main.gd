@@ -18,7 +18,6 @@ enum BackgroundTile {
 @onready var speed_label: Label = $UI/SpeedLabel
 @onready var hearts_label: Label = $UI/HeartsLabel
 @onready var road_cards_label: Label = $UI/RoadCardsLabel
-@onready var test_vehicle: Vehicle = $GameWorld/TestVehicle
 @onready var test_stoplight: Stoplight = $GameWorld/TestStoplight
 @onready var roads_container: Node2D = $GameWorld/Roads
 
@@ -43,6 +42,16 @@ var use_new_ui: bool = true  # Set to true to enable new floating windows (Ctrl+
 # Help panel elements
 @onready var help_panel: Panel = $UI/HelpPanel
 @onready var toggle_help_button: Button = $UI/ToggleHelpButton
+
+# Background audio
+var background_audio: AudioStreamPlayer = null
+var background_music: AudioStreamPlayer = null  # Background music that alternates
+var bg_music_tracks: Array = []  # Store both music tracks
+var current_music_index: int = 0  # Track which music is playing
+var engine_audio: AudioStreamPlayer = null  # Car engine sound when code runs
+var crash_audio: AudioStreamPlayer = null  # Car crash sound
+var engine_loop_start: float = 0.05  # Skip silence at start
+var engine_loop_end: float = 1.9  # Stop before silence at end
 
 # Current line highlighting
 var _current_executing_line: int = -1
@@ -96,10 +105,15 @@ var car_spawn_direction: Vector2 = Vector2.RIGHT
 var car_spawn_rotation: float = PI / 2  # 90 degrees - car faces right
 var car_destination: Vector2 = Vector2(1368, 504 + LANE_OFFSET)  # Tile (9,3) center, offset down
 var is_spawning_cars: bool = false
-var next_car_id: int = 2  # Start from 2 since car1 is the test vehicle
+var next_car_id: int = 1  # Start from 1 (no test vehicle)
 
-
+var level_menu_panel: Panel = null
+var level_menu_visible: bool = true
 func _ready() -> void:
+	# Set music to very low volume during gameplay
+	if MusicManager:
+		MusicManager.set_game_volume()
+	
 	# Create background container (behind roads)
 	background_container = Node2D.new()
 	background_container.name = "Background"
@@ -120,17 +134,6 @@ func _ready() -> void:
 	level_manager.level_completed.connect(_on_level_manager_completed)
 	level_manager.level_failed.connect(_on_level_manager_failed)
 
-	# Register vehicle with simulation engine
-	simulation_engine.register_vehicle(test_vehicle)
-
-	# Pass road checker reference to vehicle for road detection
-	test_vehicle.set_road_checker(self)
-
-	# Set destination and connect signals for test vehicle
-	test_vehicle.destination = car_destination
-	test_vehicle.reached_destination.connect(_on_car_reached_destination)
-	test_vehicle.crashed.connect(_on_car_crashed)
-
 	# Register stoplight if it exists
 	if test_stoplight:
 		simulation_engine.register_stoplight(test_stoplight)
@@ -148,11 +151,6 @@ func _ready() -> void:
 	simulation_engine.level_failed.connect(_on_level_failed)
 	simulation_engine.execution_line_changed.connect(_on_execution_line_changed)
 	simulation_engine.execution_error_occurred.connect(_on_execution_error)
-
-	# Connect vehicle signals if vehicle exists
-	if test_vehicle:
-		test_vehicle.ran_red_light.connect(_on_car_ran_red_light)
-		test_vehicle.off_road_crash.connect(_on_car_off_road)
 
 	# Connect result popup buttons
 	retry_button.pressed.connect(_on_retry_pressed)
@@ -183,13 +181,58 @@ func _ready() -> void:
 	if use_new_ui:
 		_setup_new_ui()
 
-	_update_status("Ready - Enter code and press 'Run Code' (F5)")
+	# Load level from GameState (set by level selector)
+	if GameState.selected_level_id != "":
+		if level_manager.load_level(GameState.selected_level_id):
+			level_manager.start_level()
+			_update_status("Level %s - Ready" % GameState.selected_level_id)
+			_update_road_cards_ui()  # Update road cards based on level type
+		else:
+			_update_status("Failed to load level")
+	else:
+		_update_status("Ready - Enter code and press Run")
+	
+	# Setup background engine sound
+	background_audio = AudioStreamPlayer.new()
+	background_audio.stream = load("res://assets/audio/car-engine-running.mp3")
+	background_audio.volume_db = -15.0
+	add_child(background_audio)
+	background_audio.play(1.0)  # Start at 1 second
+	
+	# Background music is now handled by MusicManager autoload
+	# No longer creating local background_music player
+	
+	# Setup car engine sound (plays when code with movement runs)
+	engine_audio = AudioStreamPlayer.new()
+	engine_audio.stream = load("res://assets/audio/engine-6000.mp3")
+	engine_audio.volume_db = -20.0  # Quieter volume
+	add_child(engine_audio)
+	
+	# Setup crash sound (plays once when car crashes)
+	crash_audio = AudioStreamPlayer.new()
+	crash_audio.stream = load("res://assets/audio/car-crash-sound-376882.mp3")
+	crash_audio.volume_db = -10.0
+	add_child(crash_audio)
+	
 	_update_speed_label()
 	_update_hearts_label()
 	_update_road_cards_label()
 
+	# Spawn initial car so one is visible from the start
+	_spawn_new_car()
+
 
 func _process(delta: float) -> void:
+	# Loop background audio between 1-15 seconds
+	if background_audio and background_audio.playing:
+		if background_audio.get_playback_position() >= 15.0:
+			background_audio.play(1.0)  # Restart at 1 second
+	
+	# Manual seamless loop for engine audio (skip silence gaps)
+	if engine_audio and engine_audio.playing:
+		if engine_audio.get_playback_position() >= engine_loop_end:
+			engine_audio.play(engine_loop_start)  # Restart at loop start point
+	
 	# Handle camera movement (WASD or Arrow keys)
 	if camera:
 		var camera_velocity = Vector2.ZERO
@@ -428,10 +471,11 @@ func _get_direction_from_offset(offset: Vector2i) -> String:
 	return ""
 
 
-## Check if two grid positions are adjacent (including diagonals)
+## Check if two grid positions are adjacent (cardinals only)
 func _is_adjacent(pos1: Vector2i, pos2: Vector2i) -> bool:
 	var diff = pos2 - pos1
-	return abs(diff.x) <= 1 and abs(diff.y) <= 1 and diff != Vector2i.ZERO
+	# Only cardinal directions: exactly one axis differs by 1, other is 0
+	return (abs(diff.x) == 1 and diff.y == 0) or (abs(diff.y) == 1 and diff.x == 0)
 
 
 ## Select a road tile and show selection indicator
@@ -570,16 +614,10 @@ func _on_run_button_pressed() -> void:
 	for grid_pos in road_tiles:
 		road_tiles[grid_pos].mark_paths_dirty()
 
-	# Reset vehicle position before running (check if vehicle still exists)
-	if is_instance_valid(test_vehicle):
-		if test_vehicle.vehicle_state == 1:  # Only reset if not crashed
-			test_vehicle.reset(car_spawn_position, Vector2.RIGHT)
-		else:
-			# Vehicle is crashed, spawn a new one
-			_respawn_test_vehicle()
-	else:
-		# Vehicle was freed, spawn a new one
-		_respawn_test_vehicle()
+	# Spawn an initial car if there are no cars
+	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	if vehicles.size() == 0:
+		_spawn_new_car()
 
 	# Execute the code
 	simulation_engine.execute_code(code)
@@ -591,10 +629,27 @@ func _on_simulation_started() -> void:
 	is_editing_enabled = true  # Keep editing enabled during gameplay
 	is_spawning_cars = true  # Start spawning cars
 	car_spawn_timer = 0.0  # Reset spawn timer
+	
+	# Play engine sound if code contains movement commands
+	var code = code_editor.text.to_lower()
+	if "car.go" in code or "car.move" in code:
+		if engine_audio and not engine_audio.playing:
+			engine_audio.play(engine_loop_start)  # Start at loop point, skip silence
+		# Stop background audio when car engine starts
+		if background_audio and background_audio.playing:
+			background_audio.stop()
 
 
 func _on_simulation_paused() -> void:
 	_update_status("Paused (Press Space to resume)")
+	
+	# Stop engine sound when paused/stopped
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Resume background audio when paused
+	if background_audio and not background_audio.playing:
+		background_audio.play(1.0)
 
 
 func _on_simulation_ended(success: bool) -> void:
@@ -602,6 +657,15 @@ func _on_simulation_ended(success: bool) -> void:
 	is_editing_enabled = true
 	is_spawning_cars = false  # Stop spawning cars
 	_current_executing_line = -1  # Clear line highlighting
+	
+	# Stop engine sound
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Resume background audio
+	if background_audio and not background_audio.playing:
+		background_audio.play(1.0)
+	
 	if success:
 		_update_status("Simulation complete!")
 	else:
@@ -615,13 +679,30 @@ func _on_car_reached_destination(car_id: String) -> void:
 func _on_car_crashed(car_id: String) -> void:
 	_lose_heart()
 	_update_status("Car '%s' crashed! Lost 1 heart" % car_id)
+	
+	# Stop engine sound when car crashes
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Play crash sound
+	if crash_audio and not crash_audio.playing:
+		crash_audio.play()
 
 
 func _on_car_off_road(car_id: String) -> void:
 	_lose_heart()
 	_update_status("Car '%s' went off-road! Lost 1 heart" % car_id)
+	
+	# Stop engine sound when car goes off-road
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Play crash sound
+	if crash_audio and not crash_audio.playing:
+		crash_audio.play()
 
 
+## Switch to next background music track when current one finishes
 func _on_level_completed(stars: int) -> void:
 	_update_status("Level Complete! Stars: %s" % stars)
 	_show_victory_popup(stars)
@@ -807,15 +888,20 @@ func _on_retry_pressed() -> void:
 	simulation_engine.reset()
 	is_spawning_cars = false
 	_clear_line_highlight()
+	
+	# Stop engine sound on retry
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Resume background audio
+	if background_audio and not background_audio.playing:
+		background_audio.play(1.0)
 
-	# Clear ALL spawned cars (crashed and active) except we'll respawn test vehicle
+	# Clear ALL spawned cars
 	_clear_all_spawned_cars()
 
 	# Reset car ID counter
-	next_car_id = 2
-
-	# Always respawn the test vehicle fresh
-	_respawn_test_vehicle()
+	next_car_id = 1
 
 	if test_stoplight:
 		test_stoplight.reset()
@@ -823,6 +909,9 @@ func _on_retry_pressed() -> void:
 	_update_hearts_label()
 	_update_status("Reset - Ready")
 	run_button.disabled = false
+
+	# Spawn initial car so one is visible after reset
+	_spawn_new_car()
 
 
 func _on_next_pressed() -> void:
@@ -845,19 +934,24 @@ func _do_fast_retry() -> void:
 	simulation_engine.reset()
 	is_spawning_cars = false
 	_clear_line_highlight()
+	
+	# Stop engine sound on reset
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Resume background audio
+	if background_audio and not background_audio.playing:
+		background_audio.play(1.0)
 
 	# Force all road tiles to recalculate paths (fixes guideline bug on subsequent runs)
 	for grid_pos in road_tiles:
 		road_tiles[grid_pos].mark_paths_dirty()
 
-	# Clear ALL spawned cars (crashed and active) except we'll respawn test vehicle
+	# Clear ALL spawned cars
 	_clear_all_spawned_cars()
 
 	# Reset car ID counter
-	next_car_id = 2
-
-	# Always respawn the test vehicle fresh
-	_respawn_test_vehicle()
+	next_car_id = 1
 
 	if test_stoplight:
 		test_stoplight.reset()
@@ -865,6 +959,9 @@ func _do_fast_retry() -> void:
 	_update_hearts_label()
 	_update_status("Reset - Ready")
 	run_button.disabled = false
+
+	# Spawn initial car so one is visible after reset
+	_spawn_new_car()
 
 
 func _input(event: InputEvent) -> void:
@@ -1139,68 +1236,6 @@ func _clear_all_spawned_cars() -> void:
 		simulation_engine.unregister_vehicle(vehicle.vehicle_id)
 		vehicle.queue_free()
 
-	# Clear the test_vehicle reference
-	test_vehicle = null
-
-
-func _respawn_test_vehicle() -> void:
-	# Load a random car scene from the 8 available
-	var car_scenes = [
-		"res://scenes/entities/car_sedan.tscn",
-		"res://scenes/entities/car_estate.tscn",
-		"res://scenes/entities/car_sport.tscn",
-		"res://scenes/entities/car_micro.tscn",
-		"res://scenes/entities/car_pickup.tscn",
-		"res://scenes/entities/car_jeepney.tscn",
-		"res://scenes/entities/car_jeepney_2.tscn",
-		"res://scenes/entities/car_bus.tscn"
-	]
-	var random_index = randi() % car_scenes.size()
-	var vehicle_scene = load(car_scenes[random_index])
-	if vehicle_scene == null:
-		_update_status("Error: Could not load vehicle scene")
-		return
-
-	# Remove old test_vehicle if it exists but is crashed
-	if is_instance_valid(test_vehicle):
-		simulation_engine.unregister_vehicle(test_vehicle.vehicle_id)
-		test_vehicle.queue_free()
-
-	# Create new vehicle instance
-	test_vehicle = vehicle_scene.instantiate()
-	test_vehicle.vehicle_id = "car1"
-
-	# Set position and direction (car sprite faces UP, so rotation PI/2 makes it face RIGHT)
-	test_vehicle.global_position = car_spawn_position
-	test_vehicle.direction = car_spawn_direction
-	test_vehicle.rotation = car_spawn_rotation
-
-	# Set destination
-	test_vehicle.destination = car_destination
-
-	# Set random color based on vehicle type and rarity
-	test_vehicle.set_random_color()
-
-	# Add to scene
-	$GameWorld.add_child(test_vehicle)
-
-	# Set road checker reference
-	test_vehicle.set_road_checker(self)
-
-	# Register with simulation engine
-	simulation_engine.register_vehicle(test_vehicle)
-
-	# Connect signals
-	test_vehicle.reached_destination.connect(_on_car_reached_destination)
-	test_vehicle.crashed.connect(_on_car_crashed)
-	test_vehicle.off_road_crash.connect(_on_car_off_road)
-	test_vehicle.ran_red_light.connect(_on_car_ran_red_light)
-
-	# Make aware of stoplight
-	if test_stoplight:
-		test_vehicle.add_stoplight(test_stoplight)
-
-	_update_status("Spawned %s" % test_vehicle.get_vehicle_type_name())
 
 ## ============================================
 ## NEW UI SYSTEM INTEGRATION (Phase 9)
@@ -1253,14 +1288,14 @@ func _on_window_manager_code_run(code: String) -> void:
 		_update_status("Error: No code entered")
 		return
 
-	# Reset vehicle position before running
-	if is_instance_valid(test_vehicle):
-		if test_vehicle.vehicle_state == 1:
-			test_vehicle.reset(car_spawn_position, Vector2.RIGHT)
-		else:
-			_respawn_test_vehicle()
-	else:
-		_respawn_test_vehicle()
+	# Force all road tiles to recalculate paths
+	for grid_pos in road_tiles:
+		road_tiles[grid_pos].mark_paths_dirty()
+
+	# Spawn an initial car if there are no cars
+	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	if vehicles.size() == 0:
+		_spawn_new_car()
 
 	# Execute the code
 	simulation_engine.execute_code(code)
@@ -1272,6 +1307,19 @@ func _on_window_manager_pause() -> void:
 func _on_window_manager_reset() -> void:
 	"""Handle reset request from new UI - same as fast retry"""
 	_do_fast_retry()
+
+
+func _exit_tree() -> void:
+	"""Clean up background audio when exiting the scene"""
+	if background_audio:
+		background_audio.stop()
+		background_audio.queue_free()
+	if engine_audio:
+		engine_audio.stop()
+		engine_audio.queue_free()
+	if crash_audio:
+		crash_audio.stop()
+		crash_audio.queue_free()
 
 func _on_window_manager_speed_changed(speed: float) -> void:
 	"""Handle speed change from new UI - instant update"""

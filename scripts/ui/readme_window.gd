@@ -87,7 +87,7 @@ Write Python code to control vehicles and complete levels. Your code runs on all
   [color=gray]if car.front_road():
       car.go()
   elif car.left_road():
-      car.turn("left")
+	  car.turn("left")
   else:
       car.stop()[/color]
 
@@ -112,9 +112,9 @@ Create helper modules to organize your code:
   [color=gray]def avoid_crash():
       if car.front_crash():
           if car.left_road():
-              car.turn("left")
+			  car.turn("left")
           elif car.right_road():
-              car.turn("right")
+			  car.turn("right")
 
   def navigate():
       if car.front_road():
@@ -154,17 +154,17 @@ Create helper modules to organize your code:
 def navigate_safely():
     if car.front_crash():
         if car.left_road():
-            car.turn("left")
+			car.turn("left")
         elif car.right_road():
-            car.turn("right")
+			car.turn("right")
         else:
             car.stop()
     elif car.front_road() and check_stoplight():
         car.go()
     elif car.left_road():
-        car.turn("left")
+		car.turn("left")
     elif car.right_road():
-        car.turn("right")
+		car.turn("right")
     else:
         car.stop()
 

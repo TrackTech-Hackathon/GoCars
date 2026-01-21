@@ -10,16 +10,12 @@ class_name RoadTile
 ## Connections are stored manually - roads only connect when explicitly linked
 ## Preview mode shows the tile at 50% opacity
 
-# References to connection sprites (8 directions)
+# References to connection sprites (4 cardinal directions)
 @onready var connection_sprites: Dictionary = {
-	"top_left": $ConnectionSprites/TopLeft,
 	"top": $ConnectionSprites/Top,
-	"top_right": $ConnectionSprites/TopRight,
 	"left": $ConnectionSprites/Left,
 	"right": $ConnectionSprites/Right,
-	"bottom_left": $ConnectionSprites/BottomLeft,
-	"bottom": $ConnectionSprites/Bottom,
-	"bottom_right": $ConnectionSprites/BottomRight
+	"bottom": $ConnectionSprites/Bottom
 }
 
 @onready var main_sprite: Sprite2D = $MainSprite
@@ -27,14 +23,10 @@ class_name RoadTile
 # Manual connections - which directions this tile is connected to
 # Unlike neighbors, connections are explicitly set (not auto-detected)
 var connections: Dictionary = {
-	"top_left": false,
 	"top": false,
-	"top_right": false,
 	"left": false,
 	"right": false,
-	"bottom_left": false,
-	"bottom": false,
-	"bottom_right": false
+	"bottom": false
 }
 
 # Extended connection state for 2-step visibility rules
@@ -42,18 +34,14 @@ var extended_connections: Dictionary = {
 	"top_top": false,
 	"bottom_bottom": false,
 	"left_left": false,
-	"right_right": false,
-	"top_left_top_left": false,
-	"top_right_top_right": false,
-	"bottom_left_bottom_left": false,
-	"bottom_right_bottom_right": false
+	"right_right": false
 }
 
 # Preview mode - tile shows at 50% opacity
 var is_preview: bool = false
 
 # Debug mode - show guideline paths visually
-var show_guidelines: bool = true 
+var show_guidelines: bool = false
 
 # Lazy path calculation flag - paths recalculated on first access
 var _paths_dirty: bool = true
@@ -106,11 +94,6 @@ func _get_path_color(entry_dir: String) -> Color:
 		"bottom": return Color(0.8, 0.2, 0.2, 0.8)  # Red
 		"left": return Color(0.2, 0.2, 0.8, 0.8)    # Blue
 		"right": return Color(0.8, 0.8, 0.2, 0.8)   # Yellow
-		# Diagonals
-		"top_left": return Color(0.2, 0.8, 0.8, 0.8)     # Cyan
-		"top_right": return Color(0.8, 0.2, 0.8, 0.8)    # Magenta
-		"bottom_left": return Color(0.8, 0.5, 0.2, 0.8)  # Orange
-		"bottom_right": return Color(0.5, 0.8, 0.2, 0.8) # Lime
 	return Color.WHITE
 
 
@@ -134,64 +117,33 @@ func _update_opacity() -> void:
 func update_connection_sprites() -> void:
 	# Apply visibility rules for each sprite
 
-	# Cardinal sprites - check adjacent diagonals and 2-step cardinal
+	# Cardinal sprites - check adjacent and 2-step cardinal
 	connection_sprites["top"].visible = _should_show_cardinal(
 		connections["top"],
-		connections["top_left"], connections["top_right"],
+		connections["left"], connections["right"],
 		extended_connections["top_top"]
 	)
 
 	connection_sprites["bottom"].visible = _should_show_cardinal(
 		connections["bottom"],
-		connections["bottom_left"], connections["bottom_right"],
+		connections["left"], connections["right"],
 		extended_connections["bottom_bottom"]
 	)
 
 	connection_sprites["left"].visible = _should_show_cardinal(
 		connections["left"],
-		connections["top_left"], connections["bottom_left"],
+		connections["top"], connections["bottom"],
 		extended_connections["left_left"]
 	)
 
 	connection_sprites["right"].visible = _should_show_cardinal(
 		connections["right"],
-		connections["top_right"], connections["bottom_right"],
+		connections["top"], connections["bottom"],
 		extended_connections["right_right"]
-	)
-
-	# Diagonal sprites - check adjacent cardinals and 2-step diagonal
-	connection_sprites["top_left"].visible = _should_show_diagonal(
-		connections["top_left"],
-		connections["top"], connections["left"],
-		extended_connections["top_left_top_left"]
-	)
-
-	connection_sprites["top_right"].visible = _should_show_diagonal(
-		connections["top_right"],
-		connections["top"], connections["right"],
-		extended_connections["top_right_top_right"]
-	)
-
-	connection_sprites["bottom_left"].visible = _should_show_diagonal(
-		connections["bottom_left"],
-		connections["bottom"], connections["left"],
-		extended_connections["bottom_left_bottom_left"]
-	)
-
-	connection_sprites["bottom_right"].visible = _should_show_diagonal(
-		connections["bottom_right"],
-		connections["bottom"], connections["right"],
-		extended_connections["bottom_right_bottom_right"]
 	)
 
 
 func _should_show_cardinal(has_connection: bool, _adjacent1: bool, _adjacent2: bool, _has_2step: bool) -> bool:
-	# Simplified: just show the connection if it exists
-	# The complex rules were for auto-tiling, but we use manual connections now
-	return has_connection
-
-
-func _should_show_diagonal(has_connection: bool, _adjacent1: bool, _adjacent2: bool, _has_2step: bool) -> bool:
 	# Simplified: just show the connection if it exists
 	# The complex rules were for auto-tiling, but we use manual connections now
 	return has_connection
@@ -253,10 +205,6 @@ static func get_opposite_direction(direction: String) -> String:
 		"bottom": return "top"
 		"left": return "right"
 		"right": return "left"
-		"top_left": return "bottom_right"
-		"top_right": return "bottom_left"
-		"bottom_left": return "top_right"
-		"bottom_right": return "top_left"
 	return ""
 
 
@@ -353,11 +301,6 @@ func _get_edge_center(dir: String, tile_center: Vector2) -> Vector2:
 		"bottom": return tile_center + Vector2(0, HALF_TILE)
 		"left": return tile_center + Vector2(-HALF_TILE, 0)
 		"right": return tile_center + Vector2(HALF_TILE, 0)
-		# Diagonals - tile corners
-		"top_left": return tile_center + Vector2(-HALF_TILE, -HALF_TILE)
-		"top_right": return tile_center + Vector2(HALF_TILE, -HALF_TILE)
-		"bottom_left": return tile_center + Vector2(-HALF_TILE, HALF_TILE)
-		"bottom_right": return tile_center + Vector2(HALF_TILE, HALF_TILE)
 	return tile_center
 
 
@@ -375,15 +318,6 @@ func _get_straight_lane_offset(entry: String, exit_dir: String) -> Vector2:
 			return Vector2(-LANE_OFFSET, 0)
 		"bottom_top":  # Traveling UP -> right side is RIGHT (+X)
 			return Vector2(LANE_OFFSET, 0)
-		# Diagonal straights - perpendicular offset (90° clockwise from travel)
-		"top_left_bottom_right":  # Traveling SE -> right side is SW (-X, +Y)
-			return Vector2(-1, 1).normalized() * LANE_OFFSET
-		"bottom_right_top_left":  # Traveling NW -> right side is NE (+X, -Y)
-			return Vector2(1, -1).normalized() * LANE_OFFSET
-		"top_right_bottom_left":  # Traveling SW -> right side is NW (-X, -Y)
-			return Vector2(-1, -1).normalized() * LANE_OFFSET
-		"bottom_left_top_right":  # Traveling NE -> right side is SE (+X, +Y)
-			return Vector2(1, 1).normalized() * LANE_OFFSET
 	return Vector2.ZERO
 
 
@@ -424,17 +358,6 @@ func _get_corner_point(entry: String, exit_dir: String, tile_center: Vector2) ->
 			"top_left", "top_right", "bottom_left", "bottom_right":
 				return tile_center + Vector2(entry_offset.x, exit_offset.y)
 
-	# Cardinal to diagonal or diagonal to cardinal turns
-	# Use a blend of entry and exit offsets for a smooth curve through center
-	if (entry_axis <= 1 and exit_axis >= 2) or (entry_axis >= 2 and exit_axis <= 1):
-		# Blend: take weighted average closer to center for a smoother path
-		return tile_center + (entry_offset + exit_offset) * 0.5
-
-	# Diagonal to diagonal turns (45° or 90° angle changes)
-	if entry_axis >= 2 and exit_axis >= 2:
-		# For diagonal-to-diagonal, blend the offsets
-		return tile_center + (entry_offset + exit_offset) * 0.5
-
 	# Fallback to center
 	return tile_center
 
@@ -443,16 +366,10 @@ func _get_corner_point(entry: String, exit_dir: String, tile_center: Vector2) ->
 func _get_entry_lane_offset(entry: String) -> Vector2:
 	# Right-hand driving: car is on RIGHT side of travel direction (90° clockwise)
 	match entry:
-		# Cardinals
 		"left":   return Vector2(0, LANE_OFFSET)    # Traveling right, right side is DOWN (+Y)
 		"right":  return Vector2(0, -LANE_OFFSET)   # Traveling left, right side is UP (-Y)
 		"top":    return Vector2(-LANE_OFFSET, 0)   # Traveling down, right side is LEFT (-X)
 		"bottom": return Vector2(LANE_OFFSET, 0)    # Traveling up, right side is RIGHT (+X)
-		# Diagonals - perpendicular offset (90° clockwise from travel direction)
-		"top_left":     return Vector2(-1, 1).normalized() * LANE_OFFSET   # Travel SE, right is SW
-		"top_right":    return Vector2(-1, -1).normalized() * LANE_OFFSET  # Travel SW, right is NW
-		"bottom_left":  return Vector2(1, 1).normalized() * LANE_OFFSET    # Travel NE, right is SE
-		"bottom_right": return Vector2(1, -1).normalized() * LANE_OFFSET   # Travel NW, right is NE
 	return Vector2.ZERO
 
 
@@ -460,30 +377,20 @@ func _get_entry_lane_offset(entry: String) -> Vector2:
 func _get_exit_lane_offset(exit_dir: String) -> Vector2:
 	# Right-hand driving: car is on RIGHT side of travel direction (90° clockwise)
 	match exit_dir:
-		# Cardinals
 		"left":   return Vector2(0, -LANE_OFFSET)   # Traveling left, right side is UP (-Y)
 		"right":  return Vector2(0, LANE_OFFSET)    # Traveling right, right side is DOWN (+Y)
 		"top":    return Vector2(LANE_OFFSET, 0)    # Traveling up, right side is RIGHT (+X)
 		"bottom": return Vector2(-LANE_OFFSET, 0)   # Traveling down, right side is LEFT (-X)
-		# Diagonals - perpendicular offset (90° clockwise from travel direction)
-		"top_left":     return Vector2(1, -1).normalized() * LANE_OFFSET   # Travel NW, right is NE
-		"top_right":    return Vector2(1, 1).normalized() * LANE_OFFSET    # Travel NE, right is SE
-		"bottom_left":  return Vector2(-1, -1).normalized() * LANE_OFFSET  # Travel SW, right is NW
-		"bottom_right": return Vector2(-1, 1).normalized() * LANE_OFFSET   # Travel SE, right is SW
 	return Vector2.ZERO
 
 
-## Get axis for a direction (0 = horizontal, 1 = vertical, 2 = diagonal /, 3 = diagonal \)
+## Get axis for a direction (0 = horizontal, 1 = vertical)
 func _get_axis(dir: String) -> int:
 	match dir:
 		"left", "right":
 			return 0  # Horizontal
 		"top", "bottom":
 			return 1  # Vertical
-		"top_right", "bottom_left":
-			return 2  # Diagonal /
-		"top_left", "bottom_right":
-			return 3  # Diagonal \
 	return -1
 
 
@@ -491,16 +398,11 @@ func _get_axis(dir: String) -> int:
 static func get_left_of(entry: String) -> String:
 	# When entering from a direction, left is relative to movement (turn left = 90° counter-clockwise)
 	match entry:
-		# Cardinals - entry is where car CAME FROM, so travel direction is opposite
+		# Entry is where car CAME FROM, so travel direction is opposite
 		"right": return "bottom" # Traveling left (west), turn left → go south
 		"left": return "top"     # Traveling right (east), turn left → go north
 		"top": return "right"    # Traveling down (south), turn left → go east
 		"bottom": return "left"  # Traveling up (north), turn left → go west
-		# Diagonals - 90° counter-clockwise from travel direction
-		"bottom_right": return "bottom_left"  # Travel NW, left is SW
-		"top_left": return "top_right"        # Travel SE, left is NE
-		"bottom_left": return "bottom_right"  # Travel NE, left is SE
-		"top_right": return "top_left"        # Travel SW, left is NW
 	return ""
 
 
@@ -508,14 +410,9 @@ static func get_left_of(entry: String) -> String:
 static func get_right_of(entry: String) -> String:
 	# When entering from a direction, right is relative to movement (turn right = 90° clockwise)
 	match entry:
-		# Cardinals - entry is where car CAME FROM, so travel direction is opposite
+		# Entry is where car CAME FROM, so travel direction is opposite
 		"right": return "top"    # Traveling left (west), turn right → go north
 		"left": return "bottom"  # Traveling right (east), turn right → go south
 		"top": return "left"     # Traveling down (south), turn right → go west
 		"bottom": return "right" # Traveling up (north), turn right → go east
-		# Diagonals - 90° clockwise from travel direction
-		"bottom_right": return "top_right"    # Travel NW, right is NE
-		"top_left": return "bottom_left"      # Travel SE, right is SW
-		"bottom_left": return "top_left"      # Travel NE, right is NW
-		"top_right": return "bottom_right"    # Travel SW, right is SE
 	return ""

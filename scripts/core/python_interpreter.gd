@@ -14,6 +14,7 @@ signal execution_line(line_number: int)
 signal execution_error(error: String, line: int)
 signal execution_completed()
 signal command_executed(object_name: String, method_name: String, args: Array)
+signal print_output(message: String)  # For Python print() statements
 
 # ============================================
 # Constants
@@ -21,6 +22,9 @@ signal command_executed(object_name: String, method_name: String, args: Array)
 # Removed for presentation mode - players can press R to reset
 # const MAX_LOOP_ITERATIONS: int = 10000
 # const MAX_EXECUTION_TIME_MS: int = 10000  # 10 seconds
+
+# Proximity threshold for stoplight state checks (matches Vehicle's detection range)
+const STOPLIGHT_PROXIMITY_RANGE: float = 100.0
 
 # ============================================
 # State
@@ -759,6 +763,101 @@ func _evaluate_call_expr(expr: Dictionary) -> Variant:
 			if args.size() > 0:
 				return args[0]
 			return 0
+		# Handle print() built-in function
+		if method == "print":
+			return _builtin_print(args)
+		# Handle str() built-in function
+		if method == "str":
+			if args.size() > 0:
+				return str(args[0])
+			return ""
+		# Handle len() built-in function
+		if method == "len":
+			if args.size() > 0:
+				var val = args[0]
+				if val is String:
+					return val.length()
+				if val is Array:
+					return val.size()
+			return 0
+		# Handle int() built-in function
+		if method == "int":
+			if args.size() > 0:
+				var val = args[0]
+				if val is int:
+					return val
+				if val is float:
+					return int(val)
+				if val is String:
+					if val.is_valid_int():
+						return val.to_int()
+					_add_error("ValueError: invalid literal for int()", _current_line)
+					return null
+			return 0
+		# Handle float() built-in function
+		if method == "float":
+			if args.size() > 0:
+				var val = args[0]
+				if val is float:
+					return val
+				if val is int:
+					return float(val)
+				if val is String:
+					if val.is_valid_float():
+						return val.to_float()
+					_add_error("ValueError: invalid literal for float()", _current_line)
+					return null
+			return 0.0
+		# Handle type() built-in function (useful for debugging)
+		if method == "type":
+			if args.size() > 0:
+				return _get_python_type_name(args[0])
+			return "NoneType"
+		# Handle abs() built-in function
+		if method == "abs":
+			if args.size() > 0:
+				var val = args[0]
+				if val is int or val is float:
+					return abs(val)
+				_add_error("TypeError: bad operand type for abs()", _current_line)
+				return null
+			return 0
+		# Handle min() built-in function
+		if method == "min":
+			if args.size() >= 2:
+				var result = args[0]
+				for i in range(1, args.size()):
+					if args[i] < result:
+						result = args[i]
+				return result
+			elif args.size() == 1:
+				return args[0]
+			return null
+		# Handle max() built-in function
+		if method == "max":
+			if args.size() >= 2:
+				var result = args[0]
+				for i in range(1, args.size()):
+					if args[i] > result:
+						result = args[i]
+				return result
+			elif args.size() == 1:
+				return args[0]
+			return null
+		# Handle bool() built-in function (useful for debugging)
+		if method == "bool":
+			if args.size() > 0:
+				return _is_truthy(args[0])
+			return false
+		# Handle round() built-in function
+		if method == "round":
+			if args.size() > 0:
+				var val = args[0]
+				if val is int or val is float:
+					return round(val)
+				_add_error("TypeError: round() requires a number", _current_line)
+				return null
+			return 0
 		# NEW: Check if it's a user-defined function
 		if _functions.has(method):
 			return _call_user_function(method, args)
@@ -796,6 +895,22 @@ func _evaluate_member_expr(expr: Dictionary) -> Variant:
 	_add_error("AttributeError: object has no attribute '%s'" % property, _current_line)
 	return null
 
+
+## Check if the current car is near a stoplight (for proximity-aware state checks)
+func _is_car_near_stoplight(stoplight: Variant) -> bool:
+	# Get the current car from game objects
+	if not "car" in _game_objects:
+		return true  # No car context, return global state
+	var car = _game_objects["car"]
+	if car == null or not is_instance_valid(car):
+		return true  # Invalid car, return global state
+	if stoplight == null or not is_instance_valid(stoplight):
+		return true  # Invalid stoplight, return global state
+	# Check distance
+	var distance = car.global_position.distance_to(stoplight.global_position)
+	return distance <= STOPLIGHT_PROXIMITY_RANGE
+
+
 func _call_method(obj: Variant, obj_name: String, method: String, args: Array) -> Variant:
 	# Emit command signal for the simulation engine
 	command_executed.emit(obj_name, method, args)
@@ -808,6 +923,12 @@ func _call_method(obj: Variant, obj_name: String, method: String, args: Array) -
 	if not obj.has_method(method):
 		_add_error("AttributeError: '%s' object has no method '%s'" % [obj_name, method], _current_line)
 		return null
+
+	# PROXIMITY CHECK: For stoplight state queries, check car proximity first
+	# Car must be within range for stoplight to "affect" it
+	if obj_name == "stoplight" and method in ["is_red", "is_green", "is_yellow"]:
+		if not _is_car_near_stoplight(obj):
+			return false  # Car too far - stoplight state doesn't matter
 
 	# Call the method based on argument count
 	var result: Variant = null
@@ -938,8 +1059,58 @@ func _call_user_function(func_name: String, args: Array) -> Variant:
 	return result
 
 # ============================================
+# Built-in Functions
+# ============================================
+
+## Handle Python print() function
+func _builtin_print(args: Array) -> Variant:
+	# Join all arguments with spaces (like Python print)
+	var parts: Array[String] = []
+	for arg in args:
+		parts.append(str(arg))
+	var output = " ".join(parts)
+
+	# Emit signal for terminal to display
+	print_output.emit(output)
+
+	# Also print to Godot console for debugging
+	print("[Python print] " + output)
+
+	return null  # print() returns None in Python
+
+# ============================================
 # Helper Functions
 # ============================================
+
+## Get Python-style type name for a value (used by type() built-in)
+func _get_python_type_name(value: Variant) -> String:
+	if value == null:
+		return "NoneType"
+	match typeof(value):
+		TYPE_BOOL:
+			return "bool"
+		TYPE_INT:
+			return "int"
+		TYPE_FLOAT:
+			return "float"
+		TYPE_STRING:
+			return "str"
+		TYPE_ARRAY:
+			return "list"
+		TYPE_DICTIONARY:
+			return "dict"
+		TYPE_OBJECT:
+			if value.has_method("get_class"):
+				var cls_name = value.get_class()
+				# Return simplified names for game objects
+				if "Vehicle" in cls_name:
+					return "Car"
+				if "Stoplight" in cls_name:
+					return "Stoplight"
+				return cls_name
+			return "object"
+		_:
+			return "object"
 
 func _is_truthy(value: Variant) -> bool:
 	if value == null:

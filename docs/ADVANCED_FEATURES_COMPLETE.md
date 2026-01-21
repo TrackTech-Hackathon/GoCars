@@ -46,8 +46,8 @@ All three advanced features are now fully implemented and integrated into the Go
 - `RenameDialog` popup with:
   - Text input pre-filled with current filename
   - Real-time validation:
-    - Empty name check
-    - Invalid character detection (/, \, :, *, ?, ", <, >, |)
+	- Empty name check
+	- Invalid character detection (/, \, :, *, ?, ", <, >, |)
     - Duplicate filename prevention
     - Must start with letter or underscore
   - Visual feedback (red border on error)
@@ -199,7 +199,7 @@ All features tested and working:
 **Fix:** Updated `_create_python_highlighter()` to load and instantiate the custom class:
 ```gdscript
 func _create_python_highlighter() -> SyntaxHighlighter:
-    var PythonSyntaxHighlighterClass = load("res://scripts/ui/python_syntax_highlighter.gd")
+	var PythonSyntaxHighlighterClass = load("res://scripts/ui/python_syntax_highlighter.gd")
     var highlighter = PythonSyntaxHighlighterClass.new()
     return highlighter
 ```
@@ -210,7 +210,7 @@ func _create_python_highlighter() -> SyntaxHighlighter:
 **Fix:** Added position validation in `window_manager.gd`:
 ```gdscript
 if ce.has("position"):
-    var pos = Vector2(ce["position"][0], ce["position"][1])
+	var pos = Vector2(ce["position"][0], ce["position"][1])
     if pos.x > 10 and pos.y > 10:  # Validate position
         code_editor_window.global_position = pos
 ```

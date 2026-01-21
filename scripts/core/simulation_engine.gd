@@ -15,6 +15,7 @@ signal level_failed(reason: String)
 signal execution_line_changed(line_number: int)
 signal execution_error_occurred(error: String, line: int)
 signal infinite_loop_detected()
+signal print_output(message: String)  # For Python print() statements
 
 # Simulation state
 enum State { IDLE, RUNNING, PAUSED, STEP }
@@ -68,6 +69,7 @@ func _ready() -> void:
 	# Connect interpreter signals
 	_python_interpreter.execution_line.connect(_on_interpreter_execution_line)
 	_python_interpreter.execution_error.connect(_on_interpreter_execution_error)
+	_python_interpreter.print_output.connect(_on_interpreter_print_output)
 
 
 # ============================================
@@ -109,15 +111,15 @@ func _on_stoplight_state_changed(stoplight_id: String, new_state: String) -> voi
 
 func _process(delta: float) -> void:
 	if current_state == State.RUNNING or current_state == State.STEP:
-		# Update level timer
-		if _timer_active and _level_time_limit > 0:
-			_level_timer += delta
-			if _level_timer >= _level_time_limit:
-				_on_level_failed("Time expired!")
-				return
+		# Time limit disabled - levels no longer fail due to time
+		# if _timer_active and _level_time_limit > 0:
+		# 	_level_timer += delta
+		# 	if _level_timer >= _level_time_limit:
+		# 		_on_level_failed("Time expired!")
+		# 		return
 
-		# Check for out-of-bounds vehicles
-		_check_vehicle_boundaries()
+		# Out-of-bounds check disabled - cars can leave the map
+		# _check_vehicle_boundaries()
 
 		# Step-based code execution (one statement/iteration per interval)
 		_execution_timer += delta
@@ -258,6 +260,9 @@ func execute_code_for_vehicle(code: String, vehicle: Vehicle) -> void:
 	if _stoplights.size() > 0:
 		var first_stoplight_id = _stoplights.keys()[0]
 		temp_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
+
+	# Connect print output signal
+	temp_interpreter.print_output.connect(_on_interpreter_print_output)
 
 	# Parse and start execution
 	var ast = _python_parser.parse(code)
@@ -573,6 +578,10 @@ func _on_interpreter_execution_error(error: String, line: int) -> void:
 	# if error.find("infinite loop") >= 0:
 	# 	infinite_loop_detected.emit()
 	# 	_on_level_failed("Infinite loop detected at line %d" % line)
+
+
+func _on_interpreter_print_output(message: String) -> void:
+	print_output.emit(message)
 
 
 # ============================================

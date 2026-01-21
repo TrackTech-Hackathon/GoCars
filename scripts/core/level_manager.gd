@@ -53,8 +53,6 @@ var _level_completed_flag: bool = false
 
 
 func _ready() -> void:
-	# Preload entity scenes
-	_vehicle_scene = preload("res://objects/test_vehicle.tscn")
 
 	# Try to preload stoplight scenes (may not exist yet)
 	if ResourceLoader.exists("res://scenes/entities/stoplight.tscn"):

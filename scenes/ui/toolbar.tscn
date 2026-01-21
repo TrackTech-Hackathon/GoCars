@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://c5n8m2k9p4j1x"]
+[gd_scene load_steps=2 format=3 uid="uid://c5n8m2lap4j1x"]
 
-[ext_resource type="Script" path="res://scripts/ui/toolbar.gd" id="1_toolbar"]
+[ext_resource type="Script" uid="uid://d1k72kyxu4km6" path="res://scripts/ui/toolbar.gd" id="1_toolbar"]
 
 [node name="Toolbar" type="HBoxContainer"]
 anchors_preset = 1

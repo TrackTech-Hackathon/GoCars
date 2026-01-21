@@ -1,0 +1,622 @@
+[gd_scene load_steps=16 format=3 uid="uid://cqkqswm0ovfss"]
+
+[ext_resource type="Texture2D" uid="uid://cwswoagt665ls" path="res://assets/Main_Menu_Assets/PanayIsland.png" id="1_fk1gg"]
+[ext_resource type="Texture2D" uid="uid://brr7ipwciwbal" path="res://assets/Main_Menu_Assets/Water.png" id="1_n0qu6"]
+[ext_resource type="Texture2D" uid="uid://hif4f5wjhr1r" path="res://assets/Main_Menu_Assets/FinalIsometricCircle.png" id="2_h56qn"]
+[ext_resource type="Texture2D" uid="uid://dynxnxmjf1tv8" path="res://assets/Main_Menu_Assets/LandMarkIcon.png" id="2_ws25f"]
+[ext_resource type="Script" uid="uid://cvthg1ndr8tms" path="res://scenes/UI/UI_Scripts/CampaignMarkerHover.gd" id="3_wnmx6"]
+[ext_resource type="Texture2D" uid="uid://w4rbvou3017d" path="res://assets/Main_Menu_Assets/IloiloIcon2.png" id="5_rw8ch"]
+[ext_resource type="Texture2D" uid="uid://bpr6rufkdg11g" path="res://assets/Main_Menu_Assets/IloiloIcon.png" id="6_r0spa"]
+[ext_resource type="Texture2D" uid="uid://dnkuocl0lrhha" path="res://assets/Main_Menu_Assets/BanigFrame.png" id="8_6ivqm"]
+[ext_resource type="FontFile" uid="uid://bg6pof5832ljm" path="res://assets/fonts/pixel.ttf" id="9_5ywgh"]
+[ext_resource type="Texture2D" uid="uid://cko2s4yjsvljf" path="res://assets/Main_Menu_Assets/BanigButtonFrame.png" id="10_5ywgh"]
+[ext_resource type="Script" uid="uid://iae7ttpr2nh1" path="res://scenes/UI/UI_Scripts/TexturebuttonHover.gd" id="10_8gbxi"]
+[ext_resource type="Script" uid="uid://d26xks468twvi" path="res://scenes/UI/UI_Scripts/IdleAnimModule.gd" id="11_w46t7"]
+[ext_resource type="Texture2D" uid="uid://dpqmkhncqsx7l" path="res://assets/Main_Menu_Assets/Vignette.png" id="13_bo8e2"]
+
+[sub_resource type="Shader" id="Shader_8kxf1"]
+code = "
+shader_type canvas_item;
+
+uniform vec4 top_color    : source_color = vec4(0.20, 0.65, 1.00, 0.85);
+uniform vec4 mid_color    : source_color = vec4(0.55, 0.85, 1.00, 0.35);
+uniform vec4 bottom_color : source_color = vec4(1.00, 1.00, 1.00, 0.00);
+
+void fragment() {
+	// UV.y: 0 top -> 1 bottom for Control/ColorRect
+	float t = clamp(UV.y, 0.0, 1.0);
+
+	// two-stage blend for nicer gradient
+	vec4 a = mix(top_color, mid_color, smoothstep(0.0, 0.55, t));
+	vec4 b = mix(mid_color, bottom_color, smoothstep(0.45, 1.0, t));
+
+	// combine
+	vec4 col = mix(a, b, t);
+	COLOR = col;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fk1gg"]
+shader = SubResource("Shader_8kxf1")
+shader_parameter/top_color = Color(0.2, 0.65, 1, 0.85)
+shader_parameter/mid_color = Color(0.55, 0.85, 1, 0.35)
+shader_parameter/bottom_color = Color(1, 1, 1, 0)
+
+[node name="CampaignMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CM_CampaignMenu" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BG" type="TextureRect" parent="CM_CampaignMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_n0qu6")
+expand_mode = 3
+
+[node name="SkyGradient" type="ColorRect" parent="CM_CampaignMenu"]
+material = SubResource("ShaderMaterial_fk1gg")
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="MapAspect" type="AspectRatioContainer" parent="CM_CampaignMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch_mode = 3
+
+[node name="MapIsland" type="Control" parent="CM_CampaignMenu/MapAspect"]
+layout_direction = 1
+layout_mode = 2
+size_flags_stretch_ratio = 0.0
+
+[node name="Level_1" type="TextureButton" parent="CM_CampaignMenu/MapAspect/MapIsland"]
+self_modulate = Color(1.1893114, 0.98738146, 0.65517426, 1)
+z_index = 3
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.517
+anchor_top = 0.60700005
+anchor_right = 0.517
+anchor_bottom = 0.60700005
+offset_left = -24.584045
+offset_top = -25.264038
+offset_right = 25.415955
+offset_bottom = 24.735962
+grow_horizontal = 2
+grow_vertical = 2
+texture_normal = ExtResource("2_h56qn")
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("3_wnmx6")
+texture_rect_path = NodePath("TextureRect")
+icon1_path = NodePath("Icon1")
+icon2_path = NodePath("Icon2")
+label_path = NodePath("Label")
+fade_group_root_path = NodePath("../../../../HoverIloilo")
+
+[node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_1"]
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_top = -4.0
+offset_right = 1.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 19
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_1"]
+z_index = 1
+layout_mode = 0
+offset_left = 1.0
+offset_top = -40.0
+offset_right = 49.0
+offset_bottom = 8.0
+texture = ExtResource("2_ws25f")
+expand_mode = 1
+
+[node name="Icon1" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_1"]
+modulate = Color(1, 1, 1, 0)
+z_index = -1
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -44.000004
+offset_top = -33.0
+offset_right = 8.999996
+offset_bottom = 36.5625
+rotation = -0.2617994
+texture = ExtResource("5_rw8ch")
+expand_mode = 1
+
+[node name="Icon2" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_1"]
+modulate = Color(1, 1, 1, 0)
+z_index = -1
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_top = -48.000004
+offset_right = 53.0
+offset_bottom = 21.562496
+rotation = 0.2617994
+texture = ExtResource("6_r0spa")
+expand_mode = 1
+
+[node name="Level_2" type="TextureButton" parent="CM_CampaignMenu/MapAspect/MapIsland"]
+self_modulate = Color(1.1893114, 0.98738146, 0.65517426, 1)
+z_index = 2
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.38900003
+anchor_top = 0.67200005
+anchor_right = 0.38900003
+anchor_bottom = 0.67200005
+offset_left = -25.128021
+offset_top = -25.144043
+offset_right = 24.871979
+offset_bottom = 24.855957
+texture_normal = ExtResource("2_h56qn")
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("3_wnmx6")
+
+[node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_2"]
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_top = -4.0
+offset_right = 1.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 19
+text = "2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_2"]
+z_index = 1
+layout_mode = 0
+offset_left = 1.0
+offset_top = -40.0
+offset_right = 49.0
+offset_bottom = 8.0
+texture = ExtResource("2_ws25f")
+expand_mode = 1
+
+[node name="Level_3" type="TextureButton" parent="CM_CampaignMenu/MapAspect/MapIsland"]
+self_modulate = Color(1.1893114, 0.98738146, 0.65517426, 1)
+z_index = 2
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.238
+anchor_top = 0.648
+anchor_right = 0.238
+anchor_bottom = 0.648
+offset_left = -25.175995
+offset_top = -25.495972
+offset_right = 24.824005
+offset_bottom = 24.504028
+texture_normal = ExtResource("2_h56qn")
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("3_wnmx6")
+
+[node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_3"]
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_top = -4.0
+offset_right = 1.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 19
+text = "3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_3"]
+z_index = 1
+layout_mode = 0
+offset_left = 1.0
+offset_top = -40.0
+offset_right = 49.0
+offset_bottom = 8.0
+texture = ExtResource("2_ws25f")
+expand_mode = 1
+
+[node name="Level_4" type="TextureButton" parent="CM_CampaignMenu/MapAspect/MapIsland"]
+self_modulate = Color(1.1893114, 0.98738146, 0.65517426, 1)
+z_index = 2
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.4
+anchor_top = 0.34
+anchor_right = 0.4
+anchor_bottom = 0.34
+offset_left = -24.800018
+offset_top = -24.679993
+offset_right = 25.199982
+offset_bottom = 25.320007
+texture_normal = ExtResource("2_h56qn")
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("3_wnmx6")
+
+[node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_4"]
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_top = -4.0
+offset_right = 1.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 19
+text = "4"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_4"]
+z_index = 1
+layout_mode = 0
+offset_left = 1.0
+offset_top = -40.0
+offset_right = 49.0
+offset_bottom = 8.0
+texture = ExtResource("2_ws25f")
+expand_mode = 1
+
+[node name="Level_5" type="TextureButton" parent="CM_CampaignMenu/MapAspect/MapIsland"]
+self_modulate = Color(1.1893114, 0.98738146, 0.65517426, 1)
+z_index = 2
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.535
+anchor_top = 0.39000002
+anchor_right = 0.535
+anchor_bottom = 0.39000002
+offset_left = -25.320007
+offset_top = -25.28003
+offset_right = 24.679993
+offset_bottom = 24.71997
+texture_normal = ExtResource("2_h56qn")
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("3_wnmx6")
+
+[node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_5"]
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.0
+offset_top = -4.0
+offset_right = 1.0
+offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.95)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.9)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 19
+text = "5"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_5"]
+z_index = 1
+layout_mode = 0
+offset_left = 1.0
+offset_top = -40.0
+offset_right = 49.0
+offset_bottom = 8.0
+texture = ExtResource("2_ws25f")
+expand_mode = 1
+
+[node name="Image" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland"]
+z_index = 1
+layout_direction = 1
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.23
+anchor_right = 1.0
+anchor_bottom = 0.77400005
+offset_top = -31.959991
+offset_right = 21.094727
+offset_bottom = 45.35193
+grow_vertical = 0
+localize_numeral_system = false
+mouse_filter = 2
+texture = ExtResource("1_fk1gg")
+expand_mode = 1
+
+[node name="HoverIloilo" type="TextureRect" parent="."]
+z_index = 3
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.674
+anchor_top = 0.684
+anchor_right = 0.674
+anchor_bottom = 0.684
+offset_left = -264.448
+offset_top = -157.232
+offset_right = 265.552
+offset_bottom = 156.768
+texture = ExtResource("8_6ivqm")
+expand_mode = 1
+
+[node name="Logo" type="Label" parent="HoverIloilo"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.30400002
+anchor_top = 0.252
+anchor_right = 0.30400002
+anchor_bottom = 0.272
+offset_left = -98.120026
+offset_top = -14.127998
+offset_right = 41.87999
+offset_bottom = 1.8319931
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 20
+text = "•ILOILO"
+horizontal_alignment = 1
+
+[node name="HorizBar" type="Label" parent="HoverIloilo"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.30400002
+anchor_top = 0.252
+anchor_right = 0.30400002
+anchor_bottom = 0.252
+offset_left = -92.120026
+offset_top = -3.1279984
+offset_right = 67.87999
+offset_bottom = 17.872002
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 15
+text = "────────────────────"
+
+[node name="Objective" type="Label" parent="HoverIloilo"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.2
+anchor_top = -3.5270002
+anchor_right = 1.2
+anchor_bottom = -3.5270002
+offset_left = -565.0
+offset_top = 1232.478
+offset_right = -445.0
+offset_bottom = 1244.478
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 12
+text = "Objective:"
+
+[node name="Difficulty" type="Label" parent="HoverIloilo"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.2
+anchor_top = -3.5270002
+anchor_right = 1.2
+anchor_bottom = -3.5270002
+offset_left = -565.0
+offset_top = 1203.478
+offset_right = -405.0
+offset_bottom = 1216.478
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 13
+text = "Difficulty: ★★★☆☆"
+
+[node name="Description" type="Label" parent="HoverIloilo"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.2
+anchor_top = -3.5270002
+anchor_right = 1.2
+anchor_bottom = -3.5270002
+offset_left = -554.0
+offset_top = 1249.478
+offset_right = -215.0
+offset_bottom = 1350.478
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 10
+text = "Design and manage traffic roads to optimize flow, reduce congestion, and solve each level using strategic traffic rules."
+horizontal_alignment = 3
+autowrap_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="HoverIloilo"]
+z_index = 1
+layout_mode = 0
+offset_left = 207.0
+offset_top = 59.0
+offset_right = 231.0
+offset_bottom = 83.0
+rotation = 0.2617994
+texture = ExtResource("2_ws25f")
+expand_mode = 1
+
+[node name="Icon" type="TextureRect" parent="HoverIloilo"]
+z_index = 1
+layout_mode = 0
+offset_left = 381.0
+offset_top = 27.000008
+offset_right = 598.0001
+offset_bottom = 280.00003
+rotation = 0.08726646
+texture = ExtResource("6_r0spa")
+expand_mode = 1
+
+[node name="TextureButton" type="TextureButton" parent="HoverIloilo"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.52000004
+anchor_top = 0.712
+anchor_right = 0.52000004
+anchor_bottom = 0.712
+offset_left = -83.60004
+offset_top = -19.568008
+offset_right = 83.39996
+offset_bottom = 19.431992
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("10_8gbxi")
+
+[node name="Button" type="TextureRect" parent="HoverIloilo/TextureButton"]
+modulate = Color(1.6372112, 1.6372112, 1.6372112, 1)
+self_modulate = Color(0.5251013, 0.5251013, 0.5251013, 1)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -108.5
+offset_top = -62.5
+offset_right = 103.394745
+offset_bottom = 59.5
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("10_5ywgh")
+expand_mode = 1
+
+[node name="Logo" type="Label" parent="HoverIloilo/TextureButton/Button"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.509
+anchor_top = 0.5
+anchor_right = 0.509
+anchor_bottom = 0.5
+offset_left = -70.85442
+offset_top = -9.0
+offset_right = 69.14561
+offset_bottom = 11.800003
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 20
+text = "PLAY"
+horizontal_alignment = 1
+
+[node name="Logo" type="Label" parent="."]
+z_index = 100
+layout_direction = 1
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.48200002
+anchor_top = 0.07300001
+anchor_right = 0.95100003
+anchor_bottom = 0.142
+offset_left = -0.2640381
+offset_top = -0.30400467
+offset_right = -0.55200195
+offset_bottom = -0.01600647
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 45
+text = "PANAY ISLAND"
+horizontal_alignment = 2
+script = ExtResource("11_w46t7")
+
+[node name="Vignette" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -393.88892
+offset_top = -293.0
+offset_right = 391.0
+offset_bottom = 387.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("13_bo8e2")
+expand_mode = 1

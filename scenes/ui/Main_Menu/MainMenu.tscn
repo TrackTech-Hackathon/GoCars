@@ -1,0 +1,1752 @@
+[gd_scene load_steps=33 format=3 uid="uid://dpjgydtmtd4yo"]
+
+[ext_resource type="FontFile" uid="uid://bg6pof5832ljm" path="res://assets/fonts/pixel.ttf" id="1_3luoc"]
+[ext_resource type="Script" uid="uid://6x1ui36negc7" path="res://scenes/UI/UI_Scripts/scrolling_bg.gd" id="1_mpf6q"]
+[ext_resource type="Script" uid="uid://dnhpe6suhd8vh" path="res://scenes/UI/UI_Scripts/logo_idle_anim.gd" id="2_cdyao"]
+[ext_resource type="Script" uid="uid://deb7yvwmeyup5" path="res://scenes/UI/UI_Scripts/BTN_GlobalFunctions.gd" id="2_tgsjg"]
+[ext_resource type="AudioStream" uid="uid://bawb8tthk4gko" path="res://assets/audio/BGMUSIC.mp3" id="2_music"]
+[ext_resource type="Texture2D" uid="uid://br48av34w4xel" path="res://assets/Main_Menu_Assets/GocarsLogo.png" id="3_j1s73"]
+[ext_resource type="Texture2D" uid="uid://ctn2462ckpf44" path="res://assets/Main_Menu_Assets/FinalBanigFrame.png" id="6_63hsl"]
+[ext_resource type="Texture2D" uid="uid://bpwji7btotf3n" path="res://assets/Main_Menu_Assets/LongVariantBanig1 (1).png" id="6_tjtpd"]
+[ext_resource type="Texture2D" uid="uid://xgrbhfsar8xb" path="res://assets/Main_Menu_Assets/SmallBanigVariant.png" id="7_cy5ox"]
+[ext_resource type="Texture2D" uid="uid://dpqmkhncqsx7l" path="res://assets/Main_Menu_Assets/Vignette.png" id="7_niwbw"]
+[ext_resource type="Texture2D" uid="uid://d3h2jdrxdyaph" path="res://assets/Main_Menu_Assets/BanigButtonStyle.png" id="7_ouxsb"]
+[ext_resource type="Script" uid="uid://dvar3oekttt34" path="res://scenes/UI/UI_Scripts/BTN_TXTButtonHover.gd" id="7_ro6yv"]
+[ext_resource type="Script" uid="uid://dyqbiy635uf76" path="res://scenes/UI/UI_Scripts/intro_dim.gd" id="8_6q1e7"]
+[ext_resource type="Texture2D" uid="uid://blptn8xjjm5a" path="res://assets/Main_Menu_Assets/CYFER Logo.png" id="8_78e47"]
+[ext_resource type="Texture2D" uid="uid://cqyfwdt7wtcs3" path="res://assets/Main_Menu_Assets/OutlineFrameBanig.png" id="8_lgth6"]
+[ext_resource type="Texture2D" uid="uid://ddja476521jtp" path="res://assets/Main_Menu_Assets/BanigSecondaryButton.png" id="9_ouxsb"]
+[ext_resource type="Script" uid="uid://dvkckebohptwb" path="res://scenes/UI/UI_Scripts/BTN_InnerOption.gd" id="10_ro6yv"]
+[ext_resource type="Script" uid="uid://buy0bhr65a74v" path="res://scenes/UI/UI_Scripts/BTN_OptionBack.gd" id="12_6pp0a"]
+[ext_resource type="Texture2D" uid="uid://d2g7btp2t1x38" path="res://assets/Main_Menu_Assets/PlaceholderBackground_sky_transparent.png" id="14_udil8"]
+[ext_resource type="Script" uid="uid://clypnhq21s5qu" path="res://scenes/UI/UI_Scripts/JeepBGAnim.gd" id="16_upbnc"]
+[ext_resource type="Texture2D" uid="uid://25o1gtbiayy2" path="res://assets/Main_Menu_Assets/jeepney4.png" id="17_rt0s1"]
+[ext_resource type="Texture2D" uid="uid://cqlh0tqhyprau" path="res://assets/Main_Menu_Assets/trcycle2.png" id="18_nmuy7"]
+[ext_resource type="Texture2D" uid="uid://bfcyujpjc6bb2" path="res://assets/Main_Menu_Assets/Smoke particle.png" id="19_sfnos"]
+[ext_resource type="Texture2D" uid="uid://bn5ehcc55xi4w" path="res://assets/Main_Menu_Assets/Sky.png" id="20_udil8"]
+[ext_resource type="Script" uid="uid://berlq1fm1des4" path="res://scenes/UI/UI_Scripts/CloudAnimation.gd" id="21_aa67h"]
+[ext_resource type="Texture2D" uid="uid://dje0p5agcshqb" path="res://assets/Main_Menu_Assets/Cloud1.png" id="22_a7qtu"]
+[ext_resource type="Texture2D" uid="uid://dbnwax1ysrepn" path="res://assets/Main_Menu_Assets/Cloud2.png" id="23_h5vcq"]
+[ext_resource type="Texture2D" uid="uid://by6otlc3vpto5" path="res://assets/Main_Menu_Assets/cloud3.png" id="24_tjtpd"]
+[ext_resource type="Script" uid="uid://cx77sih6b6ffa" path="res://scenes/UI/UI_Scripts/Pedestrians.gd" id="25_a7qtu"]
+[ext_resource type="Texture2D" uid="uid://teaqancmfhv5" path="res://assets/Main_Menu_Assets/walk1.png" id="27_cy5ox"]
+[ext_resource type="Texture2D" uid="uid://d2lij7iyuxttn" path="res://assets/Main_Menu_Assets/walk2.png" id="28_j1s73"]
+
+[sub_resource type="GDScript" id="GDScript_2vtb1"]
+script/source = "extends Control
+
+# Play background music after logo intro animation using persistent MusicManager
+func _ready() -> void:
+	await get_tree().create_timer(5.5).timeout
+	MusicManager.play_menu_music()
+"
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_2vtb1")
+
+[node name="MC_MainMenu" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Center" type="CenterContainer" parent="MC_MainMenu"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 0.74700004
+offset_bottom = -0.056030273
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Stack" type="VBoxContainer" parent="MC_MainMenu/Center"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="@Control@202282" type="Control" parent="MC_MainMenu/Center/Stack"]
+custom_minimum_size = Vector2(0, 5.475)
+layout_mode = 2
+
+[node name="@Control@202283" type="Control" parent="MC_MainMenu/Center/Stack"]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="BottomRow" type="HBoxContainer" parent="MC_MainMenu/Center/Stack"]
+custom_minimum_size = Vector2(12.625, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="CanvasLayer" type="CanvasLayer" parent="MC_MainMenu"]
+
+[node name="IntroDim" type="ColorRect" parent="MC_MainMenu"]
+visible = false
+z_index = 99
+z_as_relative = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.22597003, 0.25830933, 0.30681694, 1)
+script = ExtResource("8_6q1e7")
+
+[node name="BTN_Campaign" type="TextureButton" parent="MC_MainMenu"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.31500003
+anchor_top = 0.55700004
+anchor_right = 0.68700004
+anchor_bottom = 0.657
+offset_left = 0.1199646
+offset_top = 0.063964844
+offset_right = -0.42407227
+offset_bottom = 0.26400757
+texture_normal = ExtResource("6_tjtpd")
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("2_tgsjg")
+scene_to_load = "res://scenes/menus/level_selector.tscn"
+
+[node name="Text" type="Label" parent="MC_MainMenu/BTN_Campaign"]
+z_index = 1
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.19000001
+anchor_top = 0.30200002
+anchor_right = 0.846
+anchor_bottom = 0.68500006
+offset_left = -5.841419
+offset_top = 0.69200134
+offset_right = 0.05342102
+offset_bottom = 0.0099983215
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 20
+text = "Campaign"
+horizontal_alignment = 1
+
+[node name="BTN_Sandbox" type="TextureButton" parent="MC_MainMenu"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.31500003
+anchor_top = 0.65300006
+anchor_right = 0.68700004
+anchor_bottom = 0.753
+offset_left = 0.1199646
+offset_top = -0.14404297
+offset_right = -0.42407227
+offset_bottom = 0.055999756
+texture_normal = ExtResource("6_tjtpd")
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("2_tgsjg")
+
+[node name="Text" type="Label" parent="MC_MainMenu/BTN_Sandbox"]
+z_index = 1
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.19000001
+anchor_top = 0.30200002
+anchor_right = 0.846
+anchor_bottom = 0.68500006
+offset_left = -6.319992
+offset_top = 2.3700104
+offset_right = -0.4251709
+offset_bottom = 1.6880074
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 20
+text = "Sandbox"
+horizontal_alignment = 1
+
+[node name="BTN_Options" type="TextureButton" parent="MC_MainMenu" node_paths=PackedStringArray("show_node", "hide_node")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32000002
+anchor_top = 0.776
+anchor_right = 0.497
+anchor_bottom = 0.86300004
+offset_left = 0.35998535
+offset_top = 0.15197754
+offset_right = 0.45599365
+offset_bottom = -0.22399902
+texture_normal = ExtResource("7_cy5ox")
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("2_tgsjg")
+show_node = NodePath("../../MC_OptionsUI")
+hide_node = NodePath("..")
+
+[node name="Text" type="Label" parent="MC_MainMenu/BTN_Options"]
+z_index = 1
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.19000001
+anchor_top = 0.30200002
+anchor_right = 0.846
+anchor_bottom = 0.68500006
+offset_left = -5.841419
+offset_top = 0.69200134
+offset_right = 0.05342102
+offset_bottom = 0.0099983215
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 20
+text = "Options"
+horizontal_alignment = 1
+
+[node name="BTN_Quit" type="TextureButton" parent="MC_MainMenu"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.50200003
+anchor_top = 0.776
+anchor_right = 0.679
+anchor_bottom = 0.86300004
+offset_left = -0.3040161
+offset_top = 0.15197754
+offset_right = -0.20800781
+offset_bottom = -0.22399902
+texture_normal = ExtResource("7_cy5ox")
+ignore_texture_size = true
+stretch_mode = 0
+script = ExtResource("2_tgsjg")
+
+[node name="Text" type="Label" parent="MC_MainMenu/BTN_Quit"]
+z_index = 1
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.19000001
+anchor_top = 0.30200002
+anchor_right = 0.846
+anchor_bottom = 0.68500006
+offset_left = -5.841419
+offset_top = 0.69200134
+offset_right = 0.05342102
+offset_bottom = 0.0099983215
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 20
+text = "Quit"
+horizontal_alignment = 1
+
+[node name="Logo" type="TextureRect" parent="MC_MainMenu"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.349
+anchor_top = 0.060000002
+anchor_right = 0.63600004
+anchor_bottom = 0.5
+offset_left = -0.04800415
+offset_top = 0.11999893
+offset_right = 0.3279419
+offset_bottom = 46.0
+mouse_filter = 2
+texture = ExtResource("3_j1s73")
+expand_mode = 1
+script = ExtResource("2_cdyao")
+intro_wait_before_logo = 0.75
+intro_logo_fade_in_time = 0.5
+intro_dim_fade_out_time = 0.5
+intro_dim_path = NodePath("../IntroDim")
+splash_texture = ExtResource("8_78e47")
+splash_size = Vector2(520, 520)
+splash_wait_before = 2.0
+splash_fade_in_time = 0.5
+splash_hold_time = 1.5
+splash_fade_out_time = 0.5
+
+[node name="MC_OptionsUI" type="Control" parent="."]
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="DimBG" type="TextureRect" parent="MC_OptionsUI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+
+[node name="MainPanel" type="TextureRect" parent="MC_OptionsUI"]
+self_modulate = Color(0.87280023, 1.0941244, 1.4687854, 1)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -324.0
+offset_right = 300.0
+offset_bottom = 321.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("6_63hsl")
+expand_mode = 1
+
+[node name="GameplayBTN" type="TextureRect" parent="MC_OptionsUI/MainPanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.157
+anchor_top = 0.18400002
+anchor_right = 0.34600002
+anchor_bottom = 0.261
+offset_left = -29.059998
+offset_top = -3.680008
+offset_right = 29.75505
+offset_bottom = 85.655
+mouse_filter = 2
+expand_mode = 1
+flip_h = true
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/GameplayBTN" node_paths=PackedStringArray("show_node", "hide_node_1", "hide_node_2", "hide_node_3")]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.16000001
+anchor_top = 0.34500003
+anchor_right = 0.83100003
+anchor_bottom = 0.72700006
+offset_left = 0.05038452
+offset_top = 0.044994354
+offset_right = 0.030456543
+offset_bottom = -0.053009033
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_stretch_ratio = 0.0
+mouse_filter = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "GAMEPLAY"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("7_ro6yv")
+show_node = NodePath("../../GameplayUI")
+hide_node_1 = NodePath("../../ControlUI")
+hide_node_2 = NodePath("../../AudioUI")
+hide_node_3 = NodePath("../../InterfaceUI")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/GameplayBTN"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.17300001
+anchor_top = 0.367
+anchor_right = 0.81500006
+anchor_bottom = 0.72400004
+offset_left = -30.139267
+offset_top = -50.013
+offset_right = 30.725418
+offset_bottom = 38.364
+mouse_filter = 2
+texture_normal = ExtResource("7_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="OutlineFrame" type="TextureRect" parent="MC_OptionsUI/MainPanel"]
+layout_mode = 0
+offset_left = 204.0
+offset_top = 126.0
+offset_right = 520.0
+offset_bottom = 517.0
+mouse_filter = 2
+texture = ExtResource("8_lgth6")
+expand_mode = 1
+
+[node name="ControlBTN" type="TextureRect" parent="MC_OptionsUI/MainPanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.157
+anchor_top = 0.4
+anchor_right = 0.335
+anchor_bottom = 0.46500003
+offset_left = -29.059998
+offset_top = -54.0
+offset_right = 36.135056
+offset_bottom = 43.07498
+expand_mode = 1
+flip_h = true
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/ControlBTN" node_paths=PackedStringArray("show_node", "hide_node_1", "hide_node_2", "hide_node_3")]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.16000001
+anchor_top = 0.33800003
+anchor_right = 0.873
+anchor_bottom = 0.734
+offset_left = 0.05038452
+offset_top = 0.017997742
+offset_right = -0.043807983
+offset_bottom = -0.026000977
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "CONTROLS"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("7_ro6yv")
+show_node = NodePath("../../ControlUI")
+hide_node_1 = NodePath("../../GameplayUI")
+hide_node_2 = NodePath("../../AudioUI")
+hide_node_3 = NodePath("../../InterfaceUI")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/ControlBTN"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.17
+anchor_top = 0.358
+anchor_right = 0.81100005
+anchor_bottom = 0.71000004
+offset_left = -29.63396
+offset_top = -48.762
+offset_right = 31.399155
+offset_bottom = 40.309998
+mouse_filter = 2
+texture_normal = ExtResource("7_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="OptionFrameLabel" type="TextureRect" parent="MC_OptionsUI/MainPanel"]
+z_index = 1
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.50600004
+anchor_top = 0.545
+anchor_right = 0.50600004
+anchor_bottom = 0.545
+offset_left = -199.48001
+offset_top = -419.52502
+offset_right = 207.39499
+offset_bottom = -171.52502
+texture = ExtResource("7_ouxsb")
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.35200003
+anchor_top = 0.082
+anchor_right = 0.69000006
+anchor_bottom = 0.126
+offset_left = -0.16001892
+offset_top = 0.109996796
+offset_right = -0.20004272
+offset_bottom = -0.27000427
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 28
+text = "OPTIONS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AudioBTN" type="TextureRect" parent="MC_OptionsUI/MainPanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.157
+anchor_top = 0.18400002
+anchor_right = 0.34600002
+anchor_bottom = 0.261
+offset_left = -29.059998
+offset_top = 171.31999
+offset_right = 29.75505
+offset_bottom = 260.655
+expand_mode = 1
+flip_h = true
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/AudioBTN" node_paths=PackedStringArray("show_node", "hide_node_1", "hide_node_2", "hide_node_3")]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.16000001
+anchor_top = 0.35300002
+anchor_right = 0.855
+anchor_bottom = 0.71900004
+offset_left = 0.05038452
+offset_top = -0.06700134
+offset_right = -4.011978
+offset_bottom = 0.05899048
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "AUDIO"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("7_ro6yv")
+show_node = NodePath("../../AudioUI")
+hide_node_1 = NodePath("../../GameplayUI")
+hide_node_2 = NodePath("../../ControlUI")
+hide_node_3 = NodePath("../../InterfaceUI")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/AudioBTN"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.18100001
+anchor_top = 0.35700002
+anchor_right = 0.82900006
+anchor_bottom = 0.72400004
+offset_left = -31.486748
+offset_top = -48.623005
+offset_right = 28.367325
+offset_bottom = 38.364
+mouse_filter = 2
+texture_normal = ExtResource("7_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="InterfaceBTN" type="TextureRect" parent="MC_OptionsUI/MainPanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.157
+anchor_top = 0.18400002
+anchor_right = 0.34600002
+anchor_bottom = 0.261
+offset_left = -29.059998
+offset_top = 253.31999
+offset_right = 29.75505
+offset_bottom = 342.655
+expand_mode = 1
+flip_h = true
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/InterfaceBTN" node_paths=PackedStringArray("show_node", "hide_node_1", "hide_node_2", "hide_node_3")]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.16600001
+anchor_top = 0.35300002
+anchor_right = 0.83100003
+anchor_bottom = 0.734
+offset_left = 0.03977585
+offset_top = -0.06700134
+offset_right = 0.030456543
+offset_bottom = -0.026000977
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "INTERFACE"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("7_ro6yv")
+show_node = NodePath("../../InterfaceUI")
+hide_node_1 = NodePath("../../GameplayUI")
+hide_node_2 = NodePath("../../ControlUI")
+hide_node_3 = NodePath("../../AudioUI")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/InterfaceBTN"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.155
+anchor_top = 0.35300002
+anchor_right = 0.84400004
+anchor_bottom = 0.73300004
+offset_left = -27.107435
+offset_top = -48.067
+offset_right = 25.840805
+offset_bottom = 37.11299
+mouse_filter = 2
+texture_normal = ExtResource("7_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="GameplayUI" type="Control" parent="MC_OptionsUI/MainPanel"]
+layout_mode = 1
+anchor_left = 0.41700003
+anchor_top = 0.27600002
+anchor_right = 0.83100003
+anchor_bottom = 0.72400004
+offset_left = 0.13998413
+offset_top = -0.020019531
+offset_right = 0.019989014
+offset_bottom = 0.019989014
+
+[node name="VisualStyle" type="TextureRect" parent="MC_OptionsUI/MainPanel/GameplayUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.080000006
+anchor_right = 0.5
+anchor_bottom = 0.080000006
+offset_left = -168.0
+offset_top = -86.12
+offset_right = 169.0
+offset_bottom = 85.88
+mouse_filter = 0
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/GameplayUI/VisualStyle"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.19600001
+anchor_top = 0.41300002
+anchor_right = 0.81000006
+anchor_bottom = 0.634
+offset_left = -0.052009583
+offset_top = -0.036003113
+offset_right = 0.029968262
+offset_bottom = -0.04800415
+size_flags_stretch_ratio = 0.0
+mouse_filter = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Level Visual Style:
+Clean"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/GameplayUI/VisualStyle"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="TrafficVis" type="TextureRect" parent="MC_OptionsUI/MainPanel/GameplayUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -101.925
+offset_right = 210.04
+offset_bottom = 70.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/GameplayUI/TrafficVis"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Traffic Visualization:
+Simple"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/GameplayUI/TrafficVis"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+mouse_filter = 2
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="TimePresentation" type="TextureRect" parent="MC_OptionsUI/MainPanel/GameplayUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -42.925003
+offset_right = 210.04
+offset_bottom = 129.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/GameplayUI/TimePresentation"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Day & Time Visuals:
+Day Only"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/GameplayUI/TimePresentation"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+mouse_filter = 2
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="WeatherFX" type="TextureRect" parent="MC_OptionsUI/MainPanel/GameplayUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = 16.074997
+offset_right = 210.04
+offset_bottom = 188.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/GameplayUI/WeatherFX"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Weather Effects:
+Off"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/GameplayUI/WeatherFX"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="VisualIntensity" type="TextureRect" parent="MC_OptionsUI/MainPanel/GameplayUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = 73.075
+offset_right = 210.04
+offset_bottom = 245.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/GameplayUI/VisualIntensity"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Visual Intensity:
+Minimal"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/GameplayUI/VisualIntensity"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="BackBTN" type="TextureRect" parent="MC_OptionsUI/MainPanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.157
+anchor_top = 0.18400002
+anchor_right = 0.34600002
+anchor_bottom = 0.261
+offset_left = 307.93997
+offset_top = 354.32
+offset_right = 323.13153
+offset_bottom = 407.655
+expand_mode = 1
+flip_h = true
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/BackBTN" node_paths=PackedStringArray("show_node", "hide_node")]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.192
+anchor_top = 0.35900003
+anchor_right = 0.74500006
+anchor_bottom = 0.689
+offset_left = 1.0361919
+offset_top = 2.022995
+offset_right = 1.0153961
+offset_bottom = 0.03299713
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "BACK"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("12_6pp0a")
+show_node = NodePath("../../../../MC_MainMenu")
+hide_node = NodePath("../../..")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/BackBTN"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.915
+anchor_bottom = 0.93200004
+offset_left = 4.0000153
+offset_top = 6.0
+offset_right = 0.014816284
+offset_bottom = 0.0039978027
+texture_normal = ExtResource("7_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="ControlUI" type="Control" parent="MC_OptionsUI/MainPanel"]
+visible = false
+layout_mode = 1
+anchor_left = 0.41700003
+anchor_top = 0.27600002
+anchor_right = 0.83100003
+anchor_bottom = 0.72400004
+offset_left = 0.13998413
+offset_top = -0.020019531
+offset_right = 0.019989014
+offset_bottom = 0.019989014
+
+[node name="InputMethod" type="TextureRect" parent="MC_OptionsUI/MainPanel/ControlUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -156.925
+offset_right = 210.04
+offset_bottom = 15.074997
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/ControlUI/InputMethod"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Input Method:
+Keyboard"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/ControlUI/InputMethod"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="CameraSpeed" type="TextureRect" parent="MC_OptionsUI/MainPanel/ControlUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -101.925
+offset_right = 210.04
+offset_bottom = 70.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/ControlUI/CameraSpeed"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Camera Pan Speed:
+Slow"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/ControlUI/CameraSpeed"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="ZoomSpeed" type="TextureRect" parent="MC_OptionsUI/MainPanel/ControlUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -42.925003
+offset_right = 210.04
+offset_bottom = 129.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/ControlUI/ZoomSpeed"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Zoom Speed:
+Slow"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/ControlUI/ZoomSpeed"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="EdgeScrolling" type="TextureRect" parent="MC_OptionsUI/MainPanel/ControlUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = 16.074997
+offset_right = 210.04
+offset_bottom = 188.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/ControlUI/EdgeScrolling"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Edge Scrolling:
+On"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/ControlUI/EdgeScrolling"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Filler Hi" type="TextureRect" parent="MC_OptionsUI/MainPanel/ControlUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = 73.075
+offset_right = 210.04
+offset_bottom = 245.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/ControlUI/Filler Hi"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Filler:
+Hi"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/ControlUI/Filler Hi"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="AudioUI" type="Control" parent="MC_OptionsUI/MainPanel"]
+visible = false
+layout_mode = 1
+anchor_left = 0.41700003
+anchor_top = 0.27600002
+anchor_right = 0.83100003
+anchor_bottom = 0.72400004
+offset_left = 0.13998413
+offset_top = -0.020019531
+offset_right = 0.019989014
+offset_bottom = 0.019989014
+
+[node name="MasterVolume" type="TextureRect" parent="MC_OptionsUI/MainPanel/AudioUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -156.925
+offset_right = 210.04
+offset_bottom = 15.074997
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/AudioUI/MasterVolume"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Master Volume"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/AudioUI/MasterVolume"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="AmbientSounds" type="TextureRect" parent="MC_OptionsUI/MainPanel/AudioUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -101.925
+offset_right = 210.04
+offset_bottom = 70.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/AudioUI/AmbientSounds"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Ambient City Sounds"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/AudioUI/AmbientSounds"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Traffic Sounds" type="TextureRect" parent="MC_OptionsUI/MainPanel/AudioUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -42.925003
+offset_right = 210.04
+offset_bottom = 129.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/AudioUI/Traffic Sounds"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Traffic Sounds"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/AudioUI/Traffic Sounds"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="AlertSounds" type="TextureRect" parent="MC_OptionsUI/MainPanel/AudioUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = 16.074997
+offset_right = 210.04
+offset_bottom = 188.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/AudioUI/AlertSounds"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Alert/Warning Sounds"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/AudioUI/AlertSounds"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="UISounds" type="TextureRect" parent="MC_OptionsUI/MainPanel/AudioUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = 73.075
+offset_right = 210.04
+offset_bottom = 245.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/AudioUI/UISounds"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "UI Sounds"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/AudioUI/UISounds"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="InterfaceUI" type="Control" parent="MC_OptionsUI/MainPanel"]
+visible = false
+layout_mode = 1
+anchor_left = 0.41700003
+anchor_top = 0.27600002
+anchor_right = 0.83100003
+anchor_bottom = 0.72400004
+offset_left = 0.13998413
+offset_top = -0.020019531
+offset_right = 0.019989014
+offset_bottom = 0.019989014
+
+[node name="HUD Density" type="TextureRect" parent="MC_OptionsUI/MainPanel/InterfaceUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -156.925
+offset_right = 210.04
+offset_bottom = 15.074997
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/InterfaceUI/HUD Density"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "HUD Density:
+Minimal"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/InterfaceUI/HUD Density"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Traffic Overlay" type="TextureRect" parent="MC_OptionsUI/MainPanel/InterfaceUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -101.925
+offset_right = 210.04
+offset_bottom = 70.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/InterfaceUI/Traffic Overlay"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Traffic Overlay:
+Off"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/InterfaceUI/Traffic Overlay"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Grid Overlay" type="TextureRect" parent="MC_OptionsUI/MainPanel/InterfaceUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = -42.925003
+offset_right = 210.04
+offset_bottom = 129.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/InterfaceUI/Grid Overlay"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Grid Overlay:
+Off"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/InterfaceUI/Grid Overlay"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="ToolTipDetail" type="TextureRect" parent="MC_OptionsUI/MainPanel/InterfaceUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = 16.074997
+offset_right = 210.04
+offset_bottom = 188.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/InterfaceUI/ToolTipDetail"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "Tooltip Detail:
+Short"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/InterfaceUI/ToolTipDetail"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="UI Scale" type="TextureRect" parent="MC_OptionsUI/MainPanel/InterfaceUI"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.32900003
+anchor_top = 0.32500002
+anchor_right = 0.32900003
+anchor_bottom = 0.32500002
+offset_left = -126.96001
+offset_top = 73.075
+offset_right = 210.04
+offset_bottom = 245.075
+expand_mode = 1
+
+[node name="OptionLabel" type="Label" parent="MC_OptionsUI/MainPanel/InterfaceUI/UI Scale"]
+z_index = 100
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.25800002
+anchor_top = 0.49400002
+anchor_right = 0.74700004
+anchor_bottom = 0.583
+offset_left = -46.946014
+offset_top = -5.9680023
+offset_right = 47.552002
+offset_bottom = 4.0379944
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1_3luoc")
+theme_override_font_sizes/font_size = 10
+text = "UI Scale:
+Small"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("10_ro6yv")
+
+[node name="TextureButton" type="TextureButton" parent="MC_OptionsUI/MainPanel/InterfaceUI/UI Scale"]
+layout_mode = 0
+offset_left = 1.0000153
+offset_right = 337.0
+offset_bottom = 172.0
+texture_normal = ExtResource("9_ouxsb")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="MC_BG" type="ColorRect" parent="."]
+z_index = -10
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.07846785, 0.07846785, 0.07846785, 0)
+script = ExtResource("1_mpf6q")
+
+[node name="BG_1" type="TextureRect" parent="MC_BG"]
+z_index = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("14_udil8")
+
+[node name="Vignette" type="TextureRect" parent="MC_BG"]
+z_index = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -393.88892
+offset_top = -293.0
+offset_right = 391.0
+offset_bottom = 387.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("7_niwbw")
+expand_mode = 1
+
+[node name="MC_JeepneyLane" type="Control" parent="MC_BG"]
+z_index = 3
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.289
+offset_bottom = -0.2720337
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("16_upbnc")
+jeepney_texture = ExtResource("17_rt0s1")
+tricycle_texture = ExtResource("18_nmuy7")
+jeepney_chance = 0.5
+lane1_min_speed = 400.0
+lane1_max_speed = 450.0
+lane2_min_speed = 400.0
+lane2_max_speed = 450.0
+lane1_spawn_delay_min = 8.0
+lane1_spawn_delay_max = 15.0
+lane2_spawn_delay_min = 10.0
+lane2_spawn_delay_max = 15.0
+jeepney_scale_min = 0.45
+jeepney_scale_max = 0.45
+tricycle_scale_min = 0.25
+tricycle_scale_max = 0.25
+tricycle_y_offset_px = 95.0
+spawn_y_pos_1 = 570.0
+spawn_y_pos_2 = 670.0
+lane1_min_spawn_gap_px = 400.0
+lane2_min_spawn_gap_px = 400.0
+bounce_amplitude_px = 3.0
+bounce_freq_min = 2.2
+smoke_texture = ExtResource("19_sfnos")
+smoke_start_scale = 0.15
+smoke_end_scale = 0.65
+smoke_start_alpha = 0.95
+smoke_base_y_offset_px = -15.0
+smoke_jeepney_x_offset_px = -100.0
+smoke_tricycle_x_offset_px = -85.0
+
+[node name="MC_Sky" type="Control" parent="MC_BG"]
+layout_mode = 1
+anchor_left = -0.16100001
+anchor_right = 1.166
+anchor_bottom = 0.915
+offset_left = -0.5279846
+offset_right = -0.23205566
+offset_bottom = 0.079956055
+mouse_filter = 2
+script = ExtResource("21_aa67h")
+cloud_textures = Array[Texture2D]([ExtResource("22_a7qtu"), ExtResource("23_h5vcq"), ExtResource("24_tjtpd")])
+cloud_count = 50
+y_min = -10.0
+y_max = 540.0
+scale_max = 1.8
+auto_fit_max_width_px = 200.0
+destroy_x = 2050.0
+respawn_x = -50.0
+start_fill_max_x = 2050.0
+
+[node name="Sky" type="TextureRect" parent="MC_BG/MC_Sky"]
+z_index = -1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("20_udil8")
+expand_mode = 1
+
+[node name="MC_Pedestrians" type="Control" parent="MC_BG"]
+z_index = 2
+layout_mode = 1
+anchor_left = -0.16800001
+anchor_top = 0.66800004
+anchor_right = 1.172
+anchor_bottom = 1.054
+offset_left = 0.53601074
+offset_top = 0.13598633
+offset_right = -0.14404297
+offset_bottom = 0.0079956055
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("25_a7qtu")
+frame_a = ExtResource("27_cy5ox")
+frame_b = ExtResource("28_j1s73")
+fps_min = 2.0
+fps_max = 6.0
+lane1_spawn_delay_min = 6.0
+lane1_spawn_delay_max = 12.0
+lane2_spawn_delay_min = 6.0
+lane2_spawn_delay_max = 12.0
+spawn_y_pos_1 = 65.0
+spawn_y_pos_2 = 65.0
+lane1_scale_min = 0.1
+lane1_scale_max = 0.1
+lane2_scale_min = 0.1
+lane2_scale_max = 0.1

@@ -31,6 +31,9 @@ var _red_light: Node = null
 var _yellow_light: Node = null
 var _green_light: Node = null
 
+# Audio player for click sound
+var _click_audio: AudioStreamPlayer = null
+
 
 func _ready() -> void:
 	# Set initial state
@@ -40,6 +43,12 @@ func _ready() -> void:
 	_red_light = get_node_or_null("RedLight")
 	_yellow_light = get_node_or_null("YellowLight")
 	_green_light = get_node_or_null("GreenLight")
+	
+	# Setup click sound
+	_click_audio = AudioStreamPlayer.new()
+	_click_audio.stream = load("res://assets/audio/click-345983.mp3")
+	_click_audio.volume_db = -10.0
+	add_child(_click_audio)
 
 	# Update visual representation
 	_update_visuals()
@@ -133,6 +142,10 @@ func _set_state(new_state: LightState) -> void:
 		current_state = new_state
 		_update_visuals()
 		state_changed.emit(stoplight_id, get_state())
+		
+		# Play click sound when light changes
+		if _click_audio and not _click_audio.playing:
+			_click_audio.play()
 
 
 ## Update the visual representation of the lights
