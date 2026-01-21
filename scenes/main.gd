@@ -43,6 +43,16 @@ var use_new_ui: bool = true  # Set to true to enable new floating windows (Ctrl+
 @onready var help_panel: Panel = $UI/HelpPanel
 @onready var toggle_help_button: Button = $UI/ToggleHelpButton
 
+# Background audio
+var background_audio: AudioStreamPlayer = null
+var background_music: AudioStreamPlayer = null  # Background music that alternates
+var bg_music_tracks: Array = []  # Store both music tracks
+var current_music_index: int = 0  # Track which music is playing
+var engine_audio: AudioStreamPlayer = null  # Car engine sound when code runs
+var crash_audio: AudioStreamPlayer = null  # Car crash sound
+var engine_loop_start: float = 0.05  # Skip silence at start
+var engine_loop_end: float = 1.9  # Stop before silence at end
+
 # Current line highlighting
 var _current_executing_line: int = -1
 
@@ -177,6 +187,43 @@ func _ready() -> void:
 			_update_status("Failed to load level")
 	else:
 		_update_status("Ready - Enter code and press Run")
+	
+	# Setup background engine sound
+	background_audio = AudioStreamPlayer.new()
+	background_audio.stream = load("res://assets/audio/car-engine-running.mp3")
+	background_audio.volume_db = -15.0
+	add_child(background_audio)
+	background_audio.play(1.0)  # Start at 1 second
+	
+	# Setup alternating background music
+	background_music = AudioStreamPlayer.new()
+	background_music.volume_db = -25.0
+	add_child(background_music)
+	
+	# Load both music tracks
+	bg_music_tracks.append(load("res://assets/audio/BGMUSIC.mp3"))
+	bg_music_tracks.append(load("res://assets/audio/BGMUSIC2.mp3"))
+	
+	# Start with first track
+	background_music.stream = bg_music_tracks[0]
+	background_music.play()
+	current_music_index = 0
+	
+	# Connect finished signal to switch tracks
+	background_music.finished.connect(_on_background_music_finished)
+	
+	# Setup car engine sound (plays when code with movement runs)
+	engine_audio = AudioStreamPlayer.new()
+	engine_audio.stream = load("res://assets/audio/engine-6000.mp3")
+	engine_audio.volume_db = -20.0  # Quieter volume
+	add_child(engine_audio)
+	
+	# Setup crash sound (plays once when car crashes)
+	crash_audio = AudioStreamPlayer.new()
+	crash_audio.stream = load("res://assets/audio/car-crash-sound-376882.mp3")
+	crash_audio.volume_db = -10.0
+	add_child(crash_audio)
+	
 	_update_speed_label()
 	_update_hearts_label()
 	_update_road_cards_label()
@@ -186,6 +233,16 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Loop background audio between 1-15 seconds
+	if background_audio and background_audio.playing:
+		if background_audio.get_playback_position() >= 15.0:
+			background_audio.play(1.0)  # Restart at 1 second
+	
+	# Manual seamless loop for engine audio (skip silence gaps)
+	if engine_audio and engine_audio.playing:
+		if engine_audio.get_playback_position() >= engine_loop_end:
+			engine_audio.play(engine_loop_start)  # Restart at loop start point
+	
 	# Handle camera movement (WASD or Arrow keys)
 	if camera:
 		var camera_velocity = Vector2.ZERO
@@ -581,10 +638,27 @@ func _on_simulation_started() -> void:
 	is_editing_enabled = true  # Keep editing enabled during gameplay
 	is_spawning_cars = true  # Start spawning cars
 	car_spawn_timer = 0.0  # Reset spawn timer
+	
+	# Play engine sound if code contains movement commands
+	var code = code_editor.text.to_lower()
+	if "car.go" in code or "car.move" in code:
+		if engine_audio and not engine_audio.playing:
+			engine_audio.play(engine_loop_start)  # Start at loop point, skip silence
+		# Stop background audio when car engine starts
+		if background_audio and background_audio.playing:
+			background_audio.stop()
 
 
 func _on_simulation_paused() -> void:
 	_update_status("Paused (Press Space to resume)")
+	
+	# Stop engine sound when paused/stopped
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Resume background audio when paused
+	if background_audio and not background_audio.playing:
+		background_audio.play(1.0)
 
 
 func _on_simulation_ended(success: bool) -> void:
@@ -592,6 +666,15 @@ func _on_simulation_ended(success: bool) -> void:
 	is_editing_enabled = true
 	is_spawning_cars = false  # Stop spawning cars
 	_current_executing_line = -1  # Clear line highlighting
+	
+	# Stop engine sound
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Resume background audio
+	if background_audio and not background_audio.playing:
+		background_audio.play(1.0)
+	
 	if success:
 		_update_status("Simulation complete!")
 	else:
@@ -605,11 +688,35 @@ func _on_car_reached_destination(car_id: String) -> void:
 func _on_car_crashed(car_id: String) -> void:
 	_lose_heart()
 	_update_status("Car '%s' crashed! Lost 1 heart" % car_id)
+	
+	# Stop engine sound when car crashes
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Play crash sound
+	if crash_audio and not crash_audio.playing:
+		crash_audio.play()
 
 
 func _on_car_off_road(car_id: String) -> void:
 	_lose_heart()
 	_update_status("Car '%s' went off-road! Lost 1 heart" % car_id)
+	
+	# Stop engine sound when car goes off-road
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Play crash sound
+	if crash_audio and not crash_audio.playing:
+		crash_audio.play()
+
+
+## Switch to next background music track when current one finishes
+func _on_background_music_finished() -> void:
+	# Alternate between the two tracks
+	current_music_index = (current_music_index + 1) % bg_music_tracks.size()
+	background_music.stream = bg_music_tracks[current_music_index]
+	background_music.play()
 
 
 func _on_level_completed(stars: int) -> void:
@@ -797,6 +904,14 @@ func _on_retry_pressed() -> void:
 	simulation_engine.reset()
 	is_spawning_cars = false
 	_clear_line_highlight()
+	
+	# Stop engine sound on retry
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Resume background audio
+	if background_audio and not background_audio.playing:
+		background_audio.play(1.0)
 
 	# Clear ALL spawned cars
 	_clear_all_spawned_cars()
@@ -835,6 +950,14 @@ func _do_fast_retry() -> void:
 	simulation_engine.reset()
 	is_spawning_cars = false
 	_clear_line_highlight()
+	
+	# Stop engine sound on reset
+	if engine_audio and engine_audio.playing:
+		engine_audio.stop()
+	
+	# Resume background audio
+	if background_audio and not background_audio.playing:
+		background_audio.play(1.0)
 
 	# Force all road tiles to recalculate paths (fixes guideline bug on subsequent runs)
 	for grid_pos in road_tiles:
@@ -1200,6 +1323,19 @@ func _on_window_manager_pause() -> void:
 func _on_window_manager_reset() -> void:
 	"""Handle reset request from new UI - same as fast retry"""
 	_do_fast_retry()
+
+
+func _exit_tree() -> void:
+	"""Clean up background audio when exiting the scene"""
+	if background_audio:
+		background_audio.stop()
+		background_audio.queue_free()
+	if engine_audio:
+		engine_audio.stop()
+		engine_audio.queue_free()
+	if crash_audio:
+		crash_audio.stop()
+		crash_audio.queue_free()
 
 func _on_window_manager_speed_changed(speed: float) -> void:
 	"""Handle speed change from new UI - instant update"""

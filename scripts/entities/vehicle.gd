@@ -205,7 +205,7 @@ var _last_move_direction: Vector2 = Vector2.ZERO  # Track where we came from (to
 var speed_multiplier: float = 1.0
 
 # Guideline path following (new system)
-var _guideline_enabled: bool = true  # Set false to use old reactive movement
+var _guideline_enabled: bool = true  # Keep enabled for turn detection
 var _current_path: Array = []        # Waypoints to follow (world positions)
 var _path_index: int = 0             # Current waypoint index
 var _current_tile: Vector2i = Vector2i(-1, -1)   # Tile we're currently on
@@ -235,8 +235,8 @@ var _turn_start_direction: Vector2 = Vector2.ZERO
 # Distance threshold for reaching destination
 const DESTINATION_THRESHOLD: float = 10.0
 
-# Lane offset - cars drive on the left side of their direction (pixels from center)
-const LANE_OFFSET: float = 25.0
+# Lane offset - cars drive in center of road (no offset for simpler movement)
+const LANE_OFFSET: float = 0.0
 
 # Distance at which vehicle detects stoplights (in pixels)
 const STOPLIGHT_DETECTION_RANGE: float = 100.0

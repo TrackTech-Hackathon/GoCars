@@ -53,7 +53,7 @@ var extended_connections: Dictionary = {
 var is_preview: bool = false
 
 # Debug mode - show guideline paths visually
-var show_guidelines: bool = true
+var show_guidelines: bool = false
 
 # Lazy path calculation flag - paths recalculated on first access
 var _paths_dirty: bool = true
