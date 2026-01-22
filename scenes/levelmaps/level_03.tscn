@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=4 uid="uid://m44ums3jalnl"]
+
+[ext_resource type="TileSet" uid="uid://bqq1sck3ns3dj" path="res://assets/tiles/road_tileset.tres" id="1_mfnu5"]
+[ext_resource type="Script" uid="uid://cj6mm55w6w81k" path="res://scripts/map_editor/road_tilemap_layer.gd" id="2_rt80c"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hearts_ui.tscn" id="3_wkl1d"]
+
+[node name="Level02" type="Node2D"]
+
+[node name="BackgroundLayer" type="TileMapLayer" parent="."]
+z_index = -10
+tile_set = ExtResource("1_mfnu5")
+
+[node name="RoadLayer" type="TileMapLayer" parent="."]
+rotation = -0.0031954704
+tile_map_data = PackedByteArray("AAAFAP7/AAAEAAAAAAAGAP7/AAAEAAAAAAAHAP7/AAAEAAAAAAAFAAIAAAAEAAMAAAAGAAIAAAAEAAMAAAAHAAIAAAAEAAMAAAAFAAEAAAAAAAIAAAAFAAAAAAAAAAIAAAAFAP//AAAAAAIAAAAGAP//AAAAAAIAAAAGAAAAAAAAAAIAAAAGAAEAAAAAAAIAAAAHAAAAAAAAAAIAAAAHAP//AAAAAAIAAAAHAAEAAAAAAAIAAAA=")
+tile_set = ExtResource("1_mfnu5")
+script = ExtResource("2_rt80c")
+
+[node name="LevelInfo" type="Node" parent="."]
+
+[node name="LevelName" type="Label" parent="LevelInfo"]
+visible = false
+text = "Level 3"
+
+[node name="HeartsUI" parent="." instance=ExtResource("3_wkl1d")]
+layout_mode = 3
+anchors_preset = 0
+metadata/_edit_use_custom_anchors = true

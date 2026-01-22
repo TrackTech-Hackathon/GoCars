@@ -93,6 +93,7 @@ var level_timer: float = 0.0
 var timer_running: bool = false
 var level_won: bool = false
 var current_level_id: String = ""
+var current_level_display_name: String = ""
 
 # Hearts UI (loaded from level)
 var hearts_ui: Node = null
@@ -266,6 +267,11 @@ func _setup_audio() -> void:
 func _load_level(index: int) -> void:
 	current_level_index = index
 
+	# Clear all existing cars first
+	_clear_all_cars()
+	next_car_id = 1
+	is_spawning_cars = false
+
 	# Clear previous level
 	if current_level_node:
 		current_level_node.queue_free()
@@ -297,9 +303,10 @@ func _load_level(index: int) -> void:
 	if destination_data.is_empty():
 		_update_status("Warning: No destination points found!")
 
-	var level_name = level_loader.get_level_name(index)
+	var level_name = level_loader.get_level_filename(index)
 	current_level_id = level_name
-	_update_status("Loaded level: %s" % level_name)
+	current_level_display_name = level_loader.get_level_name_from_instance(current_level_node)
+	_update_status("Loaded level: %s" % current_level_display_name)
 
 	# Load hearts from level's HeartsUI node if present
 	_load_level_hearts()
@@ -317,7 +324,8 @@ func _load_level(index: int) -> void:
 func _load_level_by_name(level_name: String) -> void:
 	var paths = level_loader.get_level_paths()
 	for i in range(paths.size()):
-		if level_loader.get_level_name(i) == level_name:
+		# Match by filename (level_01, level_02, etc.)
+		if level_loader.get_level_filename(i) == level_name:
 			_load_level(i)
 			return
 
@@ -681,7 +689,7 @@ func _show_victory_popup(stars: int) -> void:
 		is_new_best = GameData.save_best_time(current_level_id, level_timer)
 		GameData.mark_level_completed(current_level_id)
 
-	result_title.text = "LEVEL COMPLETE!"
+	result_title.text = "%s\nCOMPLETE!" % current_level_display_name
 
 	var star_display = ""
 	for i in range(3):
@@ -727,7 +735,7 @@ func _show_failure_popup(reason: String) -> void:
 	# Stop timer on failure (don't save time)
 	timer_running = false
 
-	result_title.text = "LEVEL FAILED"
+	result_title.text = "%s\nFAILED" % current_level_display_name
 
 	var message_parts: Array = []
 	message_parts.append(reason)

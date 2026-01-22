@@ -35,12 +35,67 @@ func get_level_path(index: int) -> String:
 	return ""
 
 
-## Get level name from path (filename without extension)
-func get_level_name(index: int) -> String:
+## Get level filename from path (filename without extension)
+func get_level_filename(index: int) -> String:
 	var path = get_level_path(index)
 	if path.is_empty():
 		return ""
 	return path.get_file().get_basename()
+
+
+## Get level display name from the LevelName label in the scene
+## Falls back to filename if LevelName label doesn't exist
+func get_level_display_name(index: int) -> String:
+	var path = get_level_path(index)
+	if path.is_empty():
+		return ""
+
+	# Load the scene to check for LevelName label
+	var scene = load(path)
+	if scene == null:
+		return path.get_file().get_basename()
+
+	var instance = scene.instantiate()
+	var display_name = _extract_level_name(instance)
+	instance.queue_free()
+
+	if display_name.is_empty():
+		return path.get_file().get_basename()
+	return display_name
+
+
+## Get level display name by path
+func get_level_display_name_by_path(path: String) -> String:
+	var scene = load(path)
+	if scene == null:
+		return path.get_file().get_basename()
+
+	var instance = scene.instantiate()
+	var display_name = _extract_level_name(instance)
+	instance.queue_free()
+
+	if display_name.is_empty():
+		return path.get_file().get_basename()
+	return display_name
+
+
+## Extract level name from a level instance
+func _extract_level_name(level_instance: Node) -> String:
+	# Look for LevelInfo/LevelName label
+	var level_info = level_instance.get_node_or_null("LevelInfo")
+	if level_info:
+		var level_name_label = level_info.get_node_or_null("LevelName")
+		if level_name_label and level_name_label is Label:
+			return level_name_label.text.strip_edges()
+	return ""
+
+
+## Get level name from an already loaded level instance
+func get_level_name_from_instance(level_instance: Node) -> String:
+	var name = _extract_level_name(level_instance)
+	if name.is_empty():
+		return level_instance.name
+	return name
 
 
 ## Load and instantiate a level scene by index

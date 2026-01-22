@@ -629,17 +629,34 @@ Levels are created using Godot's TileMapLayer system. Each level is a scene file
 1. **Copy an existing level**: Duplicate `scenes/levelmaps/level_01.tscn`
 2. **Rename it**: e.g., `level_02.tscn`, `level_03.tscn`, etc.
 3. **Open in Godot Editor**: Double-click to open
-4. **Paint tiles on RoadLayer**: Use the TileMap painting tools
-5. **Save**: The level auto-loads from the folder
+4. **Set the display name**: Edit `LevelInfo/LevelName` Label's text property
+5. **Paint tiles on RoadLayer**: Use the TileMap painting tools
+6. **Configure hearts**: Edit `HeartsUI/HeartCount` Label's text (e.g., "3" for 3 hearts)
+7. **Save**: The level auto-loads from the folder
 
-Levels are automatically detected from `scenes/levelmaps/` and sorted alphabetically.
+Levels are automatically detected from `scenes/levelmaps/` and sorted alphabetically by filename.
+
+### Level Naming System
+
+Levels have two names:
+- **Filename** (e.g., `level_01`, `level_02`): Used internally for save data and level loading
+- **Display Name** (from LevelName label): Shown in menus and game UI
+
+To set the display name:
+1. Expand `LevelInfo` node in the scene tree
+2. Select the `LevelName` Label node
+3. Edit the `text` property to your desired name (e.g., "TileMap Tutorial", "First Drive")
+4. Keep `visible = false` (the label is only for storing the name)
 
 ### Level Structure
 
 Each level scene has:
 - **BackgroundLayer** (TileMapLayer): For grass, water, decorations (z_index = -10)
 - **RoadLayer** (TileMapLayer + RoadTileMapLayer script): For roads and parking tiles
-- **LevelInfo** (Node): Optional metadata
+- **LevelInfo** (Node): Level metadata container
+  - **LevelName** (Label): Display name shown in menus and game over (visible = false)
+- **HeartsUI** (instance of hearts_ui.tscn): Hearts/lives display
+  - **HeartCount** (Label): Set text to configure starting hearts (e.g., "3")
 
 ### New Tileset Layout (5×5 grid, 144×144 per tile)
 
@@ -680,6 +697,15 @@ Cars enter these tiles and stop:
 - **Road layer script**: `scripts/map_editor/road_tilemap_layer.gd`
 - **Level loader**: `scripts/core/level_loader.gd`
 - **Main scene (TileMap version)**: `scenes/main_tilemap.gd`
+- **Hearts UI**: `scenes/ui/hearts_ui.tscn`
+- **Game data (save/load)**: `scripts/core/game_data.gd`
+
+### Level Selector
+The level selector (`scenes/menus/level_selector.gd`) automatically:
+- Scans `scenes/levelmaps/` folder for `.tscn` files
+- Reads the `LevelName` label from each level for display
+- Shows best completion times from saved data
+- Sorts levels alphabetically by filename
 
 ---
 

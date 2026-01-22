@@ -2,12 +2,15 @@ extends Control
 
 ## Level Selector Scene
 ## Full-screen menu for selecting which level to play
+## Dynamically loads levels from the levelmaps folder
+
+const LEVELS_PATH: String = "res://scenes/levelmaps/"
 
 func _ready() -> void:
 	# Lower music volume for level selector
 	if MusicManager:
 		MusicManager.lower_volume()
-	
+
 	# Set to full screen
 	anchor_right = 1.0
 	anchor_bottom = 1.0
@@ -69,35 +72,18 @@ func _ready() -> void:
 	spacer.custom_minimum_size = Vector2(0, 20)
 	vbox.add_child(spacer)
 
-	# Level data: [id, name, description, is_tilemap]
-	# Levels with [BUILD] have road editing enabled
-	# is_tilemap = true means it uses the new TileMap-based level system
-	var levels = [
-		["level_01", "Level 1", "TileMap Tutorial", true],
-		["T1", "First Drive", "Learn car.go()", false],
-		["T2", "Stop Sign", "Learn car.stop()", false],
-		["T3", "Turn Ahead", "Turns [BUILD]", false],
-		["T5", "Traffic Jam", "Multi-car [BUILD]", false],
-		["C1", "Smallville", "Variables", false],
-		["C2", "Red Light", "If statements", false],
-		["C3", "Jaro Crossroads", "elif/else [BUILD]", false],
-		["C5", "Molo Mansion", "Comparisons [BUILD]", false],
-		["W1", "Ferry Dock", "While loops", false],
-		["W3", "Fort San Pedro", "For loops [BUILD]", false],
-		["W5", "Guimaras Ferry", "Break [BUILD]", false]
-	]
+	# Dynamically load levels from levelmaps folder
+	var level_paths = _scan_levels_folder()
 
 	# Create buttons for each level
-	for level_data in levels:
-		var level_id = level_data[0]
-		var level_name = level_data[1]
-		var level_desc = level_data[2]
-		var is_tilemap = level_data[3]
+	for level_path in level_paths:
+		var level_id = level_path.get_file().get_basename()
+		var level_display_name = _get_level_display_name(level_path)
 
 		var btn = Button.new()
 
 		# Show best time if available
-		var btn_text = "%s: %s - %s" % [level_id, level_name, level_desc]
+		var btn_text = level_display_name
 		if GameData and GameData.has_best_time(level_id):
 			var best_time = GameData.get_best_time(level_id)
 			btn_text += " [Best: %s]" % _format_time(best_time)
@@ -135,19 +121,63 @@ func _ready() -> void:
 		btn_pressed.content_margin_right = 20
 		btn.add_theme_stylebox_override("pressed", btn_pressed)
 
-		btn.pressed.connect(_on_level_pressed.bind(level_id, is_tilemap))
+		btn.pressed.connect(_on_level_pressed.bind(level_id))
 		vbox.add_child(btn)
 
 
-func _on_level_pressed(level_id: String, is_tilemap: bool) -> void:
+## Scan the levelmaps folder for .tscn files
+func _scan_levels_folder() -> Array[String]:
+	var level_paths: Array[String] = []
+
+	var dir = DirAccess.open(LEVELS_PATH)
+	if dir == null:
+		push_warning("Could not open levels folder: %s" % LEVELS_PATH)
+		return level_paths
+
+	dir.list_dir_begin()
+	var file_name = dir.get_next()
+
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".tscn"):
+			level_paths.append(LEVELS_PATH + file_name)
+		file_name = dir.get_next()
+
+	dir.list_dir_end()
+
+	# Sort alphabetically/numerically
+	level_paths.sort()
+	return level_paths
+
+
+## Get level display name from the LevelName label in the scene
+func _get_level_display_name(level_path: String) -> String:
+	var scene = load(level_path)
+	if scene == null:
+		return level_path.get_file().get_basename()
+
+	var instance = scene.instantiate()
+	var display_name = ""
+
+	# Look for LevelInfo/LevelName label
+	var level_info = instance.get_node_or_null("LevelInfo")
+	if level_info:
+		var level_name_label = level_info.get_node_or_null("LevelName")
+		if level_name_label and level_name_label is Label:
+			display_name = level_name_label.text.strip_edges()
+
+	instance.queue_free()
+
+	if display_name.is_empty():
+		return level_path.get_file().get_basename()
+	return display_name
+
+
+func _on_level_pressed(level_id: String) -> void:
 	# Store selected level in GameState autoload
 	GameState.selected_level_id = level_id
 
-	# Change to appropriate game scene based on level type
-	if is_tilemap:
-		get_tree().change_scene_to_file("res://scenes/main_tilemap.tscn")
-	else:
-		get_tree().change_scene_to_file("res://scenes/main.tscn")
+	# All levels in levelmaps folder use the TileMap system
+	get_tree().change_scene_to_file("res://scenes/main_tilemap.tscn")
 
 
 ## Format time as MM:SS.ms
