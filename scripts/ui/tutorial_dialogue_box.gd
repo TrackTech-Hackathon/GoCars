@@ -15,6 +15,7 @@ signal skip_pressed()
 @onready var character_portrait: TextureRect = $DialoguePanel/HBoxContainer/CharacterPortrait
 @onready var speaker_name: Label = $DialoguePanel/HBoxContainer/VBoxContainer/SpeakerName
 @onready var dialogue_text: RichTextLabel = $DialoguePanel/HBoxContainer/VBoxContainer/DialogueText
+@onready var action_helper: Label = $DialoguePanel/HBoxContainer/VBoxContainer/ActionHelper
 @onready var continue_indicator: Label = $DialoguePanel/HBoxContainer/VBoxContainer/ContinueIndicator
 @onready var skip_button: Button = $DialoguePanel/SkipButton
 
@@ -65,8 +66,8 @@ func _load_sprites() -> void:
 		else:
 			push_warning("TutorialDialogueBox: Could not load %s sprite" % emotion)
 
-## Show dialogue with text, speaker, and emotion
-func show_dialogue(text: String, speaker: String = "Maki", emotion: String = "talking") -> void:
+## Show dialogue with text, speaker, emotion, and optional action hint
+func show_dialogue(text: String, speaker: String = "Maki", emotion: String = "talking", action_hint: String = "") -> void:
 	visible = true
 	dialogue_panel.visible = true
 
@@ -75,6 +76,13 @@ func show_dialogue(text: String, speaker: String = "Maki", emotion: String = "ta
 
 	# Change character sprite with crossfade
 	_set_emotion(emotion)
+
+	# Show action helper if provided
+	if action_hint.is_empty():
+		action_helper.visible = false
+	else:
+		action_helper.text = ">> " + action_hint
+		action_helper.visible = true
 
 	# Start typewriter effect
 	_start_typewriter(text)

@@ -2033,5 +2033,12 @@ func _on_tutorial_completed(level_id: String) -> void:
 
 ## Notify TutorialManager of player actions
 func _notify_tutorial_action(action: String) -> void:
+	print("Main: _notify_tutorial_action called with: %s" % action)
 	if TutorialManager and TutorialManager.is_active():
+		print("Main: TutorialManager is active, calling notify_action")
 		TutorialManager.notify_action(action)
+	else:
+		if not TutorialManager:
+			print("Main: TutorialManager not found")
+		elif not TutorialManager.is_active():
+			print("Main: TutorialManager not active")

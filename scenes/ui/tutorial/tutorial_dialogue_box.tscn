@@ -1,8 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://dtutor1ald1alog"]
+[gd_scene load_steps=5 format=3 uid="uid://c7lgfwy3a3yly"]
 
-[ext_resource type="Script" path="res://scripts/ui/tutorial_dialogue_box.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://bw1j0ovmsfqlu" path="res://assets/sprites/Maki_Normal.png" id="2_maki"]
-[ext_resource type="FontFile" uid="uid://c8h3mfg1hqfis" path="res://assets/fonts/pixel.ttf" id="3_font"]
+[ext_resource type="Script" uid="uid://ctywxj6p4q3rq" path="res://scripts/ui/tutorial_dialogue_box.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://7c8l1bvff785" path="res://assets/sprites/Maki_Normal.png" id="2_maki"]
+[ext_resource type="FontFile" uid="uid://bg6pof5832ljm" path="res://assets/fonts/pixel.ttf" id="3_font"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0.1, 0.1, 0.12, 0.95)
@@ -13,24 +13,15 @@ border_width_bottom = 2
 border_color = Color(0.3, 0.3, 0.35, 1)
 corner_radius_top_left = 12
 corner_radius_top_right = 12
-corner_radius_bottom_left = 12
 corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
 
 [node name="TutorialDialogueBox" type="CanvasLayer"]
 layer = 100
 script = ExtResource("1_script")
 
-[node name="DimOverlay" type="ColorRect" parent="."]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.3)
-mouse_filter = 2
-
 [node name="DialoguePanel" type="Panel" parent="."]
-anchors_preset = 12
+anchors_preset = -1
 anchor_top = 0.65
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -57,7 +48,7 @@ grow_vertical = 2
 theme_override_constants/separation = 24
 
 [node name="CharacterPortrait" type="TextureRect" parent="DialoguePanel/HBoxContainer"]
-custom_minimum_size = Vector2(180, 180)
+custom_minimum_size = Vector2(250, 250)
 layout_mode = 2
 size_flags_vertical = 4
 texture = ExtResource("2_maki")
@@ -85,6 +76,13 @@ theme_override_fonts/normal_font = ExtResource("3_font")
 theme_override_font_sizes/normal_font_size = 22
 bbcode_enabled = true
 text = "Welcome to GoCars! I'm Maki, and I'll teach you how to code cars!"
+
+[node name="ActionHelper" type="Label" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.8, 1, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
 
 [node name="ContinueIndicator" type="Label" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
 layout_mode = 2

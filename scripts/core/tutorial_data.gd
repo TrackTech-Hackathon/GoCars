@@ -179,15 +179,22 @@ func _parse_action(step: TutorialStep, action_content: String) -> void:
 	if action_content.begins_with("Arrow points"):
 		step.action = "point"
 		step.emotion = "pointing"
-		# Extract target
+		# Extract target - everything after "to "
 		var to_pos = action_content.find(" to ")
 		if to_pos != -1:
-			step.target = action_content.substr(to_pos + 4)
+			step.target = action_content.substr(to_pos + 4).strip_edges()
+			print("TutorialData: Point action - target: '%s'" % step.target)
 
 	elif action_content.begins_with("WAIT:"):
-		step.action = "wait"
+		# If already pointing, combine actions as "point_and_wait"
+		if step.action == "point":
+			step.action = "point_and_wait"
+		else:
+			step.action = "wait"
 		step.wait_type = action_content.substr(5).strip_edges()
-		step.target = step.wait_type
+		# Don't overwrite target if already set from point action
+		if step.target.is_empty():
+			step.target = step.wait_type
 
 	elif action_content.begins_with("FORCE"):
 		step.action = "force"
@@ -210,17 +217,21 @@ func _determine_emotion(text: String, action: String) -> String:
 	# If already pointing, keep pointing
 	if action == "point":
 		return "pointing"
+	
+	# Check for level complete - always happy
+	if action == "level_complete":
+		return "happy"
 
-	# Check for happy indicators
-	var happy_words = ["AMAZING", "CONGRATULATIONS", "EXCELLENT", "Perfect", "GREAT", "Good luck"]
+	# Check for happy indicators (success, praise, encouragement)
+	var happy_words = ["AMAZING", "CONGRATULATIONS", "EXCELLENT", "Perfect", "GREAT", "Good luck", "Well done", "Nice", "Awesome", "correct", "succeeded", "success"]
 	for word in happy_words:
-		if word in text:
+		if word.to_lower() in text.to_lower():
 			return "happy"
 
 	# Check for warning/concerned indicators
-	var concern_words = ["CRASH", "VIOLATION", "lost", "GAME OVER", "careful"]
+	var concern_words = ["CRASH", "VIOLATION", "lost", "GAME OVER", "careful", "Uh oh", "Oh no", "mistake", "error", "wrong"]
 	for word in concern_words:
-		if word in text:
+		if word.to_lower() in text.to_lower():
 			return "normal"  # Use normal with concerned text
 
 	# Default to talking for most dialogue

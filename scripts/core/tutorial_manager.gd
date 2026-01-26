@@ -37,13 +37,20 @@ var dialogue_box: Node = null
 ## Preloaded dialogue box scene
 var dialogue_box_scene: PackedScene = null
 
+## Preloaded highlight scene
+var highlight_scene: PackedScene = null
+
+## Highlight overlay
+var highlight_overlay: Node = null
+
 func _ready() -> void:
 	# Load tutorial data
 	tutorial_data = TutorialDataClass.new()
 
 	# Preload dialogue box scene
-	dialogue_box_scene = load("res://scenes/ui/tutorial/tutorial_dialogue_box.tscn")
-
+	dialogue_box_scene = load("res://scenes/ui/tutorial/tutorial_dialogue_box.tscn")	
+	# Preload highlight scene
+	highlight_scene = load("res://scenes/ui/tutorial/tutorial_highlight.tscn")
 	print("TutorialManager: Ready")
 
 ## Start tutorial for a level
@@ -72,6 +79,11 @@ func start_tutorial(level_name: String, parent_node: Node) -> bool:
 			dialogue_box.continue_pressed.connect(_on_continue_pressed)
 		if dialogue_box.has_signal("skip_pressed"):
 			dialogue_box.skip_pressed.connect(_on_skip_pressed)
+	
+	# Create highlight overlay if not exists
+	if not highlight_overlay and highlight_scene:
+		highlight_overlay = highlight_scene.instantiate()
+		parent_node.add_child(highlight_overlay)
 
 	# Show skip button if already completed
 	if dialogue_box and GameData.has_completed_tutorial(level_name):
@@ -115,13 +127,32 @@ func advance_step() -> void:
 
 ## Process a tutorial step
 func _process_step(step) -> void:
+	print("TutorialManager: Processing step - action: %s, target: %s" % [step.action, step.target])
+	
 	# Handle action
 	match step.action:
 		"point":
-			highlight_requested.emit(step.target)
+			# Extract hint from target if it contains "|" separator
+			var parts = step.target.split("|", false)
+			var target_name = parts[0].strip_edges()
+			var hint = parts[1].strip_edges() if parts.size() > 1 else ""
+			print("TutorialManager: Calling highlight for target: '%s'" % target_name)
+			_highlight_target(target_name, hint)
+		"point_and_wait":
+			# Combined action: highlight AND wait
+			var parts = step.target.split("|", false)
+			var target_name = parts[0].strip_edges()
+			var hint = parts[1].strip_edges() if parts.size() > 1 else ""
+			print("TutorialManager: Calling highlight for target: '%s'" % target_name)
+			_highlight_target(target_name, hint)
+			is_waiting_for_action = true
+			pending_wait_action = step.wait_type
+			print("Tutorial waiting for action: %s" % step.wait_type)
+			wait_for_action.emit(step.wait_type)
 		"wait":
 			is_waiting_for_action = true
 			pending_wait_action = step.wait_type
+			print("Tutorial waiting for action: %s" % step.wait_type)
 			wait_for_action.emit(step.wait_type)
 		"force":
 			force_event.emit(step.target)
@@ -134,7 +165,7 @@ func _process_step(step) -> void:
 				dialogue_box.show_character()
 		_:
 			# Clear any highlight for non-point actions
-			highlight_cleared.emit()
+			_clear_highlight()
 
 	# Show dialogue if there is any
 	if step.dialogue.size() > 0:
@@ -147,7 +178,7 @@ func _process_step(step) -> void:
 func _show_dialogue(step) -> void:
 	if current_dialogue_index >= step.dialogue.size():
 		# All dialogue shown, check if waiting
-		if step.action == "wait":
+		if step.action == "wait" or step.action == "point_and_wait":
 			# Stay on this step until action is performed
 			return
 		else:
@@ -158,13 +189,18 @@ func _show_dialogue(step) -> void:
 	var text = step.dialogue[current_dialogue_index]
 	var speaker = step.speaker
 	var emotion = step.emotion
+	
+	# Generate action hint based on wait type
+	var action_hint = ""
+	if (step.action == "wait" or step.action == "point_and_wait") and not step.wait_type.is_empty():
+		action_hint = _get_action_hint(step.wait_type)
 
 	# Emit signal for dialogue
 	dialogue_shown.emit(text, speaker, emotion)
 
-	# Update dialogue box
+	# Update dialogue box with action hint
 	if dialogue_box and dialogue_box.has_method("show_dialogue"):
-		dialogue_box.show_dialogue(text, speaker, emotion)
+		dialogue_box.call("show_dialogue", text, speaker, emotion, action_hint)
 
 ## Continue to next dialogue line or step
 func continue_dialogue() -> void:
@@ -209,22 +245,31 @@ func _action_matches(performed: String, waited: String) -> bool:
 	performed = performed.to_lower().strip_edges()
 	waited = waited.to_lower().strip_edges()
 
+	print("TutorialManager: Matching action '%s' against '%s'" % [performed, waited])
+
 	# Direct match
 	if performed == waited:
+		print("TutorialManager: Direct match!")
 		return true
 
 	# Common action mappings
 	var mappings = {
-		"run_code": ["player presses run", "player runs code", "run", "f5"],
+		"run_code": ["player presses run", "player presses f5", "player runs code", "run", "f5"],
 		"open_code_editor": ["player clicks to open code editor", "open editor", "code editor"],
-		"type_code": ["player types", "player writes code", "type"],
+		"type_code": ["player types", "player writes code", "type", "car.go()"],
 	}
 
 	for key in mappings:
 		if performed == key:
 			for match_str in mappings[key]:
 				if match_str in waited:
+					print("TutorialManager: Matched via mapping!")
 					return true
+	
+	# Check if waited action contains the performed action
+	if performed in waited:
+		print("TutorialManager: Partial match!")
+		return true
 
 	return false
 
@@ -292,6 +337,51 @@ func _on_continue_pressed() -> void:
 
 func _on_skip_pressed() -> void:
 	skip_tutorial()
+
+## Get user-friendly action hint from wait type
+func _get_action_hint(wait_type: String) -> String:
+	wait_type = wait_type.to_lower().strip_edges()
+	
+	# Map wait actions to user-friendly hints
+	var hints = {
+		"player presses run": "Click the ▶ Run button (or press F5) to continue",
+		"player presses f5": "Press F5 or click the ▶ Run button to continue",
+		"run_code": "Click the ▶ Run button to execute your code",
+		"player clicks to open code editor": "Click the Code Editor button in the toolbar",
+		"open_code_editor": "Click the Code Editor button to open it",
+		"player types car.go()": "Type: car.go() in the code editor",
+		"player types": "Type car.go() in the code editor",
+		"type_code": "Type car.go() in the code editor",
+		"player writes code": "Type car.go() in the code editor",
+	}
+	
+	# Try direct match
+	if wait_type in hints:
+		return hints[wait_type]
+	
+	# Try partial match
+	for key in hints:
+		if key in wait_type:
+			return hints[key]
+	
+	# Fallback: clean up the wait type
+	return "Complete the action: " + wait_type.capitalize()
+
+## Highlight a target UI element
+func _highlight_target(target_name: String, hint: String = "") -> void:
+	print("TutorialManager: _highlight_target called, overlay exists: %s" % (highlight_overlay != null))
+	if highlight_overlay and highlight_overlay.has_method("highlight_target"):
+		print("TutorialManager: Calling highlight_overlay.highlight_target('%s')" % target_name)
+		highlight_overlay.highlight_target(target_name, hint)
+		highlight_requested.emit(target_name)
+	else:
+		print("TutorialManager: highlight_overlay not ready or missing method")
+
+## Clear highlight
+func _clear_highlight() -> void:
+	if highlight_overlay and highlight_overlay.has_method("clear_highlight"):
+		highlight_overlay.clear_highlight()
+		highlight_cleared.emit()
 
 ## Check if a level has a tutorial
 func has_tutorial(level_name: String) -> bool:

@@ -29,30 +29,30 @@ STEP 2: Point at Car
 "It won't move on its own - YOU have to tell it what to do with code."
 
 STEP 3: Point at Code Editor Button
-[Arrow points to code editor button/panel]
+[Arrow points to code_editor_button]
 "Click here to open the Code Editor - this is where you'll write your code!"
 [WAIT: Player clicks to open code editor]
 
 STEP 4: Code Editor Overview
-[Code editor opens, arrow points to text area]
+[Code editor opens, arrow points to code_edit]
 "This is your Code Editor! It works just like a real programmer's editor."
 "You write Python code here to control the car."
 
 STEP 5: Point at File Explorer
-[Arrow points to file explorer]
+[Arrow points to file_explorer]
 "This is the File Explorer - you can create and manage code files here."
 "For now, we'll use the default file."
 
 STEP 6: Point at Run Button
-[Arrow points to Run/Play button]
+[Arrow points to run_button]
 "This is the RUN button (or press F5). It executes your code!"
 
 STEP 7: Point at Pause Button
-[Arrow points to Pause button]
+[Arrow points to pause_button]
 "PAUSE button (Spacebar) - freezes the simulation."
 
 STEP 8: Point at Reset Button
-[Arrow points to Reset button]
+[Arrow points to reset_button]
 "RESET button (R) - restarts the level if things go wrong."
 
 STEP 9: Point at Speed Controls
@@ -68,15 +68,17 @@ STEP 10: Shortcuts Summary
 "+ / - = Speed Up / Slow Down"
 
 STEP 11: First Code Challenge
-[Arrow points to code editor text area]
+[Arrow points to code_edit]
 "Now let's make the car move!"
-"Type: car.go()"
-"This tells the car to start driving forward."
+"In the code editor, type exactly: car.go()"
+"This is a Python command that tells the car to start driving forward automatically."
+"The car will keep moving until it reaches the destination or crashes."
 [WAIT: Player types car.go()]
 
 STEP 12: Run the Code
-[Arrow points to Run button]
-"Great! Now press RUN (F5) to see your car move!"
+[Arrow points to run_button]
+"Perfect! You typed car.go() - now let's run it!"
+"Click the RUN button (or press F5) to execute your code and watch the car move!"
 [WAIT: Player presses Run]
 
 STEP 13: Success
