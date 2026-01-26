@@ -226,6 +226,11 @@ var _last_exit_direction: String = "" # Direction we exited the previous tile
 var _use_simple_movement: bool = false # After turning, use simple movement until entering new tile
 var _current_move_dir: Vector2 = Vector2.RIGHT  # Stable movement direction for grid calculations
 
+# Decision locking state (prevents zigzag from continuous re-evaluation)
+var _decision_made_for_tile: bool = false     # True once turn/go executed on this tile
+var _locked_exits: Array = []                 # Available exits cached at tile entry
+var _locked_entry_direction: String = ""      # Entry direction frozen at tile entry
+
 # Auto-navigate mode - car automatically follows road
 var auto_navigate: bool = false
 var _nav_check_timer: float = 0.0
@@ -663,17 +668,18 @@ func _follow_guideline_path(delta: float) -> void:
 			_on_off_road_crash()
 			return
 
+	# Check for tile transition (must happen even during simple movement!)
+	var current_grid = _get_current_grid_pos()
+	if current_grid != _current_tile:
+		_on_enter_new_tile(current_grid)
+
 	# After turning, use simple movement until entering a new tile
 	if _use_simple_movement:
 		_move(delta)
 		return
 
-	# Only check for tile transition when we have no path
-	# During path following, trust the waypoints (prevents false transitions)
+	# Only acquire path when we have no path
 	if _current_path.is_empty():
-		var current_grid = _get_current_grid_pos()
-		if current_grid != _current_tile:
-			_on_enter_new_tile(current_grid)
 		_acquire_path_for_current_tile()
 
 	# If still no path (dead end or error), fall back to old movement
@@ -693,13 +699,24 @@ func _on_enter_new_tile(new_tile: Vector2i) -> void:
 	# Resume guideline movement on new tile
 	_use_simple_movement = false
 
+	# RESET decision lock for new tile (allows new road detection)
+	_decision_made_for_tile = false
+	_locked_exits.clear()
+
+	# Calculate and LOCK entry direction
 	# ALWAYS use _last_exit_direction for entry calculation (more stable)
 	# The grid-based calculation is unreliable due to lane offset swings
 	if _last_exit_direction != "":
-		_entry_direction = RoadTile.get_opposite_direction(_last_exit_direction)
+		_locked_entry_direction = RoadTile.get_opposite_direction(_last_exit_direction)
 	else:
 		# First tile only - use facing direction
-		_entry_direction = _get_opposite_direction(_vector_to_connection_direction(direction))
+		_locked_entry_direction = _get_opposite_direction(_vector_to_connection_direction(direction))
+
+	# Keep _entry_direction in sync for compatibility
+	_entry_direction = _locked_entry_direction
+
+	# Cache available exits for this tile
+	_cache_available_exits()
 
 	# Clear path to force acquisition of new one
 	_current_path.clear()
@@ -854,6 +871,16 @@ func _grid_offset_to_direction(offset: Vector2i) -> String:
 		Vector2i(-1, 0): return "left"
 		Vector2i(1, 0): return "right"
 	return ""
+
+
+## Cache available exits when entering a tile (for decision locking)
+func _cache_available_exits() -> void:
+	_locked_exits.clear()
+	if _road_checker == null or not _road_checker.has_method("get_road_tile"):
+		return
+	var tile = _road_checker.get_road_tile(_current_tile)
+	if tile != null:
+		_locked_exits = tile.get_available_exits(_locked_entry_direction)
 
 
 func _check_destination() -> void:
@@ -1023,6 +1050,9 @@ func _exec_go() -> void:
 	# Initialize exit direction if not set (ensures stable entry direction calculation)
 	if _last_exit_direction == "":
 		_last_exit_direction = _vector_to_connection_direction(direction)
+	# NOTE: Do NOT set _decision_made_for_tile here!
+	# go() should allow subsequent turn detection when car reaches tile center
+	# Only turn() should lock the decision to prevent multiple turns
 	_update_stats_state()  # Update state label
 	# go() runs indefinitely, so mark command as complete immediately
 	# (the car keeps moving until stop() is called)
@@ -1040,6 +1070,8 @@ func _exec_stop() -> void:
 
 func _exec_turn(turn_direction: String) -> void:
 	if turn_direction == "left" or turn_direction == "right":
+		# LOCK decision for this tile (prevents zigzag from re-evaluation)
+		_decision_made_for_tile = true
 		# ALWAYS rotate immediately - bad code will crash, good code checked first
 		_execute_turn(turn_direction)
 		# Turn completion is handled in _process_turn()
@@ -1124,23 +1156,27 @@ func _get_opposite_direction(dir: String) -> String:
 
 
 ## Check if there's a road in front of the car (short name)
-## With guidelines: checks if current tile has a straight-through exit
-## Without guidelines: checks adjacent tile for connection
+## Uses LOCKED entry direction for consistent results within a tile
 func front_road() -> bool:
 	# Can't evaluate roads while turning - prevents multiple turn queuing
 	if _is_turning:
 		return false
+	# If a decision (go/turn) was already made for this tile, return false
+	# This prevents multiple turns on the same tile
+	if _decision_made_for_tile:
+		return false
 	if _road_checker == null:
 		return false
 
-	# With guideline system, check available exits from current tile
-	# Skip this when using simple movement (after turning) - entry direction won't match tile's paths
-	if _guideline_enabled and _entry_direction != "" and not _use_simple_movement:
+	# Use LOCKED entry direction for consistent road detection (if available)
+	# If not yet initialized, use fallback detection below
+	if _locked_entry_direction != "":
+		# Check available exits using locked entry direction
 		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
 		if tile != null:
-			var exits = tile.get_available_exits(_entry_direction)
+			var exits = tile.get_available_exits(_locked_entry_direction)
 			# "Front" means continuing straight (opposite of entry)
-			var straight_exit = RoadTile.get_opposite_direction(_entry_direction)
+			var straight_exit = RoadTile.get_opposite_direction(_locked_entry_direction)
 			return straight_exit in exits
 
 	# Fallback: check adjacent tile based on facing direction
@@ -1173,11 +1209,14 @@ func _is_near_turn_point() -> bool:
 
 
 ## Check if there's a road to the left of the car (short name)
-## With guidelines: checks if current tile has a left turn exit
-## Without guidelines: checks adjacent tile for connection
+## Uses LOCKED entry direction for consistent results within a tile
 func left_road() -> bool:
 	# Can't evaluate roads while turning - prevents multiple turn queuing
 	if _is_turning:
+		return false
+	# If a decision (go/turn) was already made for this tile, return false
+	# This prevents multiple turns on the same tile
+	if _decision_made_for_tile:
 		return false
 	# Only detect side roads when near the turn point (prevents early turning)
 	if not _is_near_turn_point():
@@ -1185,14 +1224,15 @@ func left_road() -> bool:
 	if _road_checker == null:
 		return false
 
-	# With guideline system, check available exits from current tile
-	# Skip this when using simple movement (after turning) - entry direction won't match tile's paths
-	if _guideline_enabled and _entry_direction != "" and not _use_simple_movement:
+	# Use LOCKED entry direction for consistent road detection (if available)
+	# If not yet initialized, use fallback detection below
+	if _locked_entry_direction != "":
+		# Check available exits using locked entry direction
 		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
 		if tile != null:
-			var exits = tile.get_available_exits(_entry_direction)
+			var exits = tile.get_available_exits(_locked_entry_direction)
 			# Check cardinal left direction
-			var left_exit = RoadTile.get_left_of(_entry_direction)
+			var left_exit = RoadTile.get_left_of(_locked_entry_direction)
 			return left_exit in exits
 
 	# Fallback: check adjacent tile based on facing direction
@@ -1219,11 +1259,14 @@ func left_road() -> bool:
 
 
 ## Check if there's a road to the right of the car (short name)
-## With guidelines: checks if current tile has a right turn exit
-## Without guidelines: checks adjacent tile for connection
+## Uses LOCKED entry direction for consistent results within a tile
 func right_road() -> bool:
 	# Can't evaluate roads while turning - prevents multiple turn queuing
 	if _is_turning:
+		return false
+	# If a decision (go/turn) was already made for this tile, return false
+	# This prevents multiple turns on the same tile
+	if _decision_made_for_tile:
 		return false
 	# Only detect side roads when near the turn point (prevents early turning)
 	if not _is_near_turn_point():
@@ -1231,14 +1274,15 @@ func right_road() -> bool:
 	if _road_checker == null:
 		return false
 
-	# With guideline system, check available exits from current tile
-	# Skip this when using simple movement (after turning) - entry direction won't match tile's paths
-	if _guideline_enabled and _entry_direction != "" and not _use_simple_movement:
+	# Use LOCKED entry direction for consistent road detection (if available)
+	# If not yet initialized, use fallback detection below
+	if _locked_entry_direction != "":
+		# Check available exits using locked entry direction
 		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
 		if tile != null:
-			var exits = tile.get_available_exits(_entry_direction)
+			var exits = tile.get_available_exits(_locked_entry_direction)
 			# Check cardinal right direction
-			var right_exit = RoadTile.get_right_of(_entry_direction)
+			var right_exit = RoadTile.get_right_of(_locked_entry_direction)
 			return right_exit in exits
 
 	# Fallback: check adjacent tile based on facing direction
@@ -1513,6 +1557,10 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# This ensures front_road(), left_road(), right_road() work immediately
 	_current_tile = _get_current_grid_pos()
 	_entry_direction = _get_opposite_direction(_vector_to_connection_direction(direction))
+	# Reset decision locking state
+	_decision_made_for_tile = false
+	_locked_exits.clear()
+	_locked_entry_direction = _entry_direction  # Initialize locked entry direction
 
 
 # ============================================
@@ -1634,22 +1682,22 @@ func _process_turn(delta: float) -> void:
 		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
 		direction = Vector2.UP.rotated(rotation)
 
-		# Update exit direction to match new facing - critical for correct entry detection on next tile
+		# Update exit direction to match new facing - critical for NEXT tile entry calculation
 		_last_exit_direction = _vector_to_connection_direction(direction)
 
-		# Update entry direction for correct road detection (front_road, left_road, etc.)
-		# After turning, pretend we "entered" from behind our new facing direction
-		_entry_direction = RoadTile.get_opposite_direction(_last_exit_direction)
+		# DO NOT update _entry_direction here - keep it LOCKED until new tile!
+		# This is the key fix for the zigzag problem.
+		# The locked entry direction ensures road detection returns consistent values.
 
 		# Update facing label after turn completes
 		_update_stats_facing()
 
-		# After turning, immediately acquire new guideline path for current tile
-		# Don't use simple movement - stay on guidelines to prevent oscillation
-		_use_simple_movement = false
+		# After turning, use simple movement to exit the tile
+		# We already know the exit direction (_last_exit_direction), so just move that way
+		# Don't try to re-acquire a path based on old entry direction
+		_use_simple_movement = true
 		_current_path.clear()
 		_path_index = 0
-		_acquire_path_for_current_tile()
 
 		# Turn command completed - process next command
 		_command_completed()

@@ -472,9 +472,13 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	# The entry_dir tells us what direction the car will enter the NEXT tile from
 	# So _last_exit_direction should be the opposite (the direction it's traveling)
 	var exit_dir = _get_opposite_direction(spawn.get("entry_dir", ""))
+	var entry_dir = spawn.get("entry_dir", "")
 	if exit_dir != "":
 		new_car._last_exit_direction = exit_dir
 		new_car._current_tile = spawn.get("grid_pos", Vector2i(-1, -1))
+		# Initialize locked entry direction for road detection (prevents dead_end() false positive)
+		new_car._locked_entry_direction = entry_dir
+		new_car._entry_direction = entry_dir
 
 	# Set all destinations (car can reach ANY parking spot)
 	if not destination_data.is_empty():

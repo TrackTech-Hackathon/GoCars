@@ -906,9 +906,9 @@ Vehicles spawn with random colors based on a rarity system using shader-based pa
 **Enums (in `scripts/entities/vehicle.gd`):**
 ```gdscript
 enum VehicleColor {
-    WHITE, GRAY, BLACK, RED, BEIGE,      # Common (indices 0-4)
-    GREEN, BLUE, CYAN, ORANGE, BROWN,    # Uncommon (indices 5-9)
-    LIME, MAGENTA, PINK, PURPLE, YELLOW  # Rare (indices 10-14)
+	WHITE, GRAY, BLACK, RED, BEIGE,      # Common (indices 0-4)
+	GREEN, BLUE, CYAN, ORANGE, BROWN,    # Uncommon (indices 5-9)
+	LIME, MAGENTA, PINK, PURPLE, YELLOW  # Rare (indices 10-14)
 }
 
 enum ColorRarity { COMMON, UNCOMMON, RARE }
