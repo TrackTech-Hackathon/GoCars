@@ -5,7 +5,7 @@
 ## Author: Claude Code
 ## Date: January 2026
 
-extends PanelContainer
+extends Panel
 class_name FloatingWindow
 
 ## Signals
