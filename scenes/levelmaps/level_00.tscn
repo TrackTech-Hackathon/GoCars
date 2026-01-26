@@ -282,7 +282,7 @@ text = "Level 1 "
 
 [node name="LevelBuildRoads" type="Label" parent="LevelSettings"]
 visible = false
-text = "5"
+text = "20"
 
 [node name="HeartsUI" parent="." instance=ExtResource("3_1su6t")]
 layout_mode = 3
