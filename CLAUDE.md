@@ -67,7 +67,7 @@ GoCars/
 │   ├── audio/
 │   ├── fonts/
 │   └── tiles/             # Tileset images and resources
-│       ├── gocarstilesSheet.png      # Main tileset (5x5, 144x144 per tile)
+│       ├── gocarstilesSheet.png      # Main tileset (8x7, 144x144 per tile)
 │       ├── road_tileset.tres         # TileSet resource for TileMapLayers
 │       └── Old Assets/               # Deprecated tilesets
 ├── scenes/
@@ -629,10 +629,11 @@ Levels are created using Godot's TileMapLayer system. Each level is a scene file
 1. **Copy an existing level**: Duplicate `scenes/levelmaps/level_01.tscn`
 2. **Rename it**: e.g., `level_02.tscn`, `level_03.tscn`, etc.
 3. **Open in Godot Editor**: Double-click to open
-4. **Set the display name**: Edit `LevelInfo/LevelName` Label's text property
-5. **Paint tiles on RoadLayer**: Use the TileMap painting tools
-6. **Configure hearts**: Edit `HeartsUI/HeartCount` Label's text (e.g., "3" for 3 hearts)
-7. **Save**: The level auto-loads from the folder
+4. **Set the display name**: Edit `LevelSettings/LevelName` Label's text property
+5. **Configure road building**: Edit `LevelSettings/LevelBuildRoads` Label's text (0=disabled, 1+=enabled with count)
+6. **Paint tiles on RoadLayer**: Use the TileMap painting tools
+7. **Configure hearts**: Edit `HeartsUI/HeartCount` Label's text (e.g., "3" for 3 hearts)
+8. **Save**: The level auto-loads from the folder
 
 Levels are automatically detected from `scenes/levelmaps/` and sorted alphabetically by filename.
 
@@ -643,7 +644,7 @@ Levels have two names:
 - **Display Name** (from LevelName label): Shown in menus and game UI
 
 To set the display name:
-1. Expand `LevelInfo` node in the scene tree
+1. Expand `LevelSettings` node in the scene tree
 2. Select the `LevelName` Label node
 3. Edit the `text` property to your desired name (e.g., "TileMap Tutorial", "First Drive")
 4. Keep `visible = false` (the label is only for storing the name)
@@ -653,22 +654,28 @@ To set the display name:
 Each level scene has:
 - **BackgroundLayer** (TileMapLayer): For grass, water, decorations (z_index = -10)
 - **RoadLayer** (TileMapLayer + RoadTileMapLayer script): For roads and parking tiles
-- **LevelInfo** (Node): Level metadata container
+- **LevelSettings** (Node): Level metadata container
   - **LevelName** (Label): Display name shown in menus and game over (visible = false)
+  - **LevelBuildRoads** (Label): Road building configuration (visible = false)
+    - `"0"` = Road building disabled
+    - `"5"` = Road building enabled with 5 road cards
+- **EnableBuildingLayer** (TileMapLayer, optional): Per-tile build permissions
 - **HeartsUI** (instance of hearts_ui.tscn): Hearts/lives display
   - **HeartCount** (Label): Set text to configure starting hearts (e.g., "3")
 
-### New Tileset Layout (5×5 grid, 144×144 per tile)
+### Tileset Layout (8×7 grid, 144×144 per tile)
 
-The tileset `assets/tiles/gocarstilesSheet.png` has 25 tiles:
+The tileset `assets/tiles/gocarstilesSheet.png` has 56 tiles organized as follows:
 
-| Row | Col 0 | Col 1 | Col 2 | Col 3 | Col 4 |
-|-----|-------|-------|-------|-------|-------|
-| **0** | Road (no connection) | Road E | Road EW | Road W | Spawn Parking S |
-| **1** | Road S | Road SE | Road SEW | Road SW | Spawn Parking N |
-| **2** | Road SN | Road SNE | Road SNEW | Road SNW | Dest Parking S |
-| **3** | Road N | Road NE | Road NEW | Road NW | Dest Parking N |
-| **4** | Spawn Parking E | Spawn Parking W | Dest Parking E | Dest Parking W | (None) |
+| Row | Col 0 | Col 1 | Col 2 | Col 3 | Col 4 | Col 5 | Col 6 | Col 7 |
+|-----|-------|-------|-------|-------|-------|-------|-------|-------|
+| **0** | Road (none) | Road E | Road EW | Road W | Spawn S (A) | Spawn S (B) | Spawn S (C) | Spawn S (D) |
+| **1** | Road S | Road SE | Road SEW | Road SW | Spawn N (A) | Spawn N (B) | Spawn N (C) | Spawn N (D) |
+| **2** | Road SN | Road SNE | Road SNEW | Road SNW | Dest S (A) | Dest S (B) | Dest S (C) | Dest S (D) |
+| **3** | Road N | Road NE | Road NEW | Road NW | Dest N (A) | Dest N (B) | Dest N (C) | Dest N (D) |
+| **4** | Spawn E (A) | Spawn W (A) | Spawn E (B) | Spawn W (B) | Spawn E (C) | Spawn W (C) | Spawn E (D) | Spawn W (D) |
+| **5** | Dest E (A) | Dest W (A) | Dest E (B) | Dest W (B) | Dest E (C) | Dest W (C) | Dest E (D) | Dest W (D) |
+| **6** | Stoplight SNEW | Stoplight SNE | Stoplight NEW | Stoplight SEW | Stoplight SNW | (None) | (None) | (None) |
 
 **Connection Key:**
 - **E** = East (right)
@@ -676,19 +683,30 @@ The tileset `assets/tiles/gocarstilesSheet.png` has 25 tiles:
 - **N** = North (top)
 - **S** = South (bottom)
 
-### Spawn Parking Tiles (Green borders)
-Cars spawn from these tiles and drive out through the connection:
-- **Spawn Parking S** (r0/c4): Car exits through bottom
-- **Spawn Parking N** (r1/c4): Car exits through top
-- **Spawn Parking E** (r4/c0): Car exits through right
-- **Spawn Parking W** (r4/c1): Car exits through left
+**Spawn Groups (A, B, C, D):**
+Each spawn and destination parking tile belongs to a group (A, B, C, or D). Cars must park at a destination matching their spawn group, or they lose a heart.
 
-### Destination Parking Tiles (Red borders)
+### Spawn Parking Tiles (with Groups)
+Cars spawn from these tiles and drive out through the connection:
+- **Spawn S (A-D)** (r0/c4-7): Car exits through bottom
+- **Spawn N (A-D)** (r1/c4-7): Car exits through top
+- **Spawn E (A-D)** (r4/c0,2,4,6): Car exits through right
+- **Spawn W (A-D)** (r4/c1,3,5,7): Car exits through left
+
+### Destination Parking Tiles (with Groups)
 Cars enter these tiles and stop:
-- **Dest Parking S** (r2/c4): Car enters from bottom
-- **Dest Parking N** (r3/c4): Car enters from top
-- **Dest Parking E** (r4/c2): Car enters from right
-- **Dest Parking W** (r4/c3): Car enters from left
+- **Dest S (A-D)** (r2/c4-7): Car enters from bottom
+- **Dest N (A-D)** (r3/c4-7): Car enters from top
+- **Dest E (A-D)** (r5/c0,2,4,6): Car enters from right
+- **Dest W (A-D)** (r5/c1,3,5,7): Car enters from left
+
+### Stoplight Tiles
+Stoplights spawn automatically from these tiles:
+- **Stoplight SNEW** (r6/c0): 4-way intersection
+- **Stoplight SNE** (r6/c1): T-junction (no west)
+- **Stoplight NEW** (r6/c2): T-junction (no south)
+- **Stoplight SEW** (r6/c3): T-junction (no north)
+- **Stoplight SNW** (r6/c4): T-junction (no east)
 
 ### Level Files Location
 - **Levels folder**: `scenes/levelmaps/`
@@ -752,11 +770,20 @@ Players edit roads through a selection-based system:
 
 ### Road Cards System
 Players have a limited number of road cards to modify the map:
-- **Initial count**: 10 road cards (configurable per level)
+- **Per-level config**: Set via `LevelSettings/LevelBuildRoads` label
+  - `"0"` = Road building completely disabled (no UI shown)
+  - `"5"` = Road building enabled with 5 road cards
 - **Placing a road**: Costs 1 road card (click on preview tile)
 - **Connecting roads**: FREE (click adjacent existing road)
 - **Removing a road**: Refunds 1 road card (right-click on road tile)
-- **UI Display**: Road card count shown in top-left corner
+- **UI Display**: Road card count shown in top-left corner (hidden if disabled)
+
+### EnableBuilding Layer (Optional)
+Levels can include an `EnableBuildingLayer` TileMapLayer for per-tile build permissions:
+- **Tile 0**: Cannot select, build, or remove at this position
+- **Tile 1**: Can select and build, but cannot remove
+- **Tile 2**: Full permissions (select, build, remove)
+- If no EnableBuildingLayer exists, all tiles have full permissions when building is enabled
 
 ### Hearts System
 Players have a limited number of hearts (lives):
@@ -807,6 +834,37 @@ Cars spawn automatically so players can see what they're dealing with:
 - **Code Execution**: Each new car automatically runs the current code
 - **Control**: Continuous spawning starts when "Run Code" is pressed, stops on reset
 - **Strategy**: Your code must handle multiple cars and navigate around crashed cars
+
+### Spawn Groups System (A, B, C, D)
+Cars must park at destinations matching their spawn group:
+- **Groups**: A, B, C, D (defined by spawn/destination tile type)
+- **Spawn assignment**: Cars inherit the group of their spawn tile
+- **Correct parking**: Car parks at destination with matching group (Group A car → Dest A)
+- **Wrong parking penalty**: Parking at wrong group destination costs 1 heart but still counts as parked
+- **No group**: If spawn tile has no group, car can park anywhere without penalty
+
+**Vehicle API for spawn groups:**
+```gdscript
+vehicle.spawn_group           # SpawnGroup enum (A, B, C, D, NONE)
+vehicle.get_spawn_group_name() # Returns "A", "B", "C", "D", or "None"
+vehicle.is_at_correct_destination() # True if at matching group destination
+vehicle.is_at_any_destination()     # True if at any destination
+```
+
+### Vehicle Stats Hover UI
+Hovering over a vehicle displays a stats panel showing:
+- **Type**: Vehicle type name (Sedan, Jeepney, Bus, etc.)
+- **Group**: Spawn group (A, B, C, D, or None)
+- **Speed**: Current effective speed
+- **Facing**: Direction (North, South, East, West)
+- **State**: Current state (Moving, Waiting, Parked, Crashed)
+
+### Stoplight Tile Spawning
+Stoplights are automatically spawned from stoplight tiles in the tilemap:
+- Place stoplight tiles (row 6) in the RoadLayer
+- Stoplights spawn at tile center when level loads
+- Multiple stoplights supported per level
+- Register with simulation engine automatically
 
 ### Car Color Palettes with Rarity System
 Vehicles spawn with random colors based on a rarity system using shader-based palette swapping.
@@ -899,7 +957,7 @@ Cars must stay on road tiles:
 | Road Selection System | ✅ | Click roads to select, click adjacent to place/connect |
 | Preview Tiles | ✅ | Shows ghost preview of where road will be placed |
 | Protected Roads | ✅ | Spawn and destination roads cannot be removed |
-| Road Cards System | ✅ | Consumable resource for map editing |
+| Road Cards System | ✅ | Consumable resource for map editing (per-level config) |
 | Hearts System | ✅ | Lives with crash penalties |
 | Live Map Editing | ✅ | Edit roads during gameplay |
 | Crashed Cars as Obstacles | ✅ | Cars stay on map when crashed (crashed sprite) |
@@ -916,6 +974,14 @@ Cars must stay on road tiles:
 | HeartsUI Component | ✅ | Animated heart sprites with configurable count |
 | Multiple Destinations | ✅ | Cars can reach any destination parking spot |
 | Multi-car Start | ✅ | All spawned cars start moving when Run clicked |
+| Spawn Groups (A-D) | ✅ | Cars must park at matching group destinations |
+| Wrong Parking Penalty | ✅ | Parking at wrong group costs 1 heart |
+| Vehicle Stats Hover | ✅ | Shows Type, Group, Speed, Facing, State on hover |
+| LevelSettings Config | ✅ | Per-level name and road building configuration |
+| EnableBuilding Layer | ✅ | Per-tile build/remove permissions (3 levels) |
+| Stoplight Tile Spawning | ✅ | Stoplights auto-spawn from stoplight tiles |
+| Negative Coordinates | ✅ | Road building works at -1 x/y positions |
+| 8-Column Tileset | ✅ | New tileset with groups A-D and stoplights |
 
 ---
 

@@ -16,11 +16,19 @@ tile_map_data = PackedByteArray("AAAFAP7/AAAEAAAAAAAGAP7/AAAEAAAAAAAHAP7/AAAEAAA
 tile_set = ExtResource("1_mfnu5")
 script = ExtResource("2_rt80c")
 
-[node name="LevelInfo" type="Node" parent="."]
+[node name="EnableBuildingLayer" type="TileMapLayer" parent="."]
+visible = false
+tile_set = ExtResource("1_mfnu5")
 
-[node name="LevelName" type="Label" parent="LevelInfo"]
+[node name="LevelSettings" type="Node" parent="."]
+
+[node name="LevelName" type="Label" parent="LevelSettings"]
 visible = false
 text = "Level 3"
+
+[node name="LevelBuildRoads" type="Label" parent="LevelSettings"]
+visible = false
+text = "5"
 
 [node name="HeartsUI" parent="." instance=ExtResource("3_wkl1d")]
 layout_mode = 3

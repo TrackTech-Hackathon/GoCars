@@ -1,8 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://main_tilemap_gocars"]
+[gd_scene load_steps=4 format=3 uid="uid://main_tilemap_gocars"]
 
 [ext_resource type="Script" uid="uid://df74itlomy7yj" path="res://scripts/core/simulation_engine.gd" id="1_sim"]
 [ext_resource type="Script" path="res://scenes/main_tilemap.gd" id="2_main_tilemap"]
-[ext_resource type="PackedScene" uid="uid://ctf1l2qvnhxgs" path="res://scenes/entities/stoplight.tscn" id="3_stoplight"]
 [ext_resource type="Theme" uid="uid://oh1p0ojtw4tq" path="res://scenes/ui/panel.tres" id="4_theme"]
 
 [node name="Main" type="Node2D"]
@@ -16,9 +15,6 @@ script = ExtResource("1_sim")
 [node name="Camera2D" type="Camera2D" parent="GameWorld"]
 position = Vector2(720, 504)
 zoom = Vector2(0.5, 0.5)
-
-[node name="TestStoplight" parent="GameWorld" instance=ExtResource("3_stoplight")]
-position = Vector2(720, 504)
 
 [node name="UI" type="CanvasLayer" parent="."]
 

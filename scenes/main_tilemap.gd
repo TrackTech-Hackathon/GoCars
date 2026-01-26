@@ -15,7 +15,8 @@ const RoadTileProxy = preload("res://scripts/map_editor/road_tile_proxy.gd")
 @onready var speed_label: Label = $UI/SpeedLabel
 @onready var hearts_label: Label = $UI/HeartsLabel
 @onready var road_cards_label: Label = $UI/RoadCardsLabel
-@onready var test_stoplight: Stoplight = $GameWorld/TestStoplight
+# Stoplights are now spawned from stoplight tiles in levels
+# Use _spawned_stoplights array to access them
 
 # New UI system
 var window_manager: Variant = null
@@ -78,12 +79,19 @@ var destination_data: Array = []  # From road layer
 var is_spawning_cars: bool = false
 var next_car_id: int = 1
 
+# Spawned stoplights (from stoplight tiles)
+var _spawned_stoplights: Array = []
+
 # Tile editing state
 var is_editing_enabled: bool = true
+var is_building_enabled: bool = false  # Whether building roads is enabled for this level
 var selected_tile_pos: Vector2i = Vector2i(-1, -1)  # Currently selected tile (-1,-1 = none)
 var preview_sprite: Sprite2D = null  # Preview sprite for new tile placement
 var preview_grid_pos: Vector2i = Vector2i(-1, -1)  # Grid position of preview
 var tileset_texture: Texture2D = null  # Cached tileset texture for preview
+
+# Enable Building layer (for build permissions per tile)
+var enable_building_layer: TileMapLayer = null
 
 # Selection highlight
 var selection_highlight: ColorRect = null
@@ -98,6 +106,9 @@ var current_level_display_name: String = ""
 # Hearts UI (loaded from level)
 var hearts_ui: Node = null
 
+# Stats UI Panel (follows mouse, shows hovered car stats)
+var stats_ui_panel: Node = null
+
 
 func _ready() -> void:
 	# Set music volume
@@ -106,6 +117,9 @@ func _ready() -> void:
 
 	# Initialize level loader
 	level_loader = LevelLoaderScript.new()
+
+	# Create stats UI panel
+	_setup_stats_ui_panel()
 
 	# Connect UI signals
 	run_button.pressed.connect(_on_run_button_pressed)
@@ -136,11 +150,8 @@ func _ready() -> void:
 	# Connect help panel button
 	toggle_help_button.pressed.connect(_on_toggle_help_pressed)
 
-	# Update stoplight panel if stoplight exists
-	if test_stoplight:
-		test_stoplight.state_changed.connect(_on_stoplight_state_changed)
-		_update_stoplight_state_label()
-		simulation_engine.register_stoplight(test_stoplight)
+	# Note: Stoplights are spawned from tiles when level is loaded
+	# The stoplight panel will be updated when stoplights are spawned
 
 	# Set initial code
 	code_editor.text = "car.go()"
@@ -303,6 +314,9 @@ func _load_level(index: int) -> void:
 	if destination_data.is_empty():
 		_update_status("Warning: No destination points found!")
 
+	# Spawn stoplights from stoplight tiles
+	_spawn_stoplights_from_tiles()
+
 	var level_name = level_loader.get_level_filename(index)
 	current_level_id = level_name
 	current_level_display_name = level_loader.get_level_name_from_instance(current_level_node)
@@ -311,9 +325,12 @@ func _load_level(index: int) -> void:
 	# Load hearts from level's HeartsUI node if present
 	_load_level_hearts()
 
-	# Reset timer for new level
+	# Load road building configuration
+	_load_level_build_roads()
+
+	# Reset timer for new level (timer starts when Run Code is pressed)
 	level_timer = 0.0
-	timer_running = true
+	timer_running = false
 	level_won = false
 	_update_timer_label()
 
@@ -428,6 +445,10 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	new_car.direction = spawn["direction"]
 	new_car.rotation = spawn["rotation"]
 
+	# Set spawn group if present
+	if spawn.has("group"):
+		new_car.set_spawn_group(spawn["group"])
+
 	# Initialize navigation state for proper guideline following
 	# The entry_dir tells us what direction the car will enter the NEXT tile from
 	# So _last_exit_direction should be the opposite (the direction it's traveling)
@@ -460,11 +481,12 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	new_car.off_road_crash.connect(_on_car_off_road)
 	new_car.ran_red_light.connect(_on_car_ran_red_light)
 
-	# Make aware of stoplight
-	if test_stoplight:
-		new_car.add_stoplight(test_stoplight)
+	# Make aware of all spawned stoplights
+	for stoplight in _spawned_stoplights:
+		new_car.add_stoplight(stoplight)
 
-	_update_status("Spawned %s: %s" % [new_car.get_vehicle_type_name(), new_car.vehicle_id])
+	var group_str = new_car.get_spawn_group_name()
+	_update_status("Spawned %s: %s (Group %s)" % [new_car.get_vehicle_type_name(), new_car.vehicle_id, group_str])
 	return new_car
 
 
@@ -483,6 +505,62 @@ func _clear_all_cars() -> void:
 	for vehicle in vehicles:
 		simulation_engine.unregister_vehicle(vehicle.vehicle_id)
 		vehicle.queue_free()
+
+
+func _clear_spawned_stoplights() -> void:
+	for stoplight in _spawned_stoplights:
+		if is_instance_valid(stoplight):
+			simulation_engine.unregister_stoplight(stoplight)
+			stoplight.queue_free()
+	_spawned_stoplights.clear()
+
+
+## Spawn stoplights from stoplight tiles in the road layer
+func _spawn_stoplights_from_tiles() -> void:
+	# Clear any previously spawned stoplights
+	_clear_spawned_stoplights()
+
+	if road_layer == null:
+		return
+
+	# Get stoplight positions from road layer
+	var stoplight_data = road_layer.get_stoplight_data()
+	if stoplight_data.is_empty():
+		return
+
+	# Load stoplight scene
+	var stoplight_scene = load("res://scenes/entities/stoplight.tscn")
+	if stoplight_scene == null:
+		_update_status("Error: Could not load stoplight scene")
+		return
+
+	# Spawn stoplights at each position
+	var stoplight_id = 1
+	for data in stoplight_data:
+		var stoplight = stoplight_scene.instantiate() as Stoplight
+		if stoplight == null:
+			continue
+
+		stoplight.stoplight_id = "stoplight%d" % stoplight_id
+		stoplight_id += 1
+		stoplight.global_position = data["position"]
+
+		# Add to scene
+		$GameWorld.add_child(stoplight)
+
+		# Register with simulation engine
+		simulation_engine.register_stoplight(stoplight)
+
+		# Store reference
+		_spawned_stoplights.append(stoplight)
+
+		# Connect state change signal
+		stoplight.state_changed.connect(_on_stoplight_state_changed)
+
+	print("Spawned %d stoplights from tiles" % _spawned_stoplights.size())
+
+	# Update stoplight panel after spawning
+	_update_stoplight_state_label()
 
 
 # ============================================
@@ -530,6 +608,9 @@ func _on_simulation_started() -> void:
 	is_spawning_cars = true
 	car_spawn_timer = 0.0
 
+	# Start timer when code execution begins
+	timer_running = true
+
 	# Play engine sound
 	var code = code_editor.text
 	if window_manager:
@@ -566,6 +647,18 @@ func _on_simulation_ended(success: bool) -> void:
 
 
 func _on_car_reached_destination(car_id: String) -> void:
+	# Find the car that reached destination
+	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	for vehicle in vehicles:
+		if vehicle.vehicle_id == car_id:
+			# Check if car is at correct group destination
+			if not vehicle.is_at_correct_destination():
+				# Wrong destination - lose a heart but still count as parked
+				_lose_heart()
+				_update_status("Car '%s' parked at wrong destination! (-1 heart)" % car_id)
+			else:
+				_update_status("Car '%s' reached destination!" % car_id)
+			return
 	_update_status("Car '%s' reached destination!" % car_id)
 
 
@@ -603,7 +696,16 @@ func _on_level_completed(stars: int) -> void:
 
 func _on_level_failed(reason: String) -> void:
 	_update_status("Level Failed: %s" % reason)
+	_stop_all_cars()
 	_show_failure_popup(reason)
+
+
+## Stop all cars when level fails
+func _stop_all_cars() -> void:
+	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	for vehicle in vehicles:
+		if is_instance_valid(vehicle) and vehicle.has_method("stop"):
+			vehicle.stop()
 
 
 func _on_execution_line_changed(line_number: int) -> void:
@@ -638,22 +740,38 @@ func _on_execution_error(error: String, line: int) -> void:
 # Stoplight Panel
 # ============================================
 
+## Get the first spawned stoplight (for stoplight panel control)
+func _get_active_stoplight() -> Stoplight:
+	if _spawned_stoplights.size() > 0 and is_instance_valid(_spawned_stoplights[0]):
+		return _spawned_stoplights[0]
+	return null
+
+
 func _on_stoplight_red_pressed() -> void:
-	if test_stoplight:
-		test_stoplight.set_red()
+	var stoplight = _get_active_stoplight()
+	if stoplight:
+		stoplight.set_red()
 		_update_status("Stoplight set to RED")
+	else:
+		_update_status("No stoplight in this level")
 
 
 func _on_stoplight_yellow_pressed() -> void:
-	if test_stoplight:
-		test_stoplight.set_yellow()
+	var stoplight = _get_active_stoplight()
+	if stoplight:
+		stoplight.set_yellow()
 		_update_status("Stoplight set to YELLOW")
+	else:
+		_update_status("No stoplight in this level")
 
 
 func _on_stoplight_green_pressed() -> void:
-	if test_stoplight:
-		test_stoplight.set_green()
+	var stoplight = _get_active_stoplight()
+	if stoplight:
+		stoplight.set_green()
 		_update_status("Stoplight set to GREEN")
+	else:
+		_update_status("No stoplight in this level")
 
 
 func _on_stoplight_state_changed(_stoplight_id: String, _new_state: String) -> void:
@@ -661,9 +779,12 @@ func _on_stoplight_state_changed(_stoplight_id: String, _new_state: String) -> v
 
 
 func _update_stoplight_state_label() -> void:
-	if test_stoplight:
-		var state = test_stoplight.get_state()
+	var stoplight = _get_active_stoplight()
+	if stoplight:
+		var state = stoplight.get_state()
 		stoplight_state_label.text = "Current: %s" % state.capitalize()
+	else:
+		stoplight_state_label.text = "No stoplight"
 
 
 # ============================================
@@ -812,8 +933,11 @@ func _do_fast_retry() -> void:
 	_clear_all_cars()
 	next_car_id = 1
 
-	if test_stoplight:
-		test_stoplight.reset()
+	# Reset all spawned stoplights
+	for stoplight in _spawned_stoplights:
+		if is_instance_valid(stoplight) and stoplight.has_method("reset"):
+			stoplight.reset()
+	_update_stoplight_state_label()
 
 	# Reset hearts
 	hearts = initial_hearts
@@ -821,9 +945,9 @@ func _do_fast_retry() -> void:
 		hearts_ui.reset_hearts()
 	_update_hearts_label()
 
-	# Reset timer
+	# Reset timer (timer starts when Run Code is pressed)
 	level_timer = 0.0
-	timer_running = true
+	timer_running = false
 	level_won = false
 	_update_timer_label()
 
@@ -884,8 +1008,9 @@ func _unhandled_input(event: InputEvent) -> void:
 # ============================================
 
 ## Get grid position from world position
+## Uses floor division to properly handle negative coordinates
 func _get_grid_from_world(world_pos: Vector2) -> Vector2i:
-	return Vector2i(int(world_pos.x / TILE_SIZE), int(world_pos.y / TILE_SIZE))
+	return Vector2i(int(floor(world_pos.x / TILE_SIZE)), int(floor(world_pos.y / TILE_SIZE)))
 
 
 ## Get world position (top-left) from grid position
@@ -919,6 +1044,10 @@ func _handle_tile_click() -> void:
 	# Case 1: No tile selected - click on existing road to select it
 	if selected_tile_pos == Vector2i(-1, -1):
 		if road_layer.has_road_at(grid_pos):
+			# Check if we can select this tile (permission 1 or 2)
+			if not _can_select_tile(grid_pos):
+				_update_status("Cannot select this tile")
+				return
 			_select_tile(grid_pos)
 		return
 
@@ -929,13 +1058,28 @@ func _handle_tile_click() -> void:
 
 	# Case 3: Clicked on another existing road - select it instead
 	if road_layer.has_road_at(grid_pos):
+		# Check if we can select this tile
+		if not _can_select_tile(grid_pos):
+			_update_status("Cannot select this tile")
+			return
 		_select_tile(grid_pos)
 		return
 
 	# Case 4: Clicked on empty space adjacent to selected - place new road
 	if _is_adjacent(selected_tile_pos, grid_pos):
+		# Check if building is enabled for this level
+		if not is_building_enabled:
+			_update_status("Road building is disabled for this level")
+			return
+
 		if road_cards <= 0:
 			_update_status("No road cards left!")
+			return
+
+		# Check if we can build at this position (permission 2 for empty tiles)
+		var build_permission = _get_build_permission(grid_pos)
+		if build_permission < 2:
+			_update_status("Cannot build here")
 			return
 
 		# Place new road tile with connection to selected tile
@@ -955,6 +1099,11 @@ func _handle_tile_remove() -> void:
 	if not is_editing_enabled or road_layer == null:
 		return
 
+	# Check if building/removing is enabled for this level
+	if not is_building_enabled:
+		_update_status("Road editing is disabled for this level")
+		return
+
 	var mouse_pos = get_global_mouse_position()
 	var grid_pos = _get_grid_from_world(mouse_pos)
 
@@ -962,12 +1111,14 @@ func _handle_tile_remove() -> void:
 	if not road_layer.has_road_at(grid_pos):
 		return
 
+	# Check if we can remove at this position (permission 2 required)
+	if not _can_remove_tile(grid_pos):
+		_update_status("Cannot remove this tile")
+		return
+
 	# Check if it's a protected tile (spawn or destination parking)
 	var tile_type = road_layer.get_tile_type_at(grid_pos)
-	if tile_type in [RoadTileMapLayer.TileType.SPAWN_PARKING_S, RoadTileMapLayer.TileType.SPAWN_PARKING_N,
-					 RoadTileMapLayer.TileType.SPAWN_PARKING_E, RoadTileMapLayer.TileType.SPAWN_PARKING_W,
-					 RoadTileMapLayer.TileType.DEST_PARKING_S, RoadTileMapLayer.TileType.DEST_PARKING_N,
-					 RoadTileMapLayer.TileType.DEST_PARKING_E, RoadTileMapLayer.TileType.DEST_PARKING_W]:
+	if _is_parking_tile(tile_type):
 		_update_status("Cannot remove parking tiles!")
 		return
 
@@ -982,6 +1133,11 @@ func _handle_tile_remove() -> void:
 	road_cards += 1
 	_update_road_cards_label()
 	_update_status("Road removed at %s (+1 card)" % grid_pos)
+
+
+## Check if a tile type is a parking tile (spawn or destination)
+func _is_parking_tile(tile_type) -> bool:
+	return tile_type in RoadTileMapLayer.SPAWN_PARKING_TILES or tile_type in RoadTileMapLayer.DEST_PARKING_TILES
 
 
 ## Select a tile for editing
@@ -1093,11 +1249,12 @@ func _find_tile_with_connections(connections: Array) -> Vector2i:
 	for atlas_coords in RoadTileMapLayer.TILE_COORDS_TO_TYPE:
 		var tile_type = RoadTileMapLayer.TILE_COORDS_TO_TYPE[atlas_coords]
 
-		# Skip parking tiles
-		if tile_type in [RoadTileMapLayer.TileType.SPAWN_PARKING_S, RoadTileMapLayer.TileType.SPAWN_PARKING_N,
-						 RoadTileMapLayer.TileType.SPAWN_PARKING_E, RoadTileMapLayer.TileType.SPAWN_PARKING_W,
-						 RoadTileMapLayer.TileType.DEST_PARKING_S, RoadTileMapLayer.TileType.DEST_PARKING_N,
-						 RoadTileMapLayer.TileType.DEST_PARKING_E, RoadTileMapLayer.TileType.DEST_PARKING_W]:
+		# Skip parking tiles and stoplight tiles
+		if tile_type in RoadTileMapLayer.SPAWN_PARKING_TILES:
+			continue
+		if tile_type in RoadTileMapLayer.DEST_PARKING_TILES:
+			continue
+		if tile_type in RoadTileMapLayer.STOPLIGHT_TILES:
 			continue
 
 		var tile_connections = RoadTileMapLayer.TILE_CONNECTIONS.get(tile_type, []).duplicate()
@@ -1142,6 +1299,19 @@ func _hide_preview() -> void:
 	if preview_sprite != null:
 		preview_sprite.visible = false
 	preview_grid_pos = Vector2i(-1, -1)
+
+
+# ============================================
+# Stats UI Panel
+# ============================================
+
+func _setup_stats_ui_panel() -> void:
+	var stats_panel_scene = load("res://scenes/ui/stats_ui_panel.tscn")
+	if stats_panel_scene:
+		stats_ui_panel = stats_panel_scene.instantiate()
+		add_child(stats_ui_panel)
+	else:
+		push_warning("Could not load StatsUIPanel scene")
 
 
 # ============================================
@@ -1368,3 +1538,97 @@ func _lose_heart() -> void:
 func _update_hearts_label() -> void:
 	if hearts_label and hearts_label.visible:
 		hearts_label.text = "Hearts: %d" % hearts
+
+
+# ============================================
+# Level Build Roads Loading
+# ============================================
+
+## Load road building configuration from level's LevelSettings/LevelBuildRoads node
+func _load_level_build_roads() -> void:
+	if current_level_node == null:
+		return
+
+	# Look for LevelSettings/LevelBuildRoads label
+	var level_settings = current_level_node.get_node_or_null("LevelSettings")
+	if level_settings == null:
+		# No settings node - disable building by default
+		is_building_enabled = false
+		road_cards = 0
+		initial_road_cards = 0
+		_update_road_cards_label()
+		return
+
+	var build_roads_label = level_settings.get_node_or_null("LevelBuildRoads")
+	if build_roads_label and build_roads_label is Label:
+		var build_roads_text = build_roads_label.text.strip_edges()
+		var build_roads_count = int(build_roads_text)
+
+		if build_roads_count <= 0:
+			# 0 = Building disabled, no roads UI
+			is_building_enabled = false
+			road_cards = 0
+			initial_road_cards = 0
+			if road_cards_label:
+				road_cards_label.visible = false
+		else:
+			# 1+ = Building enabled with specified count
+			is_building_enabled = true
+			road_cards = build_roads_count
+			initial_road_cards = build_roads_count
+			if road_cards_label:
+				road_cards_label.visible = true
+	else:
+		# No LevelBuildRoads label found - disable building
+		is_building_enabled = false
+		road_cards = 0
+		initial_road_cards = 0
+		if road_cards_label:
+			road_cards_label.visible = false
+
+	_update_road_cards_label()
+
+	# Look for EnableBuilding layer in level
+	enable_building_layer = current_level_node.get_node_or_null("EnableBuildingLayer") as TileMapLayer
+	if enable_building_layer:
+		print("EnableBuildingLayer found in level")
+	else:
+		enable_building_layer = null
+
+
+## Check if building is allowed at a specific grid position
+## Uses EnableBuilding layer if present, otherwise allows all if building is enabled
+## Returns: 0 = cannot select/build/remove, 1 = can select/build but not remove, 2 = can select/build/remove
+func _get_build_permission(grid_pos: Vector2i) -> int:
+	if not is_building_enabled:
+		return 0  # Building disabled for this level
+
+	if enable_building_layer == null:
+		return 2  # No restriction layer - full permissions if building enabled
+
+	# Check the EnableBuilding layer at this position
+	var atlas_coords = enable_building_layer.get_cell_atlas_coords(grid_pos)
+	if atlas_coords == Vector2i(-1, -1):
+		return 0  # No tile = cannot build here
+
+	# Tile 0 (0,0) = Disable all, Tile 1 (1,0) = Build only, Tile 2 (2,0) = Full permissions
+	if atlas_coords.x == 0:
+		return 0  # Tile 0: Cannot select/build/remove
+	elif atlas_coords.x == 1:
+		return 1  # Tile 1: Can select/build, cannot remove
+	elif atlas_coords.x == 2:
+		return 2  # Tile 2: Full permissions
+
+	return 0  # Default: no permissions
+
+
+## Check if a tile can be selected for editing
+func _can_select_tile(grid_pos: Vector2i) -> bool:
+	var permission = _get_build_permission(grid_pos)
+	return permission >= 1  # Permission 1 or 2 allows selection
+
+
+## Check if a road can be removed at a position
+func _can_remove_tile(grid_pos: Vector2i) -> bool:
+	var permission = _get_build_permission(grid_pos)
+	return permission >= 2  # Only permission 2 allows removal

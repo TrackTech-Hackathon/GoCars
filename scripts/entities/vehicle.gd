@@ -175,17 +175,26 @@ const VEHICLE_CONFIG: Dictionary = {
 	}
 }
 
+# Spawn Group enum (matches RoadTileMapLayer.SpawnGroup)
+enum SpawnGroup { A, B, C, D, NONE }
+
 # Vehicle properties
 @export var vehicle_id: String = "car1"
 @export var vehicle_type: VehicleType = VehicleType.SEDAN
 @export var speed: float = 200.0  # Base pixels per second
 @export var destination: Vector2 = Vector2.ZERO
+@export var spawn_group: SpawnGroup = SpawnGroup.NONE  # Which group this car belongs to
 
 # Multiple destinations support - car can reach ANY of these
 var _all_destinations: Array = []  # Array of Vector2 positions
+# Destinations for this car's group only
+var _group_destinations: Array = []  # Array of destination data for matching group
 
 # Vehicle state (0 = crashed, 1 = normal/active)
 var vehicle_state: int = 1
+
+# State enum for stats display
+enum VehicleState { PARKED, MOVING, WAITING, CRASHED }
 
 # Current color palette
 var current_color_palette: VehicleColor = VehicleColor.WHITE
@@ -353,6 +362,16 @@ const WHEEL_POSITIONS: Dictionary = {
 }
 
 
+# Stats Node with labels (read by StatsUIPanel)
+var _stats_node: Node2D = null
+var _stats_type_label: Label = null
+var _stats_color_label: Label = null
+var _stats_group_label: Label = null
+var _stats_speed_label: Label = null
+var _stats_facing_label: Label = null
+var _stats_state_label: Label = null
+
+
 func _ready() -> void:
 	# Add to vehicles group for detection
 	add_to_group("vehicles")
@@ -366,6 +385,88 @@ func _ready() -> void:
 
 	# Find and register wheels
 	_setup_wheels()
+
+	# Setup stats node with labels
+	_setup_stats_node()
+
+
+## Setup the stats node with labels that StatsUIPanel reads
+func _setup_stats_node() -> void:
+	# Create container node for stats labels
+	_stats_node = Node2D.new()
+	_stats_node.name = "StatsNode"
+	_stats_node.visible = false  # Labels are hidden, just for data storage
+	add_child(_stats_node)
+
+	# Create individual labels for each stat
+	_stats_type_label = Label.new()
+	_stats_type_label.name = "TypeLabel"
+	_stats_node.add_child(_stats_type_label)
+
+	_stats_color_label = Label.new()
+	_stats_color_label.name = "ColorLabel"
+	_stats_node.add_child(_stats_color_label)
+
+	_stats_group_label = Label.new()
+	_stats_group_label.name = "GroupLabel"
+	_stats_node.add_child(_stats_group_label)
+
+	_stats_speed_label = Label.new()
+	_stats_speed_label.name = "SpeedLabel"
+	_stats_node.add_child(_stats_speed_label)
+
+	_stats_facing_label = Label.new()
+	_stats_facing_label.name = "FacingLabel"
+	_stats_node.add_child(_stats_facing_label)
+
+	_stats_state_label = Label.new()
+	_stats_state_label.name = "StateLabel"
+	_stats_node.add_child(_stats_state_label)
+
+	# Set initial values
+	_update_stats_type()
+	_update_stats_color()
+	_update_stats_group()
+	_update_stats_speed()
+	_update_stats_facing()
+	_update_stats_state()
+
+
+## Update type label (called once when set)
+func _update_stats_type() -> void:
+	if _stats_type_label:
+		_stats_type_label.text = get_vehicle_type_name()
+
+
+## Update color label (called when spawned/color changes)
+func _update_stats_color() -> void:
+	if _stats_color_label:
+		_stats_color_label.text = get_color_name()
+
+
+## Update group label (called when spawned)
+func _update_stats_group() -> void:
+	if _stats_group_label:
+		_stats_group_label.text = get_spawn_group_name()
+
+
+## Update speed label (called once when set)
+func _update_stats_speed() -> void:
+	if _stats_speed_label:
+		var effective_speed = speed * speed_multiplier * type_speed_mult
+		_stats_speed_label.text = "%.1f" % effective_speed
+
+
+## Update facing label (called every turn)
+func _update_stats_facing() -> void:
+	if _stats_facing_label:
+		_stats_facing_label.text = get_facing_direction_name()
+
+
+## Update state label (called every state change)
+func _update_stats_state() -> void:
+	if _stats_state_label:
+		_stats_state_label.text = get_state_name()
 
 
 ## Apply configuration based on vehicle type
@@ -473,6 +574,7 @@ func _physics_process(delta: float) -> void:
 		if wait_timer <= 0:
 			is_waiting = false
 			wait_timer = 0.0
+			_update_stats_state()  # Update state label after wait ends
 			# Wait command completed - process next command
 			_command_completed()
 		return
@@ -775,6 +877,7 @@ func _on_crash() -> void:
 	stop()
 	vehicle_state = 0  # Mark as crashed
 	_switch_to_crashed_sprite()
+	_update_stats_state()  # Update state label
 	crashed.emit(vehicle_id)
 
 
@@ -782,6 +885,7 @@ func _on_off_road_crash() -> void:
 	stop()
 	vehicle_state = 0  # Mark as crashed
 	_switch_to_crashed_sprite()
+	_update_stats_state()  # Update state label
 	off_road_crash.emit(vehicle_id)
 
 
@@ -919,6 +1023,7 @@ func _exec_go() -> void:
 	# Initialize exit direction if not set (ensures stable entry direction calculation)
 	if _last_exit_direction == "":
 		_last_exit_direction = _vector_to_connection_direction(direction)
+	_update_stats_state()  # Update state label
 	# go() runs indefinitely, so mark command as complete immediately
 	# (the car keeps moving until stop() is called)
 	_command_completed()
@@ -929,6 +1034,7 @@ func _exec_stop() -> void:
 	_wants_to_move = false
 	velocity = Vector2.ZERO
 	_tiles_to_move = 0
+	_update_stats_state()  # Update state label
 	_command_completed()
 
 
@@ -944,6 +1050,7 @@ func _exec_turn(turn_direction: String) -> void:
 func _exec_wait(seconds: float) -> void:
 	wait_timer = seconds
 	is_waiting = true
+	_update_stats_state()  # Update state label
 	# Wait completion is handled in _physics_process()
 
 
@@ -1227,13 +1334,99 @@ func set_destination(dest: Vector2) -> void:
 
 ## Set all possible destinations (multiple parking spots)
 ## Car will be considered "at end" when reaching ANY of these
+## Also filters group-specific destinations if car has a spawn group
 func set_all_destinations(destinations: Array) -> void:
 	_all_destinations.clear()
+	_group_destinations.clear()
 	for dest in destinations:
 		if dest is Vector2:
 			_all_destinations.append(dest)
-		elif dest is Dictionary and dest.has("position"):
-			_all_destinations.append(dest["position"])
+		elif dest is Dictionary:
+			if dest.has("position"):
+				_all_destinations.append(dest["position"])
+			# Store group-specific destinations
+			if dest.has("group") and spawn_group != SpawnGroup.NONE:
+				if dest["group"] == spawn_group:
+					_group_destinations.append(dest)
+
+
+## Set spawn group and filter destinations
+func set_spawn_group(group: SpawnGroup) -> void:
+	spawn_group = group
+	_update_stats_group()  # Update group label
+
+
+## Get spawn group name as string
+func get_spawn_group_name() -> String:
+	match spawn_group:
+		SpawnGroup.A: return "A"
+		SpawnGroup.B: return "B"
+		SpawnGroup.C: return "C"
+		SpawnGroup.D: return "D"
+		_: return "None"
+
+
+## Check if car is at correct destination for its group
+## Returns true if at correct group destination, false if at wrong group
+func is_at_correct_destination() -> bool:
+	if spawn_group == SpawnGroup.NONE:
+		return true  # No group requirement
+	if _group_destinations.is_empty():
+		return true  # No group-specific destinations defined
+
+	for dest_data in _group_destinations:
+		var dest_pos = dest_data.get("position", Vector2.ZERO)
+		if global_position.distance_to(dest_pos) < DESTINATION_THRESHOLD:
+			return true  # At correct group destination
+
+	return false  # Not at correct destination
+
+
+## Check if car is at any destination (regardless of group)
+func is_at_any_destination() -> bool:
+	for dest in _all_destinations:
+		if global_position.distance_to(dest) < DESTINATION_THRESHOLD:
+			return true
+	return false
+
+
+## Get current vehicle state for stats display
+func get_current_state() -> VehicleState:
+	if vehicle_state == 0:
+		return VehicleState.CRASHED
+	if at_end():
+		return VehicleState.PARKED
+	if is_waiting:
+		return VehicleState.WAITING
+	if _is_moving:
+		return VehicleState.MOVING
+	return VehicleState.WAITING
+
+
+## Get vehicle state name as string
+func get_state_name() -> String:
+	match get_current_state():
+		VehicleState.PARKED: return "Parked"
+		VehicleState.MOVING: return "Moving"
+		VehicleState.WAITING: return "Waiting"
+		VehicleState.CRASHED: return "Crashed"
+	return "Unknown"
+
+
+## Get facing direction as string (South, North, East, West)
+func get_facing_direction_name() -> String:
+	# Normalize direction to check
+	var dir = direction.normalized()
+	if abs(dir.y) > abs(dir.x):
+		if dir.y > 0:
+			return "South"
+		else:
+			return "North"
+	else:
+		if dir.x > 0:
+			return "East"
+		else:
+			return "West"
 
 
 ## Check if vehicle has reached its destination (short name)
@@ -1448,6 +1641,9 @@ func _process_turn(delta: float) -> void:
 		# After turning, pretend we "entered" from behind our new facing direction
 		_entry_direction = RoadTile.get_opposite_direction(_last_exit_direction)
 
+		# Update facing label after turn completes
+		_update_stats_facing()
+
 		# After turning, immediately acquire new guideline path for current tile
 		# Don't use simple movement - stay on guidelines to prevent oscillation
 		_use_simple_movement = false
@@ -1593,6 +1789,7 @@ func _roll_color_by_rarity() -> VehicleColor:
 func set_color_palette(color: VehicleColor) -> void:
 	current_color_palette = color
 	_apply_color_palette()
+	_update_stats_color()  # Update color label
 
 
 ## Set color palette by index (0-14)
