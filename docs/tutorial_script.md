@@ -94,7 +94,7 @@ STEP 13: Success
 **Level Layout:** Zigzag maze road
 ```
 [S]--[R]
-      |
+	  |
 [R]--[R]
 |
 [R]--[D]
@@ -243,9 +243,9 @@ STEP 10: Success
 **Level Layout:** Long winding road with multiple turns
 ```
 [S]--[R]--[R]
-          |
-     [R]--[R]
-     |
+		  |
+	 [R]--[R]
+	 |
 [D]--[R]
 ```
 - Spawn: (0, 0)
@@ -284,12 +284,12 @@ STEP 5: The Magic Loop
 "Here's the magic code that handles ANY road:"
 
 while not car.at_end():
-    if car.front_road():
-        car.go()
-    elif car.left_road():
-        car.turn("left")
-    elif car.right_road():
-        car.turn("right")
+	if car.front_road():
+		car.go()
+	elif car.left_road():
+		car.turn("left")
+	elif car.right_road():
+		car.turn("right")
 
 STEP 6: Explain the Loop
 "Let me break this down:"
@@ -329,10 +329,10 @@ STEP 10: Success
 
 ```
 [S]--[R]--[SL]--[R]
-               |
-          [R]--[R]
-          |
-     [D]--[R]
+			   |
+		  [R]--[R]
+		  |
+	 [D]--[R]
 ```
 - Spawn: (0, 1)
 - Stoplight: (2, 1) - cycles between red/green
