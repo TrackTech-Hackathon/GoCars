@@ -27,10 +27,6 @@ func _setup_placeholder() -> void:
 	# VBox for centered content
 	vbox = VBoxContainer.new()
 	vbox.name = "VBoxContainer"
-	vbox.anchor_left = 0.0
-	vbox.anchor_top = 0.0
-	vbox.anchor_right = 1.0
-	vbox.anchor_bottom = 1.0
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER

@@ -132,6 +132,12 @@ func _setup_window_structure() -> void:
 	# Main VBox layout
 	var vbox = VBoxContainer.new()
 	vbox.name = "VBoxContainer"
+	vbox.anchor_left = 0.0
+	vbox.anchor_top = 0.0
+	vbox.anchor_right = 1.0
+	vbox.anchor_bottom = 1.0
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(vbox)
 
 	# Title bar

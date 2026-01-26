@@ -26,10 +26,6 @@ func _setup_documentation() -> void:
 	# Scroll container
 	scroll_container = ScrollContainer.new()
 	scroll_container.name = "ScrollContainer"
-	scroll_container.anchor_left = 0.0
-	scroll_container.anchor_top = 0.0
-	scroll_container.anchor_right = 1.0
-	scroll_container.anchor_bottom = 1.0
 	scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(scroll_container)

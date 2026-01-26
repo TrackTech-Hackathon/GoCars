@@ -63,12 +63,17 @@ offset_right = 400.0
 offset_bottom = 90.0
 text = "Status: Ready"
 
-[node name="SpeedLabel" type="Label" parent="UI"]
-offset_left = 438.0
-offset_top = 21.0
-offset_right = 618.0
-offset_bottom = 51.0
-text = "Speed: 1.0x"
+[node name="InstructionsLabel" type="Label" parent="UI"]
+offset_left = 20.0
+offset_top = 100.0
+offset_right = 600.0
+offset_bottom = 200.0
+text = "Python Examples:
+- car.go() | car.stop() | car.turn(\"left\") | car.move(5) | car.wait(2)
+- if car.front_road(): car.go()
+- while not car.at_end(): car.go()
+- for loops need newline + indent: for i in range(3): [Enter] [Tab] car.go()
+- Space: pause | R: reset | +/-: speed"
 
 [node name="ResultPopup" type="Panel" parent="UI"]
 visible = false
