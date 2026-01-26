@@ -117,7 +117,7 @@ texture_normal = ExtResource("6_tjtpd")
 ignore_texture_size = true
 stretch_mode = 0
 script = ExtResource("2_tgsjg")
-scene_to_load = "res://scenes/menus/level_selector.tscn"
+scene_to_load = "res://scenes/ui/Main_Menu/CampaignMenu.tscn"
 
 [node name="Text" type="Label" parent="MC_MainMenu/BTN_Campaign"]
 z_index = 1

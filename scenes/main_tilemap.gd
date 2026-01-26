@@ -1662,7 +1662,7 @@ func _create_menu_button() -> void:
 ## Return to main menu
 func _on_menu_pressed() -> void:
 	_hide_result_popup()
-	get_tree().change_scene_to_file("res://scenes/menus/level_selector.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/CampaignMenu.tscn")
 
 
 # ============================================

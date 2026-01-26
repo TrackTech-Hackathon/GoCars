@@ -1,17 +1,18 @@
-[gd_scene load_steps=16 format=3 uid="uid://cqkqswm0ovfss"]
+[gd_scene load_steps=17 format=3 uid="uid://cqkqswm0ovfss"]
 
 [ext_resource type="Texture2D" uid="uid://cwswoagt665ls" path="res://assets/Main_Menu_Assets/PanayIsland.png" id="1_fk1gg"]
 [ext_resource type="Texture2D" uid="uid://brr7ipwciwbal" path="res://assets/Main_Menu_Assets/Water.png" id="1_n0qu6"]
+[ext_resource type="Script" uid="uid://sblo7c0oxmkc" path="res://scenes/ui/Main_Menu/CampaignMenu.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://hif4f5wjhr1r" path="res://assets/Main_Menu_Assets/FinalIsometricCircle.png" id="2_h56qn"]
 [ext_resource type="Texture2D" uid="uid://dynxnxmjf1tv8" path="res://assets/Main_Menu_Assets/LandMarkIcon.png" id="2_ws25f"]
-[ext_resource type="Script" uid="uid://cvthg1ndr8tms" path="res://scenes/UI/UI_Scripts/CampaignMarkerHover.gd" id="3_wnmx6"]
+[ext_resource type="Script" uid="uid://cvthg1ndr8tms" path="res://scenes/ui/UI_Scripts/CampaignMarkerHover.gd" id="3_wnmx6"]
 [ext_resource type="Texture2D" uid="uid://w4rbvou3017d" path="res://assets/Main_Menu_Assets/IloiloIcon2.png" id="5_rw8ch"]
 [ext_resource type="Texture2D" uid="uid://bpr6rufkdg11g" path="res://assets/Main_Menu_Assets/IloiloIcon.png" id="6_r0spa"]
 [ext_resource type="Texture2D" uid="uid://dnkuocl0lrhha" path="res://assets/Main_Menu_Assets/BanigFrame.png" id="8_6ivqm"]
 [ext_resource type="FontFile" uid="uid://bg6pof5832ljm" path="res://assets/fonts/pixel.ttf" id="9_5ywgh"]
 [ext_resource type="Texture2D" uid="uid://cko2s4yjsvljf" path="res://assets/Main_Menu_Assets/BanigButtonFrame.png" id="10_5ywgh"]
-[ext_resource type="Script" uid="uid://iae7ttpr2nh1" path="res://scenes/UI/UI_Scripts/TexturebuttonHover.gd" id="10_8gbxi"]
-[ext_resource type="Script" uid="uid://d26xks468twvi" path="res://scenes/UI/UI_Scripts/IdleAnimModule.gd" id="11_w46t7"]
+[ext_resource type="Script" uid="uid://iae7ttpr2nh1" path="res://scenes/ui/UI_Scripts/TexturebuttonHover.gd" id="10_8gbxi"]
+[ext_resource type="Script" uid="uid://d26xks468twvi" path="res://scenes/ui/UI_Scripts/IdleAnimModule.gd" id="11_w46t7"]
 [ext_resource type="Texture2D" uid="uid://dpqmkhncqsx7l" path="res://assets/Main_Menu_Assets/Vignette.png" id="13_bo8e2"]
 
 [sub_resource type="Shader" id="Shader_8kxf1"]
@@ -49,6 +50,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_script")
 
 [node name="CM_CampaignMenu" type="Control" parent="."]
 layout_mode = 1
@@ -403,18 +405,12 @@ texture = ExtResource("8_6ivqm")
 expand_mode = 1
 
 [node name="Logo" type="Label" parent="HoverIloilo"]
-z_index = 100
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.30400002
-anchor_top = 0.252
-anchor_right = 0.30400002
-anchor_bottom = 0.272
-offset_left = -98.120026
-offset_top = -14.127998
-offset_right = 41.87999
-offset_bottom = 1.8319931
-size_flags_stretch_ratio = 0.0
+z_index = 1000
+layout_mode = 0
+offset_left = 40.0
+offset_top = 40.0
+offset_right = 490.0
+offset_bottom = 70.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
@@ -444,17 +440,12 @@ theme_override_font_sizes/font_size = 15
 text = "────────────────────"
 
 [node name="Objective" type="Label" parent="HoverIloilo"]
-z_index = 100
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 1.2
-anchor_top = -3.5270002
-anchor_right = 1.2
-anchor_bottom = -3.5270002
-offset_left = -565.0
-offset_top = 1232.478
-offset_right = -445.0
-offset_bottom = 1244.478
+z_index = 1000
+layout_mode = 0
+offset_left = 40.0
+offset_top = 135.0
+offset_right = 490.0
+offset_bottom = 180.0
 size_flags_stretch_ratio = 0.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -464,17 +455,12 @@ theme_override_font_sizes/font_size = 12
 text = "Objective:"
 
 [node name="Difficulty" type="Label" parent="HoverIloilo"]
-z_index = 100
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 1.2
-anchor_top = -3.5270002
-anchor_right = 1.2
-anchor_bottom = -3.5270002
-offset_left = -565.0
-offset_top = 1203.478
-offset_right = -405.0
-offset_bottom = 1216.478
+z_index = 1000
+layout_mode = 0
+offset_left = 40.0
+offset_top = 100.0
+offset_right = 490.0
+offset_bottom = 125.0
 size_flags_stretch_ratio = 0.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -484,17 +470,12 @@ theme_override_font_sizes/font_size = 13
 text = "Difficulty: ★★★☆☆"
 
 [node name="Description" type="Label" parent="HoverIloilo"]
-z_index = 100
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 1.2
-anchor_top = -3.5270002
-anchor_right = 1.2
-anchor_bottom = -3.5270002
-offset_left = -554.0
-offset_top = 1249.478
-offset_right = -215.0
-offset_bottom = 1350.478
+z_index = 1000
+layout_mode = 0
+offset_left = 40.0
+offset_top = 190.0
+offset_right = 490.0
+offset_bottom = 270.0
 size_flags_stretch_ratio = 0.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)

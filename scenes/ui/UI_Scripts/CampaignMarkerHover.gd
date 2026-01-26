@@ -162,7 +162,8 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		_clicked = not _clicked
 		_apply_clicked_visuals(_clicked, false)
-		accept_event()
+		# Don't call accept_event() - let the pressed signal propagate to parent handlers
+		# accept_event()
 
 
 # ✅ Click outside -> unselect
@@ -369,13 +370,19 @@ func _tween_icons_alpha(target_a: float, duration: float) -> void:
 	if _fade_tween != null and _fade_tween.is_valid():
 		_fade_tween.kill()
 
+	# Check if we have at least one valid icon before creating tween
+	var has_icon1 = _icon1 != null and _icon1 is CanvasItem
+	var has_icon2 = _icon2 != null and _icon2 is CanvasItem
+	if not has_icon1 and not has_icon2:
+		return
+
 	_fade_tween = create_tween()
 	_fade_tween.set_trans(Tween.TRANS_SINE)
 	_fade_tween.set_ease(Tween.EASE_OUT)
 
-	if _icon1 != null and _icon1 is CanvasItem:
+	if has_icon1:
 		_fade_tween.tween_property(_icon1, "modulate:a", target_a, duration)
-	if _icon2 != null and _icon2 is CanvasItem:
+	if has_icon2:
 		_fade_tween.tween_property(_icon2, "modulate:a", target_a, duration)
 
 
@@ -386,13 +393,19 @@ func _restore_icons_alpha(duration: float) -> void:
 	if _fade_tween != null and _fade_tween.is_valid():
 		_fade_tween.kill()
 
+	# Check if we have at least one valid icon before creating tween
+	var has_icon1 = _icon1 != null and _icon1 is CanvasItem
+	var has_icon2 = _icon2 != null and _icon2 is CanvasItem
+	if not has_icon1 and not has_icon2:
+		return
+
 	_fade_tween = create_tween()
 	_fade_tween.set_trans(Tween.TRANS_SINE)
 	_fade_tween.set_ease(Tween.EASE_OUT)
 
-	if _icon1 != null and _icon1 is CanvasItem:
+	if has_icon1:
 		_fade_tween.tween_property(_icon1, "modulate:a", _icon1_base_a, duration)
-	if _icon2 != null and _icon2 is CanvasItem:
+	if has_icon2:
 		_fade_tween.tween_property(_icon2, "modulate:a", _icon2_base_a, duration)
 
 
@@ -410,6 +423,10 @@ func _tween_label_alpha(target_a: float, duration: float) -> void:
 
 
 func _pop_icons_in() -> void:
+	# Return early if no icons to animate
+	if _icon1 == null and _icon2 == null:
+		return
+
 	if _icon_pop_tween != null and _icon_pop_tween.is_valid():
 		_icon_pop_tween.kill()
 
@@ -435,6 +452,10 @@ func _pop_icons_in() -> void:
 
 
 func _pop_icons_out() -> void:
+	# Return early if no icons to animate
+	if _icon1 == null and _icon2 == null:
+		return
+
 	if _icon_pop_tween != null and _icon_pop_tween.is_valid():
 		_icon_pop_tween.kill()
 
@@ -550,6 +571,10 @@ func _tween_fade_group(is_clicked: bool) -> void:
 
 	if _fade_group_tween != null and _fade_group_tween.is_valid():
 		_fade_group_tween.kill()
+	
+	# Return early if no items to animate
+	if _fade_group_base_a.is_empty():
+		return
 
 	_fade_group_tween = create_tween()
 	_fade_group_tween.set_parallel(true) # ✅ key line: run tracks simultaneously
