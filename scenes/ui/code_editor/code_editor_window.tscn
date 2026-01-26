@@ -19,13 +19,8 @@ texture = ExtResource("3_ypdp2")
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_84dpb"]
 texture = ExtResource("4_qly7m")
-[gd_scene load_steps=4 format=3 uid="uid://cc0deed1t0r"]
 
-[ext_resource type="Script" uid="uid://bmgmiyp6xksf" path="res://scripts/ui/code_editor_window.gd" id="1_script"]
-[ext_resource type="PackedScene" uid="uid://cf1leexpl0rer" path="res://scenes/ui/code_editor/file_explorer.tscn" id="2_file_explorer"]
-[ext_resource type="PackedScene" uid="uid://cdsh2e12boepr" path="res://scenes/ui/code_editor/terminal_panel.tscn" id="3_terminal_panel"]
-
-[node name="CodeEditorWindow" type="PanelContainer"]
+[node name="CodeEditorWindow" type="Panel"]
 custom_minimum_size = Vector2(700, 500)
 offset_right = 900.0
 offset_bottom = 600.0
@@ -37,7 +32,9 @@ default_size = Vector2(900, 600)
 window_title = "Code Editor"
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
-layout_mode = 2
+layout_mode = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="TitleBar" type="PanelContainer" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 36)
