@@ -1,13 +1,13 @@
-[gd_scene load_steps=11 format=4 uid="uid://c3erbrkgooukg"]
+[gd_scene load_steps=11 format=4 uid="uid://c5q82jta31lui"]
 
-[ext_resource type="TileSet" uid="uid://bqq1sck3ns3dj" path="res://assets/tiles/road_tileset.tres" id="1_tileset"]
-[ext_resource type="Texture2D" uid="uid://cwu47msqph826" path="res://assets/tiles/backgroundtiles.png" id="1_wl2k6"]
-[ext_resource type="Script" uid="uid://cj6mm55w6w81k" path="res://scripts/map_editor/road_tilemap_layer.gd" id="2_road_script"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hearts_ui.tscn" id="3_hearts_ui"]
-[ext_resource type="Texture2D" uid="uid://cufjl83qsyjj7" path="res://assets/tiles/buildingtiles.png" id="4_luwkr"]
+[ext_resource type="Texture2D" uid="uid://cwu47msqph826" path="res://assets/tiles/backgroundtiles.png" id="1_sddf4"]
+[ext_resource type="TileSet" uid="uid://bqq1sck3ns3dj" path="res://assets/tiles/road_tileset.tres" id="2_d88ie"]
+[ext_resource type="Script" uid="uid://cj6mm55w6w81k" path="res://scripts/map_editor/road_tilemap_layer.gd" id="3_pke4n"]
+[ext_resource type="Texture2D" uid="uid://cufjl83qsyjj7" path="res://assets/tiles/buildingtiles.png" id="4_dqnmf"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hearts_ui.tscn" id="5_qbp4q"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vackf"]
-texture = ExtResource("1_wl2k6")
+texture = ExtResource("1_sddf4")
 texture_region_size = Vector2i(144, 144)
 0:0/0 = 0
 1:0/0 = 0
@@ -245,7 +245,7 @@ terrain_set_3/terrain_0/color = Color(0.38, 0.38, 0.38, 1)
 sources/1 = SubResource("TileSetAtlasSource_vackf")
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_1su6t"]
-texture = ExtResource("4_luwkr")
+texture = ExtResource("4_dqnmf")
 texture_region_size = Vector2i(144, 144)
 0:0/0 = 0
 1:0/0 = 0
@@ -288,15 +288,15 @@ tile_set = SubResource("TileSet_vackf")
 [node name="Layer3" type="TileMapLayer" parent="BackgroundLayer"]
 z_index = -10
 texture_filter = 1
-tile_map_data = PackedByteArray("AAAAAAMAAQABAAgAAAABAAMAAQABAAgAAAABAAQAAQABAAkAAAAAAAQAAQABAAkAAAD//wQAAQAAAAkAAAD//wMAAQAAAAgAAAD//wIAAQAAAAcAAAAAAAIAAQABAAcAAAABAAIAAQABAAcAAAACAAMAAQAEAAAAAAACAAQAAQAEAAcAAAACAAIAAQAEAAgAAAADAAMAAQAEAAAAAAADAAQAAQABAAgAAAADAAIAAQAEAAAAAAAEAAMAAQABAAgAAAAEAAQAAQADAAcAAAAEAAIAAQADAAgAAAAFAAMAAQAEAAAAAAAFAAQAAQABAAkAAAAFAAIAAQABAAcAAAAGAAMAAQABAAgAAAAGAAQAAQABAAkAAAAGAAIAAQABAAcAAAAHAAMAAQACAAgAAAAHAAQAAQACAAkAAAAHAAIAAQACAAcAAAACAAEAAQAAAAgAAAADAAEAAQAEAAAAAAAEAAEAAQACAAgAAAACAAAAAQAAAAgAAAADAAAAAQABAAgAAAAEAAAAAQACAAgAAAACAP//AQAAAAcAAAADAP//AQABAAcAAAAEAP//AQACAAcAAAAEAAUAAQACAAgAAAADAAUAAQABAAgAAAACAAUAAQAAAAgAAAAEAAYAAQACAAgAAAADAAYAAQABAAgAAAACAAYAAQAAAAgAAAAEAAcAAQACAAkAAAADAAcAAQABAAkAAAACAAcAAQAAAAkAAAA=")
+tile_map_data = PackedByteArray("AAAAAAAAAQABAAgAAAABAAEAAQAEAAcAAAD//wEAAQAAAAkAAAD/////AQAAAAcAAAABAP//AQABAAcAAAABAAAAAQAEAAAAAAACAAEAAQAEAAAAAAAAAAEAAQABAAkAAAAAAP//AQABAAcAAAACAP//AQAEAAgAAAACAAAAAQABAAgAAAADAAEAAQAEAAAAAAADAP//AQABAAgAAAADAAAAAQAEAAAAAAAEAAEAAQABAAgAAAAEAP//AQADAAgAAAAEAAAAAQAEAAAAAAAFAAEAAQACAAgAAAAFAP//AQACAAcAAAAFAAIAAQACAAgAAAADAAIAAQAEAAAAAAAFAAAAAQACAAgAAAAEAAIAAQAEAAAAAAAFAAMAAQACAAkAAAADAAMAAQADAAcAAAAEAAMAAQABAAkAAAACAAMAAQABAAgAAAACAAIAAQABAAgAAAACAP7/AQAAAAgAAAAEAP7/AQACAAgAAAADAP7/AQAEAAAAAAACAP3/AQAAAAgAAAAEAP3/AQACAAgAAAADAP3/AQAEAAAAAAACAPz/AQAAAAcAAAAEAPz/AQACAAcAAAD//wAAAQAAAAgAAAADAPz/AQABAAcAAAABAAMAAQAEAAgAAAABAAIAAQAAAAgAAAADAAQAAQACAAgAAAACAAQAAQAEAAAAAAABAAQAAQAEAAAAAAADAAUAAQACAAkAAAACAAUAAQABAAkAAAABAAUAAQABAAkAAAAAAAUAAQABAAkAAAAAAAQAAQAEAAAAAAAAAAMAAQABAAcAAAD//wUAAQAAAAkAAAD//wQAAQAAAAgAAAD//wMAAQAAAAcAAAA=")
 tile_set = SubResource("TileSet_vackf")
 
 [node name="RoadLayer" type="TileMapLayer" parent="."]
 texture_filter = 1
 rotation = -0.0031954704
-tile_map_data = PackedByteArray("AAAAAAMAAAAAAAQAAAAGAAMAAAABAAUAAAABAAMAAAACAAAAAAACAAMAAAACAAAAAAAEAAMAAAACAAAAAAAFAAMAAAACAAAAAAADAAMAAAAAAAYAAAADAAAAAAAEAAAAAAADAAYAAAAEAAMAAAADAAUAAAAAAAIAAAADAAQAAAAAAAIAAAADAAIAAAAAAAIAAAADAAEAAAAAAAIAAAA=")
-tile_set = ExtResource("1_tileset")
-script = ExtResource("2_road_script")
+tile_map_data = PackedByteArray("AAAAAAAAAAAAAAQAAAAAAAQAAAAAAAUAAAABAAAAAAACAAAAAAACAAAAAAACAAAAAAADAAAAAAAAAAYAAAABAAQAAAACAAAAAAACAAQAAAADAAMAAAACAAMAAAAAAAIAAAACAAIAAAABAAEAAAADAAIAAAACAAAAAAAEAAIAAAADAAMAAAAEAAAAAAADAAEAAAAEAAEAAAAAAAIAAAADAP//AAAAAAIAAAADAP7/AAAAAAIAAAADAAEAAAAFAAMAAAADAP3/AAAFAAAAAAA=")
+tile_set = ExtResource("2_d88ie")
+script = ExtResource("3_pke4n")
 
 [node name="EnableBuildingLayer" type="TileMapLayer" parent="."]
 visible = false
@@ -313,7 +313,7 @@ text = "Level 1 "
 visible = false
 text = "20"
 
-[node name="HeartsUI" parent="." instance=ExtResource("3_hearts_ui")]
+[node name="HeartsUI" parent="." instance=ExtResource("5_qbp4q")]
 visible = false
 layout_mode = 3
 anchors_preset = 0

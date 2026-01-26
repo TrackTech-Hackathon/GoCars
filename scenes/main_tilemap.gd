@@ -69,7 +69,15 @@ const LANE_OFFSET: float = 25.0
 
 # Camera
 const CAMERA_SPEED: float = 500.0
+const CAMERA_SPEED_FAST: float = 1000.0  # Speed when holding shift
+const ZOOM_MIN: float = 0.25  # Maximum zoom out (smaller = see more)
+const ZOOM_MAX: float = 2.0   # Maximum zoom in (larger = see less)
+const ZOOM_STEP: float = 0.1  # How much to zoom per scroll
 @onready var camera: Camera2D = $GameWorld/Camera2D
+
+# Camera bounds (will be calculated based on level's Camera Border or road layer)
+var camera_bounds_min: Vector2 = Vector2.ZERO
+var camera_bounds_max: Vector2 = Vector2(1440, 1008)  # Default 10x7 tiles
 
 # Car spawning
 var car_spawn_timer: float = 0.0
@@ -188,7 +196,7 @@ func _process(delta: float) -> void:
 		if engine_audio.get_playback_position() >= engine_loop_end:
 			engine_audio.play(engine_loop_start)
 
-	# Handle camera movement (WASD or Arrow keys)
+	# Handle camera movement (WASD or Arrow keys, Shift for 2x speed)
 	if camera:
 		var camera_velocity = Vector2.ZERO
 		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
@@ -201,7 +209,9 @@ func _process(delta: float) -> void:
 			camera_velocity.x += 1
 
 		if camera_velocity != Vector2.ZERO:
-			camera.position += camera_velocity.normalized() * CAMERA_SPEED * delta
+			var speed = CAMERA_SPEED_FAST if Input.is_key_pressed(KEY_SHIFT) else CAMERA_SPEED
+			camera.position += camera_velocity.normalized() * speed * delta
+			_clamp_camera_to_bounds()
 
 	# Handle car spawning
 	if is_spawning_cars:
@@ -352,6 +362,11 @@ func _load_level(index: int) -> void:
 	level_won = false
 	code_is_running = false  # Code not running yet - timer at 1x speed
 	_update_timer_label()
+
+	# Calculate camera bounds and set initial position
+	_calculate_camera_bounds()
+	_set_initial_camera_position()
+	_clamp_camera_to_bounds()
 
 	# Spawn initial cars at game start (before player runs code)
 	_spawn_initial_cars()
@@ -1030,6 +1045,162 @@ func _unhandled_input(event: InputEvent) -> void:
 			_handle_tile_click()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			_handle_tile_remove()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_handle_zoom_in()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_handle_zoom_out()
+
+
+# ============================================
+# Camera Zoom System
+# ============================================
+
+## Handle zoom in (scroll up)
+func _handle_zoom_in() -> void:
+	if camera == null:
+		return
+
+	var new_zoom = camera.zoom.x + ZOOM_STEP
+	new_zoom = clampf(new_zoom, ZOOM_MIN, ZOOM_MAX)
+	camera.zoom = Vector2(new_zoom, new_zoom)
+	_clamp_camera_to_bounds()
+
+
+## Handle zoom out (scroll down)
+func _handle_zoom_out() -> void:
+	if camera == null:
+		return
+
+	# Calculate the minimum zoom level that keeps visible area within bounds
+	var viewport_size = get_viewport().get_visible_rect().size
+	var bounds_size = camera_bounds_max - camera_bounds_min
+
+	# Calculate minimum zoom to fit bounds (if we zoom out more, visible area exceeds bounds)
+	var min_zoom_x = viewport_size.x / bounds_size.x if bounds_size.x > 0 else ZOOM_MIN
+	var min_zoom_y = viewport_size.y / bounds_size.y if bounds_size.y > 0 else ZOOM_MIN
+	var min_zoom_for_bounds = maxf(min_zoom_x, min_zoom_y)
+
+	# Use the larger of ZOOM_MIN and the calculated minimum
+	var effective_min_zoom = maxf(ZOOM_MIN, min_zoom_for_bounds)
+
+	var new_zoom = camera.zoom.x - ZOOM_STEP
+	new_zoom = clampf(new_zoom, effective_min_zoom, ZOOM_MAX)
+	camera.zoom = Vector2(new_zoom, new_zoom)
+	_clamp_camera_to_bounds()
+
+
+## Calculate camera bounds based on level's Camera Border node or road layer
+func _calculate_camera_bounds() -> void:
+	# First, try to find a "Camera Border" node in the level
+	if current_level_node:
+		var camera_border = current_level_node.get_node_or_null("Camera Border")
+
+		# Handle CollisionShape2D with RectangleShape2D
+		if camera_border and camera_border is CollisionShape2D:
+			var shape = camera_border.shape
+			if shape and shape is RectangleShape2D:
+				var rect_size = shape.size
+				var center = camera_border.global_position
+				# Rectangle is centered on the node position
+				camera_bounds_min = center - rect_size / 2.0
+				camera_bounds_max = center + rect_size / 2.0
+				return
+
+		# Handle CollisionPolygon2D (fallback for polygon borders)
+		if camera_border and camera_border is CollisionPolygon2D:
+			var polygon = camera_border.polygon
+			if polygon.size() > 0:
+				# Calculate bounding box from polygon points
+				var min_x = polygon[0].x
+				var max_x = polygon[0].x
+				var min_y = polygon[0].y
+				var max_y = polygon[0].y
+
+				for point in polygon:
+					min_x = minf(min_x, point.x)
+					max_x = maxf(max_x, point.x)
+					min_y = minf(min_y, point.y)
+					max_y = maxf(max_y, point.y)
+
+				# Apply the node's global position offset
+				var global_offset = camera_border.global_position
+				camera_bounds_min = Vector2(min_x, min_y) + global_offset
+				camera_bounds_max = Vector2(max_x, max_y) + global_offset
+				return
+
+	# Fallback: calculate from road layer
+	if road_layer == null:
+		# Use default bounds
+		camera_bounds_min = Vector2(-TILE_SIZE, -TILE_SIZE)
+		camera_bounds_max = Vector2(TILE_SIZE * 10, TILE_SIZE * 7)
+		return
+
+	# Get used rect from road layer
+	var used_rect = road_layer.get_used_rect()
+	if used_rect.size == Vector2i.ZERO:
+		# No tiles - use default bounds
+		camera_bounds_min = Vector2(-TILE_SIZE, -TILE_SIZE)
+		camera_bounds_max = Vector2(TILE_SIZE * 10, TILE_SIZE * 7)
+		return
+
+	# Add padding around the level (2 tiles on each side)
+	var padding = 2
+	camera_bounds_min = Vector2(
+		(used_rect.position.x - padding) * TILE_SIZE,
+		(used_rect.position.y - padding) * TILE_SIZE
+	)
+	camera_bounds_max = Vector2(
+		(used_rect.position.x + used_rect.size.x + padding) * TILE_SIZE,
+		(used_rect.position.y + used_rect.size.y + padding) * TILE_SIZE
+	)
+
+
+## Set initial camera position from level's "Camera Start" node or keep current position
+func _set_initial_camera_position() -> void:
+	if camera == null:
+		return
+
+	# Look for a "Camera Start" node in the level to override the camera position
+	if current_level_node:
+		var camera_start = current_level_node.get_node_or_null("Camera Start")
+		if camera_start:
+			# Use the Camera Start node's position
+			camera.position = camera_start.global_position
+			return
+
+	# No Camera Start node - keep the camera's current position from the scene
+	# This allows devs to set the default camera position in main_tilemap.tscn
+
+
+## Clamp camera position to stay within bounds
+## Ensures the visible area (all 4 corners) stays inside the camera border
+func _clamp_camera_to_bounds() -> void:
+	if camera == null:
+		return
+
+	# Get viewport size
+	var viewport_size = get_viewport().get_visible_rect().size
+
+	# Calculate visible half-size based on zoom
+	var visible_half_size = viewport_size / (2.0 * camera.zoom)
+
+	# Calculate camera position limits so visible area stays within bounds
+	# Camera can move from (bounds_min + half_visible) to (bounds_max - half_visible)
+	var min_cam_x = camera_bounds_min.x + visible_half_size.x
+	var max_cam_x = camera_bounds_max.x - visible_half_size.x
+	var min_cam_y = camera_bounds_min.y + visible_half_size.y
+	var max_cam_y = camera_bounds_max.y - visible_half_size.y
+
+	# Clamp camera position - if visible area is larger than bounds, center it
+	if min_cam_x >= max_cam_x:
+		camera.position.x = (camera_bounds_min.x + camera_bounds_max.x) / 2.0
+	else:
+		camera.position.x = clampf(camera.position.x, min_cam_x, max_cam_x)
+
+	if min_cam_y >= max_cam_y:
+		camera.position.y = (camera_bounds_min.y + camera_bounds_max.y) / 2.0
+	else:
+		camera.position.y = clampf(camera.position.y, min_cam_y, max_cam_y)
 
 
 # ============================================
@@ -1211,6 +1382,7 @@ func _show_selection_highlight(grid_pos: Vector2i) -> void:
 		selection_highlight.color = Color(1.0, 1.0, 0.0, 0.3)  # Yellow highlight
 		selection_highlight.size = Vector2(TILE_SIZE, TILE_SIZE)
 		selection_highlight.z_index = 5
+		selection_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Don't block mouse events
 		$GameWorld.add_child(selection_highlight)
 
 	selection_highlight.position = _get_world_from_grid(grid_pos)
