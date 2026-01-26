@@ -1,0 +1,58 @@
+[gd_scene load_steps=2 format=3 uid="uid://cf1leexpl0rer"]
+
+[ext_resource type="Script" path="res://scripts/ui/file_explorer.gd" id="1_script"]
+
+[node name="FileExplorer" type="VBoxContainer"]
+custom_minimum_size = Vector2(200, 0)
+script = ExtResource("1_script")
+
+[node name="ButtonContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="NewFileButton" type="Button" parent="ButtonContainer"]
+layout_mode = 2
+tooltip_text = "Create new file (Ctrl+N)"
+text = "+ File"
+
+[node name="NewFolderButton" type="Button" parent="ButtonContainer"]
+layout_mode = 2
+tooltip_text = "Create new folder"
+text = "+ Folder"
+
+[node name="RenameButton" type="Button" parent="ButtonContainer"]
+layout_mode = 2
+disabled = true
+tooltip_text = "Rename selected file/folder (F2)"
+text = "Rename"
+
+[node name="FileTree" type="Tree" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+allow_rmb_select = true
+hide_root = true
+
+[node name="NamePopup" type="PopupPanel" parent="."]
+size = Vector2i(300, 100)
+popup_window = false
+
+[node name="VBox" type="VBoxContainer" parent="NamePopup"]
+offset_right = 300.0
+offset_bottom = 100.0
+theme_override_constants/separation = 8
+
+[node name="NameInput" type="LineEdit" parent="NamePopup/VBox"]
+layout_mode = 2
+placeholder_text = "Enter name..."
+
+[node name="ButtonRow" type="HBoxContainer" parent="NamePopup/VBox"]
+layout_mode = 2
+alignment = 2
+theme_override_constants/separation = 8
+
+[node name="CancelButton" type="Button" parent="NamePopup/VBox/ButtonRow"]
+layout_mode = 2
+text = "Cancel"
+
+[node name="ConfirmButton" type="Button" parent="NamePopup/VBox/ButtonRow"]
+layout_mode = 2
+text = "OK"

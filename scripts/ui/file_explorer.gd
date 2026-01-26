@@ -12,12 +12,16 @@ signal file_created(file_path: String)
 signal file_renamed(old_path: String, new_path: String)
 signal file_deleted(file_path: String)
 
-## Child nodes
-var tree: Tree
-var button_container: HBoxContainer
-var new_file_button: Button
-var new_folder_button: Button
-var rename_button: Button
+## Child nodes - Use @onready when loaded from scene
+@onready var button_container: HBoxContainer = $ButtonContainer
+@onready var new_file_button: Button = $ButtonContainer/NewFileButton
+@onready var new_folder_button: Button = $ButtonContainer/NewFolderButton
+@onready var rename_button: Button = $ButtonContainer/RenameButton
+@onready var tree: Tree = $FileTree
+@onready var name_popup: PopupPanel = $NamePopup
+@onready var name_input: LineEdit = $NamePopup/VBox/NameInput
+@onready var name_cancel_button: Button = $NamePopup/VBox/ButtonRow/CancelButton
+@onready var name_confirm_button: Button = $NamePopup/VBox/ButtonRow/ConfirmButton
 
 ## Virtual filesystem reference
 var virtual_fs: Variant = null  # VirtualFileSystem instance
@@ -25,15 +29,42 @@ var virtual_fs: Variant = null  # VirtualFileSystem instance
 ## Current selection
 var selected_file: String = ""
 
-## Popup for naming/renaming
-var name_popup: PopupPanel
-var name_input: LineEdit
-var name_confirm_button: Button
-var name_cancel_button: Button
+## Popup state
 var current_action: String = ""  # "new_file", "new_folder", "rename"
 var rename_target: String = ""  # Path of item being renamed
 
+## Flag to track if we're using scene nodes or need to build UI
+var _ui_from_scene: bool = false
+
 func _ready() -> void:
+	# Check if nodes exist (loaded from scene) or need to be created
+	_ui_from_scene = has_node("ButtonContainer")
+	
+	if not _ui_from_scene:
+		_setup_ui_dynamic()
+	else:
+		_connect_scene_signals()
+
+func _connect_scene_signals() -> void:
+	# Connect signals for scene-loaded nodes
+	if new_file_button:
+		new_file_button.pressed.connect(_on_new_file_pressed)
+	if new_folder_button:
+		new_folder_button.pressed.connect(_on_new_folder_pressed)
+	if rename_button:
+		rename_button.pressed.connect(_on_rename_pressed)
+	if tree:
+		tree.item_selected.connect(_on_item_selected)
+		tree.item_activated.connect(_on_item_activated)
+	if name_cancel_button:
+		name_cancel_button.pressed.connect(_on_name_cancel)
+	if name_confirm_button:
+		name_confirm_button.pressed.connect(_on_name_confirm)
+	if name_input:
+		name_input.text_submitted.connect(func(_text): _on_name_confirm())
+
+func _setup_ui_dynamic() -> void:
+	# Fallback: Create UI dynamically if not loaded from scene
 	# Button container
 	button_container = HBoxContainer.new()
 	button_container.name = "ButtonContainer"

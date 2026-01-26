@@ -1,0 +1,158 @@
+[gd_scene load_steps=5 format=3 uid="uid://cc0deed1t0r"]
+
+[ext_resource type="Script" path="res://scripts/ui/code_editor_window.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://cf1leexpl0rer" path="res://scenes/ui/code_editor/file_explorer.tscn" id="2_file_explorer"]
+[ext_resource type="PackedScene" uid="uid://cterm1nalp4nel" path="res://scenes/ui/code_editor/terminal_panel.tscn" id="3_terminal_panel"]
+[ext_resource type="Script" path="res://scripts/ui/python_syntax_highlighter.gd" id="4_syntax"]
+
+[node name="CodeEditorWindow" type="PanelContainer"]
+custom_minimum_size = Vector2(700, 500)
+offset_right = 900.0
+offset_bottom = 600.0
+mouse_filter = 0
+script = ExtResource("1_script")
+window_title = "Code Editor"
+min_size = Vector2(700, 500)
+max_size = Vector2(1600, 1000)
+default_size = Vector2(900, 600)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="TitleBar" type="PanelContainer" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+
+[node name="TitleHBox" type="HBoxContainer" parent="VBoxContainer/TitleBar"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SpacerLeft" type="Control" parent="VBoxContainer/TitleBar/TitleHBox"]
+custom_minimum_size = Vector2(8, 0)
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer/TitleBar/TitleHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "Code Editor"
+
+[node name="MinimizeButton" type="Button" parent="VBoxContainer/TitleBar/TitleHBox"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+tooltip_text = "Minimize"
+flat = true
+theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
+theme_override_font_sizes/font_size = 18
+text = "−"
+
+[node name="MaximizeButton" type="Button" parent="VBoxContainer/TitleBar/TitleHBox"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+tooltip_text = "Maximize"
+flat = true
+theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
+theme_override_font_sizes/font_size = 14
+text = "□"
+
+[node name="CloseButton" type="Button" parent="VBoxContainer/TitleBar/TitleHBox"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+tooltip_text = "Close"
+flat = true
+theme_override_colors/font_color = Color(0.9, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 20
+text = "×"
+
+[node name="SpacerRight" type="Control" parent="VBoxContainer/TitleBar/TitleHBox"]
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+
+[node name="ContentContainer" type="MarginContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="ContentVBox" type="VBoxContainer" parent="VBoxContainer/ContentContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ControlBar" type="HBoxContainer" parent="VBoxContainer/ContentContainer/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RunButton" type="Button" parent="VBoxContainer/ContentContainer/ContentVBox/ControlBar"]
+layout_mode = 2
+tooltip_text = "Run code (F5 or Ctrl+Enter)"
+text = "▶ Run"
+
+[node name="PauseButton" type="Button" parent="VBoxContainer/ContentContainer/ContentVBox/ControlBar"]
+layout_mode = 2
+tooltip_text = "Pause execution (Space)"
+text = "⏸ Pause"
+
+[node name="ResetButton" type="Button" parent="VBoxContainer/ContentContainer/ContentVBox/ControlBar"]
+layout_mode = 2
+tooltip_text = "Reset level (R or Ctrl+R)"
+text = "🔄 Reset"
+
+[node name="SpeedButton" type="MenuButton" parent="VBoxContainer/ContentContainer/ContentVBox/ControlBar"]
+layout_mode = 2
+tooltip_text = "Change simulation speed"
+text = "1x ▼"
+
+[node name="MainVSplit" type="VSplitContainer" parent="VBoxContainer/ContentContainer/ContentVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = -150
+
+[node name="HSplit" type="HSplitContainer" parent="VBoxContainer/ContentContainer/ContentVBox/MainVSplit"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FileExplorer" parent="VBoxContainer/ContentContainer/ContentVBox/MainVSplit/HSplit" instance=ExtResource("2_file_explorer")]
+layout_mode = 2
+
+[node name="CodeEdit" type="CodeEdit" parent="VBoxContainer/ContentContainer/ContentVBox/MainVSplit/HSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+wrap_mode = 0
+scroll_smooth = true
+minimap_draw = false
+caret_blink = true
+caret_blink_interval = 0.5
+gutters_draw_line_numbers = true
+gutters_draw_fold_gutter = false
+indent_size = 4
+indent_automatic = true
+indent_use_spaces = true
+auto_brace_completion_enabled = true
+auto_brace_completion_highlight_matching = true
+code_completion_enabled = true
+line_folding = false
+
+[node name="TerminalPanel" parent="VBoxContainer/ContentContainer/ContentVBox/MainVSplit" instance=ExtResource("3_terminal_panel")]
+layout_mode = 2
+
+[node name="StatusBar" type="HBoxContainer" parent="VBoxContainer/ContentContainer/ContentVBox"]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer/ContentContainer/ContentVBox/StatusBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Ln 1, Col 1 | main.py | ✓ Saved"
+
+[node name="Spacer" type="Control" parent="VBoxContainer/ContentContainer/ContentVBox/StatusBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MetricsLabel" type="Label" parent="VBoxContainer/ContentContainer/ContentVBox/StatusBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.8, 0.6, 1)
+text = "Steps: 0 | LOC: 0"

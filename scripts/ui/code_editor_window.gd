@@ -1,5 +1,6 @@
 ## Code Editor Window for GoCars
 ## Main code editing window with file explorer, editor, and controls
+## Can be loaded from scene (code_editor_window.tscn) or instantiated dynamically
 ## Author: Claude Code
 ## Date: January 2026
 
@@ -12,20 +13,20 @@ signal code_pause_requested()
 signal code_reset_requested()
 signal speed_changed(speed: float)
 
-## Child nodes
-var control_bar: HBoxContainer
-var run_button: Button
-var pause_button: Button
-var reset_button: Button
-var speed_button: MenuButton
-var main_vsplit: VSplitContainer  # Main vertical split for editor and terminal
-var hsplit: HSplitContainer
-var file_explorer: FileExplorer
-var code_edit: CodeEdit
-var terminal_panel: Variant = null  # Terminal/Output panel
-var status_bar: HBoxContainer
-var status_label: Label
-var metrics_label: Label
+## Child nodes - Use @onready when loaded from scene
+@onready var control_bar: HBoxContainer = $VBoxContainer/ContentContainer/ContentVBox/ControlBar
+@onready var run_button: Button = $VBoxContainer/ContentContainer/ContentVBox/ControlBar/RunButton
+@onready var pause_button: Button = $VBoxContainer/ContentContainer/ContentVBox/ControlBar/PauseButton
+@onready var reset_button: Button = $VBoxContainer/ContentContainer/ContentVBox/ControlBar/ResetButton
+@onready var speed_button: MenuButton = $VBoxContainer/ContentContainer/ContentVBox/ControlBar/SpeedButton
+@onready var main_vsplit: VSplitContainer = $VBoxContainer/ContentContainer/ContentVBox/MainVSplit
+@onready var hsplit: HSplitContainer = $VBoxContainer/ContentContainer/ContentVBox/MainVSplit/HSplit
+@onready var file_explorer: FileExplorer = $VBoxContainer/ContentContainer/ContentVBox/MainVSplit/HSplit/FileExplorer
+@onready var code_edit: CodeEdit = $VBoxContainer/ContentContainer/ContentVBox/MainVSplit/HSplit/CodeEdit
+@onready var terminal_panel: TerminalPanel = $VBoxContainer/ContentContainer/ContentVBox/MainVSplit/TerminalPanel
+@onready var status_bar: HBoxContainer = $VBoxContainer/ContentContainer/ContentVBox/StatusBar
+@onready var status_label: Label = $VBoxContainer/ContentContainer/ContentVBox/StatusBar/StatusLabel
+@onready var metrics_label: Label = $VBoxContainer/ContentContainer/ContentVBox/StatusBar/MetricsLabel
 
 ## Virtual filesystem reference
 var virtual_fs: Variant = null  # VirtualFileSystem instance
@@ -70,8 +71,101 @@ func _init() -> void:
 
 func _ready() -> void:
 	super._ready()
-	_setup_editor_ui()
+	
+	# Check if nodes exist (loaded from scene) or need to be created
+	_ui_from_scene = has_node("VBoxContainer/ContentContainer/ContentVBox")
+	
+	if _ui_from_scene:
+		_setup_scene_nodes()
+	else:
+		_setup_editor_ui()
 
+## Setup when loaded from scene file
+func _setup_scene_nodes() -> void:
+	# Setup syntax highlighter
+	if code_edit:
+		code_edit.syntax_highlighter = _create_python_highlighter()
+		
+		# Add breakpoint gutter
+		code_edit.add_gutter(BREAKPOINT_GUTTER)
+		code_edit.set_gutter_name(BREAKPOINT_GUTTER, "breakpoints")
+		code_edit.set_gutter_clickable(BREAKPOINT_GUTTER, true)
+		code_edit.set_gutter_draw(BREAKPOINT_GUTTER, true)
+		code_edit.set_gutter_type(BREAKPOINT_GUTTER, TextEdit.GUTTER_TYPE_ICON)
+		
+		# String and comment delimiters
+		code_edit.add_comment_delimiter("#", "", true)
+		code_edit.add_string_delimiter("\"", "\"", false)
+		code_edit.add_string_delimiter("'", "'", false)
+	
+	# Setup speed menu
+	if speed_button:
+		var popup = speed_button.get_popup()
+		for speed in speed_options:
+			popup.add_item("%.1fx" % speed)
+		popup.index_pressed.connect(_on_speed_selected)
+	
+	# Setup advanced features
+	_setup_advanced_features()
+	
+	# Connect signals
+	_connect_scene_signals()
+
+func _connect_scene_signals() -> void:
+	if run_button:
+		run_button.pressed.connect(_on_run_pressed)
+	if pause_button:
+		pause_button.pressed.connect(_on_pause_pressed)
+	if reset_button:
+		reset_button.pressed.connect(_on_reset_pressed)
+	if file_explorer:
+		file_explorer.file_selected.connect(_on_file_selected)
+	if code_edit:
+		code_edit.text_changed.connect(_on_text_changed)
+		code_edit.caret_changed.connect(_update_status_bar)
+		code_edit.gutter_clicked.connect(_on_gutter_clicked)
+	if terminal_panel:
+		terminal_panel.error_clicked.connect(_on_terminal_error_clicked)
+		print("CodeEditorWindow: Terminal panel connected from scene")
+
+func _setup_advanced_features() -> void:
+	var content = get_content_container()
+	
+	# Setup IntelliSense
+	if code_edit:
+		var IntelliSenseClass = load("res://scripts/ui/intellisense_manager.gd")
+		intellisense = IntelliSenseClass.new(code_edit)
+		intellisense.setup_popups(content)
+		intellisense.set_current_file(current_file)
+	
+	# Setup Snippet Handler
+	if code_edit:
+		var SnippetHandlerClass = load("res://scripts/core/snippet_handler.gd")
+		snippet_handler = SnippetHandlerClass.new(code_edit)
+		print("CodeEditorWindow: Snippet handler initialized")
+	
+	# Setup Error Highlighter
+	if code_edit:
+		var ErrorHighlighterClass = load("res://scripts/ui/error_highlighter.gd")
+		error_highlighter = ErrorHighlighterClass.new(code_edit)
+		# Find the content vbox for error panel
+		var content_vbox = $VBoxContainer/ContentContainer/ContentVBox if _ui_from_scene else null
+		if content_vbox:
+			error_highlighter.setup_error_panel(content_vbox)
+		print("CodeEditorWindow: Error highlighter initialized")
+	
+	# Setup Execution Tracer
+	if code_edit:
+		var ExecutionTracerClass = load("res://scripts/core/execution_tracer.gd")
+		execution_tracer = ExecutionTracerClass.new(code_edit)
+		print("CodeEditorWindow: Execution tracer initialized")
+	
+	# Setup Performance Metrics
+	var PerformanceMetricsClass = load("res://scripts/core/performance_metrics.gd")
+	performance_metrics = PerformanceMetricsClass.new()
+	print("CodeEditorWindow: Performance metrics initialized")
+
+## Fallback: Create UI dynamically if not loaded from scene
 func _setup_editor_ui() -> void:
 	var content = get_content_container()
 

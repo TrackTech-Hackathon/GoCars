@@ -30,6 +30,11 @@ var ui_container: CanvasLayer
 ## Persistence settings
 var settings_path: String = "user://window_settings.json"
 
+## Scene paths for windows (use scenes when available)
+const CODE_EDITOR_SCENE = "res://scenes/ui/code_editor/code_editor_window.tscn"
+const TERMINAL_SCENE = "res://scenes/ui/code_editor/terminal_panel.tscn"
+const FILE_EXPLORER_SCENE = "res://scenes/ui/code_editor/file_explorer.tscn"
+
 func _init() -> void:
 	# Initialize virtual filesystem
 	var VirtualFileSystemClass = load("res://scripts/core/virtual_filesystem.gd")
@@ -43,9 +48,8 @@ func _init() -> void:
 func setup(parent_canvas_layer: CanvasLayer) -> void:
 	ui_container = parent_canvas_layer
 
-	# Load window classes
+	# Load window classes/scenes
 	var ToolbarClass = load("res://scripts/ui/toolbar.gd")
-	var CodeEditorWindowClass = load("res://scripts/ui/code_editor_window.gd")
 	var ReadmeWindowClass = load("res://scripts/ui/readme_window.gd")
 	var SkillTreeWindowClass = load("res://scripts/ui/skill_tree_window.gd")
 
@@ -54,8 +58,17 @@ func setup(parent_canvas_layer: CanvasLayer) -> void:
 	toolbar.name = "Toolbar"
 	ui_container.add_child(toolbar)
 
-	# Create windows (initially hidden)
-	code_editor_window = CodeEditorWindowClass.new()
+	# Create code editor window - prefer scene if available
+	if ResourceLoader.exists(CODE_EDITOR_SCENE):
+		var CodeEditorScene = load(CODE_EDITOR_SCENE)
+		code_editor_window = CodeEditorScene.instantiate()
+		print("WindowManager: Loaded CodeEditorWindow from scene")
+	else:
+		# Fallback to dynamic creation
+		var CodeEditorWindowClass = load("res://scripts/ui/code_editor_window.gd")
+		code_editor_window = CodeEditorWindowClass.new()
+		print("WindowManager: Created CodeEditorWindow dynamically")
+	
 	code_editor_window.name = "CodeEditorWindow"
 	code_editor_window.visible = false
 	ui_container.add_child(code_editor_window)

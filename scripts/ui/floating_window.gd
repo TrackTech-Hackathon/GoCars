@@ -1,6 +1,7 @@
 ## Floating Window Base Class for GoCars
 ## Provides draggable, resizable, minimizable window functionality
 ## With Windows 11-style snap zones
+## Can be loaded from scene or instantiated dynamically
 ## Author: Claude Code
 ## Date: January 2026
 
@@ -46,13 +47,14 @@ enum ResizeMode {
 	BOTTOM_RIGHT
 }
 
-## Child nodes (to be assigned in _ready)
-var title_bar: PanelContainer
-var title_label: Label
-var minimize_button: Button
-var maximize_button: Button
-var close_button: Button
-var content_container: MarginContainer
+## Child nodes - Use @onready when loaded from scene
+@onready var title_bar: PanelContainer = $VBoxContainer/TitleBar if has_node("VBoxContainer/TitleBar") else null
+@onready var title_label: Label = $VBoxContainer/TitleBar/TitleHBox/TitleLabel if has_node("VBoxContainer/TitleBar/TitleHBox/TitleLabel") else null
+@onready var minimize_button: Button = $VBoxContainer/TitleBar/TitleHBox/MinimizeButton if has_node("VBoxContainer/TitleBar/TitleHBox/MinimizeButton") else null
+@onready var maximize_button: Button = $VBoxContainer/TitleBar/TitleHBox/MaximizeButton if has_node("VBoxContainer/TitleBar/TitleHBox/MaximizeButton") else null
+@onready var close_button: Button = $VBoxContainer/TitleBar/TitleHBox/CloseButton if has_node("VBoxContainer/TitleBar/TitleHBox/CloseButton") else null
+@onready var content_container: MarginContainer = $VBoxContainer/ContentContainer if has_node("VBoxContainer/ContentContainer") else null
+
 var resize_handle_size: int = 8
 
 ## Snap controller for Windows 11-style window snapping
@@ -62,7 +64,13 @@ var snap_controller: Variant = null
 var pre_maximize_rect: Rect2 = Rect2()
 var is_window_maximized: bool = false
 
+## Flag to track if loaded from scene
+var _ui_from_scene: bool = false
+
 func _ready() -> void:
+	# Check if loaded from scene
+	_ui_from_scene = has_node("VBoxContainer/TitleBar")
+	
 	# Set initial size and position
 	custom_minimum_size = min_size
 	size = default_size
@@ -74,6 +82,23 @@ func _ready() -> void:
 	else:
 		position = default_position
 
+	# Apply panel style
+	_apply_panel_style()
+	
+	if _ui_from_scene:
+		# Apply title bar style and connect signals
+		_setup_scene_window()
+	else:
+		# Setup window structure dynamically
+		_setup_window_structure()
+
+	# Connect signals
+	_connect_signals()
+
+	# Enable mouse filter
+	mouse_filter = Control.MOUSE_FILTER_STOP
+
+func _apply_panel_style() -> void:
 	# Add stylish panel with rounded corners and shadow
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.15, 0.15, 0.18, 0.98)  # Dark background
@@ -90,14 +115,18 @@ func _ready() -> void:
 	style.shadow_color = Color(0, 0, 0, 0.3)
 	add_theme_stylebox_override("panel", style)
 
-	# Setup window structure
-	_setup_window_structure()
-
-	# Connect signals
-	_connect_signals()
-
-	# Enable mouse filter
-	mouse_filter = Control.MOUSE_FILTER_STOP
+func _setup_scene_window() -> void:
+	# Apply title bar style when loaded from scene
+	if title_bar:
+		var title_style = StyleBoxFlat.new()
+		title_style.bg_color = Color(0.2, 0.2, 0.24, 1.0)
+		title_style.corner_radius_top_left = 7
+		title_style.corner_radius_top_right = 7
+		title_bar.add_theme_stylebox_override("panel", title_style)
+	
+	# Set window title
+	if title_label:
+		title_label.text = window_title
 
 func _setup_window_structure() -> void:
 	# Main VBox layout

@@ -22,16 +22,16 @@ enum MessageType {
 	PRINT      # Cyan - for user print() statements
 }
 
-## Child nodes
-var main_vbox: VBoxContainer
-var header_container: HBoxContainer
-var tab_bar: HBoxContainer
-var clear_button: Button
-var copy_button: Button
-var collapse_button: Button
-var separator: HSeparator
-var scroll_container: ScrollContainer
-var output_text: RichTextLabel
+## Child nodes - Use @onready when loaded from scene, or create dynamically
+@onready var main_vbox: VBoxContainer = $MainVBox
+@onready var header_container: HBoxContainer = $MainVBox/HeaderContainer
+@onready var tab_bar: HBoxContainer = $MainVBox/HeaderContainer/TabBar
+@onready var collapse_button: Button = $MainVBox/HeaderContainer/CollapseButton
+@onready var clear_button: Button = $MainVBox/HeaderContainer/ClearButton
+@onready var copy_button: Button = $MainVBox/HeaderContainer/CopyButton
+@onready var separator: HSeparator = $MainVBox/Separator
+@onready var scroll_container: ScrollContainer = $MainVBox/ScrollContainer
+@onready var output_text: RichTextLabel = $MainVBox/ScrollContainer/OutputText
 
 ## State
 var auto_scroll: bool = true
@@ -39,6 +39,9 @@ var max_lines: int = 500
 var current_tab: String = "OUTPUT"
 var is_collapsed: bool = false
 var original_height: float = 150.0
+
+## Flag to track if we're using scene nodes or need to build UI
+var _ui_from_scene: bool = false
 
 ## Colors for different message types
 var colors: Dictionary = {
@@ -61,8 +64,32 @@ var prefixes: Dictionary = {
 }
 
 func _ready() -> void:
-	_setup_ui()
+	# Check if nodes exist (loaded from scene) or need to be created
+	_ui_from_scene = has_node("MainVBox")
+	
+	if not _ui_from_scene:
+		_setup_ui()
+	else:
+		_connect_scene_signals()
+	
 	_apply_style()
+
+func _connect_scene_signals() -> void:
+	# Connect signals for scene-loaded nodes
+	if collapse_button:
+		collapse_button.pressed.connect(_on_collapse_pressed)
+	if clear_button:
+		clear_button.pressed.connect(_on_clear_pressed)
+	if copy_button:
+		copy_button.pressed.connect(_on_copy_pressed)
+	if output_text:
+		output_text.meta_clicked.connect(_on_meta_clicked)
+	
+	# Connect tab buttons
+	if tab_bar:
+		for child in tab_bar.get_children():
+			if child is Button:
+				child.pressed.connect(_on_tab_pressed.bind(child.text))
 
 func _setup_ui() -> void:
 	name = "TerminalPanel"

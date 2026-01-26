@@ -200,14 +200,14 @@ var window_manager: Variant = null
 var use_new_ui: bool = false  # Set to true to enable
 
 func _ready():
-    if use_new_ui:
-        _setup_new_ui()
+	if use_new_ui:
+		_setup_new_ui()
 
 func _setup_new_ui() -> void:
-    var WindowManagerClass = load("res://scripts/ui/window_manager.gd")
-    window_manager = WindowManagerClass.new()
-    window_manager.setup($UI)
-    window_manager.code_execution_requested.connect(_on_window_manager_code_run)
+	var WindowManagerClass = load("res://scripts/ui/window_manager.gd")
+	window_manager = WindowManagerClass.new()
+	window_manager.setup($UI)
+	window_manager.code_execution_requested.connect(_on_window_manager_code_run)
 ```
 
 ### Tests
@@ -240,18 +240,18 @@ func _setup_new_ui() -> void:
 **Settings File Format:**
 ```json
 {
-    "code_editor": {
-        "position": [50, 50],
-        "size": [900, 600]
-    },
-    "readme": {
-        "position": [300, 100],
-        "size": [600, 500]
-    },
-    "skill_tree": {
-        "position": [100, 150],
-        "size": [400, 300]
-    }
+	"code_editor": {
+		"position": [50, 50],
+		"size": [900, 600]
+	},
+	"readme": {
+		"position": [300, 100],
+		"size": [600, 500]
+	},
+	"skill_tree": {
+		"position": [100, 150],
+		"size": [400, 300]
+	}
 }
 ```
 
@@ -348,17 +348,17 @@ var use_new_ui: bool = true
 **helpers.py:**
 ```python
 def avoid_crash():
-    if car.front_crash():
-        if car.left_road():
-            car.turn("left")
-        elif car.right_road():
-            car.turn("right")
+	if car.front_crash():
+		if car.left_road():
+			car.turn("left")
+		elif car.right_road():
+			car.turn("right")
 
 def navigate():
-    if car.front_road():
-        car.go()
-    else:
-        car.stop()
+	if car.front_road():
+		car.go()
+	else:
+		car.stop()
 ```
 
 **main.py:**
@@ -366,8 +366,8 @@ def navigate():
 from helpers import avoid_crash, navigate
 
 while not car.at_end():
-    avoid_crash()
-    navigate()
+	avoid_crash()
+	navigate()
 ```
 
 Press **F5** to run!
