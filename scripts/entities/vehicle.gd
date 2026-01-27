@@ -1233,8 +1233,8 @@ func _is_near_turn_point() -> bool:
 	)
 	# Check distance from car to tile center
 	var dist_to_center = global_position.distance_to(tile_center)
-	# Allow turn detection when within 50 pixels of center
-	return dist_to_center < 50.0
+	# Only allow turn detection when very close to center (in the middle of the road)
+	return dist_to_center < 10
 
 
 ## Check if there's a road to the left of the car (short name)
