@@ -250,7 +250,7 @@ var _turn_target_rotation: float = 0.0
 var _turn_start_direction: Vector2 = Vector2.ZERO
 
 # Distance threshold for reaching destination
-const DESTINATION_THRESHOLD: float = 10.0
+const DESTINATION_THRESHOLD: float = 50.0
 
 # Lane offset - cars drive in center of road (no offset for simpler movement)
 const LANE_OFFSET: float = 0.0
