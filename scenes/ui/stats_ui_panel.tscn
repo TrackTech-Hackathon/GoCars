@@ -1,44 +1,57 @@
-[gd_scene load_steps=2 format=3 uid="uid://c0stats_ui_panel"]
+[gd_scene load_steps=5 format=3 uid="uid://7hil4w33eydo"]
 
-[ext_resource type="Script" path="res://scripts/ui/stats_ui_panel.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://dj2jamo8n0oo5" path="res://scripts/ui/stats_ui_panel.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dxrvqxf76w1mq" path="res://scenes/ui/code_editor/Code Editor.png" id="2_v32n3"]
+[ext_resource type="FontFile" uid="uid://dcwhex08vx2qh" path="res://assets/fonts/pixelFont-7-8x14-sproutLands.ttf" id="3_gnlxq"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_a7spd"]
+texture = ExtResource("2_v32n3")
+region_rect = Rect2(138.1705, 11.803135, 107.25018, 122.64493)
 
 [node name="StatsUIPanel" type="CanvasLayer"]
 layer = 100
 script = ExtResource("1_script")
 
 [node name="Panel" type="Panel" parent="."]
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 180.0
 offset_bottom = 130.0
 mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_a7spd")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 0
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 172.0
 offset_bottom = 122.0
+theme_override_constants/separation = 7
 
 [node name="TypeLabel" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_gnlxq")
 text = "Type: --"
 
 [node name="ColorLabel" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_gnlxq")
 text = "Color: --"
 
 [node name="GroupLabel" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_gnlxq")
 text = "Group: --"
 
 [node name="SpeedLabel" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_gnlxq")
 text = "Speed: --"
 
 [node name="FacingLabel" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_gnlxq")
 text = "Facing: --"
 
 [node name="StateLabel" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_gnlxq")
 text = "State: --"
