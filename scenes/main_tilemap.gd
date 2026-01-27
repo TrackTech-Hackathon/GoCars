@@ -443,10 +443,10 @@ func _spawn_initial_cars() -> void:
 		if typeof(group) != TYPE_STRING:
 			group = str(group)
 		# Only spawn if this group hasn't spawned yet (one car per parking spot)
-		if group_name == "" or group_name not in spawned_groups:
+		if group == "" or group not in spawned_groups:
 			_spawn_car_at(spawn)
-			if group_name != "":
-				spawned_groups.append(group_name)
+			if group != "":
+				spawned_groups.append(group)
 
 
 func _spawn_new_car() -> void:
@@ -459,8 +459,11 @@ func _spawn_new_car() -> void:
 	# Find a spawn point that hasn't been used yet
 	var available_spawns: Array = []
 	for spawn in spawn_data:
-		var group_name = spawn.get("group_name", "")
-		if group_name == "" or group_name not in spawned_groups:
+		var group = spawn.get("group", "")
+		# Convert group to string if it's not already
+		if typeof(group) != TYPE_STRING:
+			group = str(group)
+		if group == "" or group not in spawned_groups:
 			available_spawns.append(spawn)
 
 	if available_spawns.is_empty():
@@ -471,9 +474,12 @@ func _spawn_new_car() -> void:
 	var car = _spawn_car_at(spawn)
 
 	# Track that this group has spawned
-	var group_name = spawn.get("group_name", "")
-	if group_name != "" and group_name not in spawned_groups:
-		spawned_groups.append(group_name)
+	var group = spawn.get("group", "")
+	# Convert group to string if it's not already
+	if typeof(group) != TYPE_STRING:
+		group = str(group)
+	if group != "" and group not in spawned_groups:
+		spawned_groups.append(group)
 
 	# Execute current code on the new car
 	if car and is_spawning_cars:

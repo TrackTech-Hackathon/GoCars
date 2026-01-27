@@ -251,10 +251,6 @@ var _turn_start_direction: Vector2 = Vector2.ZERO
 var _turn_start_position: Vector2 = Vector2.ZERO  # Position at start of turn
 var _turn_target_position: Vector2 = Vector2.ZERO  # Target position after turn
 
-# Left turn preparation (car moves to opposite lane before turning)
-var _preparing_left_turn: bool = false
-var _left_turn_target_position: Vector2 = Vector2.ZERO  # Position to reach before turning left
-var _pending_turn_direction: String = ""  # Store the turn direction while preparing
 
 # Distance threshold for reaching destination
 const DESTINATION_THRESHOLD: float = 10.0
@@ -626,11 +622,6 @@ func _physics_process(delta: float) -> void:
 	# Handle smooth turning animation
 	if _is_turning:
 		_process_turn(delta)
-		return
-
-	# Handle left turn preparation (moving to opposite lane before turning)
-	if _preparing_left_turn:
-		_process_left_turn_prep(delta)
 		return
 
 	# Check for red light violations (player must code stoplight handling!)
@@ -1194,41 +1185,23 @@ func _exec_turn(turn_direction: String) -> void:
 		_command_completed()
 
 
-## Prepare for a left turn by moving to the opposite lane position first
+## Prepare for a right turn
+func _prepare_right_turn() -> void:
+	_is_moving = true
+	_wants_to_move = true
+	# Right turns are simpler - car is already in correct lane position
+	# Just execute the turn immediately
+	_execute_turn("right")
+
+
+## Prepare for a left turn
 func _prepare_left_turn() -> void:
-	_preparing_left_turn = true
-	_pending_turn_direction = "left"
 	_is_moving = true
 	_wants_to_move = true
 
-	# Calculate target position for left turn preparation
-	# This is the opposite side of the current lane (crossing the road)
-	var tile_center = _get_current_tile_center()
-	_left_turn_target_position = tile_center + _get_left_turn_prep_offset(direction)
-
-
-## Get the offset for left turn preparation position
-## This is where the car needs to be before starting a left turn
-## Going East: move from bottom-left to bottom-RIGHT (+X offset)
-## Going West: move from top-right to top-LEFT (-X offset)
-## Going South: move from top-left to BOTTOM-left (+Y offset)
-## Going North: move from bottom-right to TOP-right (-Y offset)
-func _get_left_turn_prep_offset(dir: Vector2) -> Vector2:
-	var normalized_dir = dir.normalized()
-	if abs(normalized_dir.x) > abs(normalized_dir.y):
-		if normalized_dir.x > 0:
-			# Going East → need bottom-RIGHT for left turn
-			return Vector2(LANE_OFFSET, LANE_OFFSET)
-		else:
-			# Going West → need top-LEFT for left turn
-			return Vector2(-LANE_OFFSET, -LANE_OFFSET)
-	else:
-		if normalized_dir.y > 0:
-			# Going South → need BOTTOM-left for left turn
-			return Vector2(-LANE_OFFSET, LANE_OFFSET)
-		else:
-			# Going North → need TOP-right for left turn
-			return Vector2(LANE_OFFSET, -LANE_OFFSET)
+	# Execute turn immediately, just like right turns
+	# Guideline path will handle lane positioning after rotation
+	_execute_turn("left")
 
 
 func _exec_wait(seconds: float) -> void:
@@ -1744,10 +1717,6 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Reset turn state
 	_is_turning = false
 	_turn_progress = 0.0
-	# Reset left turn preparation state
-	_preparing_left_turn = false
-	_left_turn_target_position = Vector2.ZERO
-	_pending_turn_direction = ""
 	# Reset auto-navigate
 	auto_navigate = false
 	_nav_check_timer = 0.0
@@ -1930,51 +1899,6 @@ func _get_opposite_lane_offset_for_direction(dir: Vector2) -> Vector2:
 
 
 ## Process left turn preparation - move to opposite lane position before turning
-func _process_left_turn_prep(delta: float) -> void:
-	# Check if car is on a road tile
-	if _road_checker != null:
-		if not _is_on_road():
-			_on_off_road_crash()
-			return
-
-	# Move toward the left turn target position
-	var to_target = _left_turn_target_position - global_position
-	var dist = to_target.length()
-
-	# Check if reached the target position
-	if dist < 5.0:
-		# Reached position, now execute the actual left turn
-		_preparing_left_turn = false
-		_is_moving = false
-		global_position = _left_turn_target_position  # Snap to exact position
-		_execute_turn(_pending_turn_direction)
-		_pending_turn_direction = ""
-		return
-
-	# Move toward target position
-	var move_dir = to_target.normalized()
-	var actual_speed = speed * speed_multiplier * type_speed_mult
-	velocity = move_dir * actual_speed
-	global_position += velocity * delta
-
-	# Check for collisions (using actual collision radii)
-	var vehicles = get_tree().get_nodes_in_group("vehicles")
-	for other_vehicle in vehicles:
-		if other_vehicle == self:
-			continue
-		var collision_dist = global_position.distance_to(other_vehicle.global_position)
-		# Use combined collision radii for accurate collision detection
-		var collision_threshold = _collision_radius + other_vehicle.get_collision_radius()
-		if collision_dist < collision_threshold:
-			if other_vehicle.vehicle_state == 0:
-				_on_crash()
-				return
-			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
-				_on_crash()
-				other_vehicle._on_crash()
-				return
-
-
 ## Process smooth turn animation with lane position transition
 func _process_turn(delta: float) -> void:
 	_turn_progress += delta / TURN_DURATION
@@ -2000,10 +1924,10 @@ func _process_turn(delta: float) -> void:
 		# Update facing label after turn completes
 		_update_stats_facing()
 
-		# After turning, use simple movement to exit the tile
-		# We already know the exit direction (_last_exit_direction), so just move that way
-		# Don't try to re-acquire a path based on old entry direction
-		_use_simple_movement = true
+		# STOP the car after turning - don't continue moving
+		_is_moving = false
+		_wants_to_move = false
+		velocity = Vector2.ZERO
 		_current_path.clear()
 		_path_index = 0
 
