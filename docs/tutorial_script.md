@@ -102,7 +102,7 @@ STEP 13: Success
 [R]--[D]
 ```
 - Spawn: (0, 1)
-- Path: Right 2, Down 1, Left 2, Down 1, Right 2
+- Path: Right 3, Down-Right 1, Right 2, Down-Left 1, Left 3
 - Destination: (4, 3)
 
 **Objective:** Learn `car.move(N)` and `car.turn("direction")`
@@ -117,7 +117,7 @@ STEP 1: Introduction
 STEP 2: Introduce car.move()
 "First, let's learn car.move(N)"
 "The N is how many tiles to move forward."
-"Example: car.move(2) moves the car 2 tiles."
+"Example: car.move(3) moves the car 3 tiles."
 
 STEP 3: Introduce car.turn()
 "To turn, use car.turn('left') or car.turn('right')"
@@ -136,9 +136,9 @@ STEP 5: Open Code Editor First
 
 STEP 6: Guide First Move
 [Arrow points to VBoxContainer/ContentContainer/ContentVBox/EditorContainer/CodeEdit]
-"Start by typing: car.move(2)"
+"Start by typing: car.move(3)"
 "This moves the car to the first corner."
-[WAIT: Player types car.move(2)]
+[WAIT: Player types car.move(3)]
 
 STEP 7: First Turn
 "Now add a turn: car.turn('right')"
