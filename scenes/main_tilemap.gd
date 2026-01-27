@@ -22,13 +22,16 @@ const RoadTileProxy = preload("res://scripts/map_editor/road_tile_proxy.gd")
 var window_manager: Variant = null
 var use_new_ui: bool = true
 
-# Result popup elements
+# Result popup elements (old system - deprecated)
 @onready var result_popup: Panel = $UI/ResultPopup
 @onready var result_title: Label = $UI/ResultPopup/ResultTitle
 @onready var result_message: Label = $UI/ResultPopup/ResultMessage
 @onready var retry_button: Button = $UI/ResultPopup/RetryButton
 @onready var next_button: Button = $UI/ResultPopup/NextButton
 var menu_button: Button = null  # Created dynamically
+
+# Completion Summary UI (new system)
+var completion_summary: CompletionSummary = null
 
 # Help panel elements
 @onready var help_panel: Panel = $UI/HelpPanel
@@ -110,9 +113,13 @@ var selection_highlight: ColorRect = null
 var level_timer: float = 0.0
 var timer_running: bool = false
 var level_won: bool = false
+var level_failed: bool = false  # Prevents victory logic after failure
 var code_is_running: bool = false  # True when code is executing (cars moving from code)
 var current_level_id: String = ""
 var current_level_display_name: String = ""
+
+# Track last heart loss cause for better failure hints
+var last_heart_loss_cause: String = "crash"  # crash, red_light, off_road
 
 # Hearts UI (loaded from level)
 var hearts_ui: Node = null
@@ -131,6 +138,9 @@ func _ready() -> void:
 
 	# Create stats UI panel
 	_setup_stats_ui_panel()
+
+	# Initialize Completion Summary UI
+	_init_completion_summary()
 
 	# Connect UI signals
 	run_button.pressed.connect(_on_run_button_pressed)
@@ -362,7 +372,9 @@ func _load_level(index: int) -> void:
 	level_timer = 0.0
 	timer_running = true  # Timer starts immediately on level load
 	level_won = false
+	level_failed = false  # Reset failure flag for new level
 	code_is_running = false  # Code not running yet - timer at 1x speed
+	last_heart_loss_cause = "crash"  # Reset to default cause
 	_update_timer_label()
 
 	# Calculate camera bounds and set initial position
@@ -767,6 +779,7 @@ func _on_car_reached_destination(car_id: String) -> void:
 
 
 func _on_car_crashed(car_id: String) -> void:
+	last_heart_loss_cause = "crash"
 	_lose_heart()
 	_update_status("Car '%s' crashed! Lost 1 heart" % car_id)
 	if engine_audio and engine_audio.playing:
@@ -776,6 +789,7 @@ func _on_car_crashed(car_id: String) -> void:
 
 
 func _on_car_off_road(car_id: String) -> void:
+	last_heart_loss_cause = "off_road"
 	_lose_heart()
 	_update_status("Car '%s' went off-road! Lost 1 heart" % car_id)
 	if engine_audio and engine_audio.playing:
@@ -785,15 +799,16 @@ func _on_car_off_road(car_id: String) -> void:
 
 
 func _on_car_ran_red_light(vehicle_id: String, _stoplight_id: String) -> void:
-	hearts -= 1
-	_update_hearts_label()
+	last_heart_loss_cause = "red_light"
+	_lose_heart()
 	_update_status("%s ran a red light! (-1 heart)" % vehicle_id)
-	if hearts <= 0:
-		_update_status("GAME OVER - Press R to Reset")
-		status_label.add_theme_color_override("font_color", Color.RED)
 
 
 func _on_level_completed(stars: int) -> void:
+	# Don't show victory if already failed (race condition prevention)
+	if level_failed:
+		return
+
 	_update_status("Level Complete! Stars: %s" % stars)
 	_show_victory_popup(stars)
 
@@ -858,20 +873,13 @@ func _show_victory_popup(stars: int) -> void:
 	level_won = true
 
 	# Save best time
-	var is_new_best = false
+	var best_time = 0.0
 	if GameData:
-		is_new_best = GameData.save_best_time(current_level_id, level_timer)
+		GameData.save_best_time(current_level_id, level_timer)
+		best_time = GameData.get_best_time(current_level_id)
 		GameData.mark_level_completed(current_level_id)
 
-	result_title.text = "%s\nCOMPLETE!" % current_level_display_name
-
-	var star_display = ""
-	for i in range(3):
-		if i < stars:
-			star_display += "[*]"
-		else:
-			star_display += "[ ]"
-
+	# Count cars at destination
 	var cars_completed = 0
 	var total_cars = 0
 	var vehicles = get_tree().get_nodes_in_group("vehicles")
@@ -880,61 +888,61 @@ func _show_victory_popup(stars: int) -> void:
 		if vehicle.at_end():
 			cars_completed += 1
 
-	var message_parts: Array = []
-	message_parts.append("Stars: %s" % star_display)
-
-	# Show time with best time
-	var time_str = "Time: %s" % _format_time(level_timer)
-	if is_new_best:
-		time_str += " (NEW BEST!)"
-	elif GameData and GameData.has_best_time(current_level_id):
-		time_str += " (Best: %s)" % _format_time(GameData.get_best_time(current_level_id))
-	message_parts.append(time_str)
-
-	message_parts.append("Cars: %d/%d" % [cars_completed, total_cars])
-	message_parts.append("Hearts remaining: %d" % hearts)
-
-	result_message.text = "\n".join(message_parts)
-
 	# Check if there's a next level
 	var has_next_level = (current_level_index + 1) < level_loader.get_level_count()
-	next_button.visible = has_next_level
-	if menu_button:
-		menu_button.visible = true
 
-	result_popup.visible = true
+	# Show completion summary
+	if completion_summary:
+		completion_summary.show_victory(
+			current_level_display_name,
+			stars,
+			level_timer,
+			best_time,
+			cars_completed,
+			total_cars,
+			hearts,
+			initial_hearts,
+			has_next_level
+		)
 
 
 func _show_failure_popup(reason: String) -> void:
 	# Stop timer on failure (don't save time)
 	timer_running = false
 
-	result_title.text = "%s\nFAILED" % current_level_display_name
+	# Generate contextual hint based on failure reason
+	var hint = ""
 
-	var message_parts: Array = []
-	message_parts.append(reason)
-	message_parts.append("")
+	# Check if failure is due to running out of hearts
+	if reason.to_lower().find("out of hearts") >= 0:
+		# Use the tracked cause for more specific hints
+		match last_heart_loss_cause:
+			"crash":
+				hint = "💡 Too many vehicle collisions! Avoid other cars on the road."
+			"off_road":
+				hint = "💡 Your cars kept driving off the road! Stay on the pavement."
+			"red_light":
+				hint = "💡 Too many red light violations! Use if statements to check stoplight.is_red()"
+			_:
+				hint = "💡 Too many mistakes! Watch your code carefully."
+	elif reason.to_lower().find("time") >= 0:
+		hint = "💡 Try to be more efficient with your code."
+	elif reason.to_lower().find("infinite") >= 0 or reason.to_lower().find("loop") >= 0:
+		hint = "💡 Check your code for infinite loops."
+	elif reason.to_lower().find("map") >= 0 or reason.to_lower().find("boundary") >= 0:
+		hint = "💡 Keep cars on the road!"
+	elif reason.to_lower().find("error") >= 0 or reason.to_lower().find("syntax") >= 0:
+		hint = "💡 Check your Python syntax."
+	else:
+		hint = "💡 Press R to retry the level."
 
-	if reason.find("hearts") >= 0 or reason.find("Hearts") >= 0:
-		message_parts.append("Too many crashes!")
-	elif reason.find("Time") >= 0 or reason.find("time") >= 0:
-		message_parts.append("Try to be more efficient.")
-	elif reason.find("infinite loop") >= 0:
-		message_parts.append("Check your code for infinite loops.")
-		message_parts.append("Use break or proper conditions.")
-	elif reason.find("map") >= 0 or reason.find("boundary") >= 0:
-		message_parts.append("Keep cars on the road!")
-	elif reason.find("Error") >= 0 or reason.find("error") >= 0:
-		message_parts.append("Check your Python syntax.")
-
-	message_parts.append("")
-	message_parts.append("Press R to retry")
-
-	result_message.text = "\n".join(message_parts)
-	next_button.visible = false
-	if menu_button:
-		menu_button.visible = true
-	result_popup.visible = true
+	# Show completion summary with failure
+	if completion_summary:
+		completion_summary.show_failure(
+			current_level_display_name,
+			reason,
+			hint
+		)
 
 
 func _hide_result_popup() -> void:
@@ -952,6 +960,29 @@ func _on_retry_pressed() -> void:
 
 func _on_next_pressed() -> void:
 	_hide_result_popup()
+	_load_next_level()
+
+
+func _on_completion_summary_retry() -> void:
+	if completion_summary:
+		completion_summary.hide()
+	# Reset timer when pressing Retry from game over screen
+	level_timer = 0.0
+	timer_running = true
+	_update_timer_label()
+	_do_fast_retry()
+
+
+func _on_completion_summary_menu() -> void:
+	if completion_summary:
+		completion_summary.hide()
+	# Return to main menu
+	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/MainMenu.tscn")
+
+
+func _on_completion_summary_next() -> void:
+	if completion_summary:
+		completion_summary.hide()
 	_load_next_level()
 
 
@@ -1005,6 +1036,8 @@ func _do_fast_retry() -> void:
 	# Timer only resets from game over screen buttons (Retry/Next Level)
 	# Timer keeps running (was started on level load)
 	level_won = false
+	level_failed = false
+	last_heart_loss_cause = "crash"  # Reset to default cause
 
 	# Code stopped running - timer goes back to 1x speed
 	code_is_running = false
@@ -1722,6 +1755,26 @@ func _setup_stats_ui_panel() -> void:
 		push_warning("Could not load StatsUIPanel scene")
 
 
+func _init_completion_summary() -> void:
+	var summary_scene = load("res://scenes/ui/completion_summary.tscn")
+	if summary_scene:
+		completion_summary = summary_scene.instantiate()
+		if completion_summary:
+			# Add to UI layer
+			var ui = get_node_or_null("UI")
+			if ui:
+				ui.add_child(completion_summary)
+			else:
+				add_child(completion_summary)
+
+			# Connect signals
+			completion_summary.retry_pressed.connect(_on_completion_summary_retry)
+			completion_summary.menu_pressed.connect(_on_completion_summary_menu)
+			completion_summary.next_level_pressed.connect(_on_completion_summary_next)
+	else:
+		push_warning("Could not load CompletionSummary scene")
+
+
 # ============================================
 # New UI System
 # ============================================
@@ -2004,6 +2057,17 @@ func _lose_heart() -> void:
 	_update_hearts_label()
 
 	if hearts <= 0:
+		# Mark level as failed to prevent victory logic from running
+		level_failed = true
+		timer_running = false
+
+		# Stop all cars immediately so they can't reach destinations
+		_stop_all_cars()
+
+		# Stop spawning new cars
+		is_spawning_cars = false
+
+		# Show failure popup
 		_show_failure_popup("Out of hearts!")
 
 
