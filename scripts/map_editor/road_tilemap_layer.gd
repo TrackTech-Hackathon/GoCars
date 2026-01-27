@@ -384,7 +384,11 @@ func get_available_exits(grid_pos: Vector2i, entry_dir: String) -> Array:
 
 ## Get spawn positions with their spawn direction
 ## Returns array of dictionaries: {position: Vector2, direction: Vector2, rotation: float, entry_dir: String, group: SpawnGroup}
-## Lane offset follows right-hand traffic (cars drive on RIGHT side of road)
+## NEW: Spawn positions are at the CENTER of the parking tile with appropriate lane offset
+## - East pathway: center-bottom
+## - West pathway: center-top
+## - South pathway: center-left
+## - North pathway: center-right
 func get_spawn_data() -> Array:
 	var spawn_data: Array = []
 
@@ -397,34 +401,34 @@ func get_spawn_data() -> Array:
 		data["group"] = get_tile_group(tile_type)
 		data["group_name"] = get_group_name(data["group"])
 
-		# Lane positions (relative to tile center):
-		# - Going East: bottom-left = (-LANE_OFFSET, +LANE_OFFSET)
-		# - Going West: top-right = (+LANE_OFFSET, -LANE_OFFSET)
-		# - Going South: top-left = (-LANE_OFFSET, -LANE_OFFSET)
-		# - Going North: bottom-right = (+LANE_OFFSET, +LANE_OFFSET)
+		# NEW: Spawn positions are at tile center with lane offset based on exit direction
+		# - Going East (exit right): center-bottom = (0, +LANE_OFFSET)
+		# - Going West (exit left): center-top = (0, -LANE_OFFSET)
+		# - Going South (exit bottom): center-left = (-LANE_OFFSET, 0)
+		# - Going North (exit top): center-right = (+LANE_OFFSET, 0)
 
 		# Check direction based on tile type (handle all groups)
 		if tile_type in [TileType.SPAWN_PARKING_S_A, TileType.SPAWN_PARKING_S_B, TileType.SPAWN_PARKING_S_C, TileType.SPAWN_PARKING_S_D]:
-			# Car exits through SOUTH (bottom), faces DOWN → top-left
-			data["position"] = world_pos + Vector2(-LANE_OFFSET, -LANE_OFFSET)
+			# Car exits through SOUTH (bottom), faces DOWN → center-left
+			data["position"] = world_pos + Vector2(-LANE_OFFSET, 0)
 			data["direction"] = Vector2.DOWN
 			data["rotation"] = PI
 			data["entry_dir"] = "top"
 		elif tile_type in [TileType.SPAWN_PARKING_N_A, TileType.SPAWN_PARKING_N_B, TileType.SPAWN_PARKING_N_C, TileType.SPAWN_PARKING_N_D]:
-			# Car exits through NORTH (top), faces UP → bottom-right
-			data["position"] = world_pos + Vector2(LANE_OFFSET, LANE_OFFSET)
+			# Car exits through NORTH (top), faces UP → center-right
+			data["position"] = world_pos + Vector2(LANE_OFFSET, 0)
 			data["direction"] = Vector2.UP
 			data["rotation"] = 0.0
 			data["entry_dir"] = "bottom"
 		elif tile_type in [TileType.SPAWN_PARKING_E_A, TileType.SPAWN_PARKING_E_B, TileType.SPAWN_PARKING_E_C, TileType.SPAWN_PARKING_E_D]:
-			# Car exits through EAST (right), faces RIGHT → bottom-left
-			data["position"] = world_pos + Vector2(-LANE_OFFSET, LANE_OFFSET)
+			# Car exits through EAST (right), faces RIGHT → center-bottom
+			data["position"] = world_pos + Vector2(0, LANE_OFFSET)
 			data["direction"] = Vector2.RIGHT
 			data["rotation"] = PI / 2
 			data["entry_dir"] = "left"
 		elif tile_type in [TileType.SPAWN_PARKING_W_A, TileType.SPAWN_PARKING_W_B, TileType.SPAWN_PARKING_W_C, TileType.SPAWN_PARKING_W_D]:
-			# Car exits through WEST (left), faces LEFT → top-right
-			data["position"] = world_pos + Vector2(LANE_OFFSET, -LANE_OFFSET)
+			# Car exits through WEST (left), faces LEFT → center-top
+			data["position"] = world_pos + Vector2(0, -LANE_OFFSET)
 			data["direction"] = Vector2.LEFT
 			data["rotation"] = -PI / 2
 			data["entry_dir"] = "right"
@@ -437,7 +441,11 @@ func get_spawn_data() -> Array:
 
 ## Get destination positions with their entry direction
 ## Returns array of dictionaries: {position: Vector2, entry_dir: String, grid_pos: Vector2i, group: SpawnGroup}
-## Lane offset follows right-hand traffic (cars drive on RIGHT side of road)
+## NEW: Destination stop positions are at the CENTER of the parking tile with appropriate lane offset
+## - East pathway (entering from left): center-bottom
+## - West pathway (entering from right): center-top
+## - South pathway (entering from top): center-left
+## - North pathway (entering from bottom): center-right
 func get_destination_data() -> Array:
 	var dest_data: Array = []
 
@@ -450,11 +458,11 @@ func get_destination_data() -> Array:
 		data["group"] = get_tile_group(tile_type)
 		data["group_name"] = get_group_name(data["group"])
 
-		# Parking positions (at tile center with lane offset):
-		# - Going East and parking: center-bottom = (0, +LANE_OFFSET)
-		# - Going West and parking: center-top = (0, -LANE_OFFSET)
-		# - Going South and parking: center-left = (-LANE_OFFSET, 0)
-		# - Going North and parking: center-right = (+LANE_OFFSET, 0)
+		# NEW: Parking positions are at tile center with lane offset based on entry direction
+		# - East pathway (entering from left): center-bottom = (0, +LANE_OFFSET)
+		# - West pathway (entering from right): center-top = (0, -LANE_OFFSET)
+		# - South pathway (entering from top): center-left = (-LANE_OFFSET, 0)
+		# - North pathway (entering from bottom): center-right = (+LANE_OFFSET, 0)
 
 		# Check direction based on tile type (handle all groups)
 		if tile_type in [TileType.DEST_PARKING_S_A, TileType.DEST_PARKING_S_B, TileType.DEST_PARKING_S_C, TileType.DEST_PARKING_S_D]:
@@ -512,30 +520,200 @@ func get_guideline_path(grid_pos: Vector2i, entry_dir: String, exit_dir: String)
 
 ## Calculate waypoint path from entry to exit direction
 ## Waypoints are in world coordinates
+## NEW PATHWAY LOGIC:
+## - East pathway (going right): travels in bottom-left lane
+## - West pathway (going left): travels in top-right lane
+## - South pathway (going down): travels in top-left lane
+## - North pathway (going up): travels in bottom-right lane
 func _calculate_path_waypoints(grid_pos: Vector2i, entry_dir: String, exit_dir: String) -> Array:
 	var points: Array = []
 	var tile_center = Vector2(map_to_local(grid_pos))
+
+	# Check if this is a parking tile - parking uses tile center
+	var tile_type = get_tile_type_at(grid_pos)
+	var is_parking = tile_type in SPAWN_PARKING_TILES or tile_type in DEST_PARKING_TILES
+
+	if is_parking:
+		# For parking tiles, path goes to/from tile center
+		return _calculate_parking_path(grid_pos, entry_dir, exit_dir, tile_center)
 
 	# Check if this is a straight path or a turn
 	var is_straight = _get_axis(entry_dir) == _get_axis(exit_dir)
 
 	if is_straight:
-		# Straight path - both points have SAME lane offset
+		# Straight path - use lane offset based on travel direction
 		var lane_offset = _get_straight_lane_offset(entry_dir, exit_dir)
 		var entry_point = _get_edge_center(entry_dir, tile_center) + lane_offset
 		var exit_point = _get_edge_center(exit_dir, tile_center) + lane_offset
 		points.append(entry_point)
 		points.append(exit_point)
 	else:
-		# Turn - need different lane offsets and a corner point
-		var entry_point = _get_turn_edge_point(entry_dir, exit_dir, tile_center, true)
-		var corner = _get_corner_point(entry_dir, exit_dir, tile_center)
-		var exit_point = _get_turn_edge_point(entry_dir, exit_dir, tile_center, false)
+		# Turn - calculate turn path with proper positioning
+		points = _calculate_turn_path(entry_dir, exit_dir, tile_center)
+
+	return points
+
+
+## Calculate path through a parking tile (spawn or destination)
+## Parking tiles use center positions
+func _calculate_parking_path(grid_pos: Vector2i, entry_dir: String, exit_dir: String, tile_center: Vector2) -> Array:
+	var points: Array = []
+	var tile_type = get_tile_type_at(grid_pos)
+
+	# Check if this is a spawn parking tile (car exits from here)
+	if tile_type in SPAWN_PARKING_TILES:
+		# Spawn: start at center, exit through connection
+		# Position based on exit direction (which lane the car will use)
+		var spawn_pos = _get_spawn_center_position(exit_dir, tile_center)
+		var exit_offset = _get_exit_lane_offset(exit_dir)
+		var exit_point = _get_edge_center(exit_dir, tile_center) + exit_offset
+		points.append(spawn_pos)
+		points.append(exit_point)
+
+	# Destination parking tile (car enters here)
+	elif tile_type in DEST_PARKING_TILES:
+		# Destination: enter through connection, stop at center
+		var entry_offset = _get_entry_lane_offset(entry_dir)
+		var entry_point = _get_edge_center(entry_dir, tile_center) + entry_offset
+		var dest_pos = _get_destination_center_position(entry_dir, tile_center)
 		points.append(entry_point)
+		points.append(dest_pos)
+
+	return points
+
+
+## Get spawn position at center of parking tile based on exit direction
+## - East pathway: center-bottom
+## - West pathway: center-top
+## - South pathway: center-left
+## - North pathway: center-right
+func _get_spawn_center_position(exit_dir: String, tile_center: Vector2) -> Vector2:
+	match exit_dir:
+		"right":  # East pathway - center-bottom
+			return tile_center + Vector2(0, LANE_OFFSET)
+		"left":   # West pathway - center-top
+			return tile_center + Vector2(0, -LANE_OFFSET)
+		"bottom": # South pathway - center-left
+			return tile_center + Vector2(-LANE_OFFSET, 0)
+		"top":    # North pathway - center-right
+			return tile_center + Vector2(LANE_OFFSET, 0)
+	return tile_center
+
+
+## Get destination stop position at center of parking tile based on entry direction
+## - East pathway (entering from left): center-bottom
+## - West pathway (entering from right): center-top
+## - South pathway (entering from top): center-left
+## - North pathway (entering from bottom): center-right
+func _get_destination_center_position(entry_dir: String, tile_center: Vector2) -> Vector2:
+	match entry_dir:
+		"left":   # East pathway - center-bottom
+			return tile_center + Vector2(0, LANE_OFFSET)
+		"right":  # West pathway - center-top
+			return tile_center + Vector2(0, -LANE_OFFSET)
+		"top":    # South pathway - center-left
+			return tile_center + Vector2(-LANE_OFFSET, 0)
+		"bottom": # North pathway - center-right
+			return tile_center + Vector2(LANE_OFFSET, 0)
+	return tile_center
+
+
+## Calculate turn path with proper positioning
+## Turn logic:
+## - Right turns: turn in place (simpler path)
+## - Left turns: need to move across to the other lane before turning
+func _calculate_turn_path(entry_dir: String, exit_dir: String, tile_center: Vector2) -> Array:
+	var points: Array = []
+	var is_right_turn = _is_right_turn(entry_dir, exit_dir)
+
+	# Get entry and exit lane positions
+	var entry_offset = _get_entry_lane_offset(entry_dir)
+	var exit_offset = _get_exit_lane_offset(exit_dir)
+	var entry_point = _get_edge_center(entry_dir, tile_center) + entry_offset
+	var exit_point = _get_edge_center(exit_dir, tile_center) + exit_offset
+
+	if is_right_turn:
+		# Right turn: simple corner path
+		# The corner is where entry lane meets exit lane
+		var corner = _get_right_turn_corner(entry_dir, exit_dir, tile_center)
+		points.append(entry_point)
+		points.append(corner)
+		points.append(exit_point)
+	else:
+		# Left turn: need to cross to the opposite lane first
+		# Move to the preparation point, then turn corner, then exit
+		var prep_point = _get_left_turn_prep_point(entry_dir, tile_center)
+		var corner = _get_left_turn_corner(entry_dir, exit_dir, tile_center)
+		points.append(entry_point)
+		points.append(prep_point)
 		points.append(corner)
 		points.append(exit_point)
 
 	return points
+
+
+## Check if this is a right turn
+func _is_right_turn(entry_dir: String, exit_dir: String) -> bool:
+	match entry_dir:
+		"left":   return exit_dir == "bottom"  # East → South
+		"right":  return exit_dir == "top"     # West → North
+		"top":    return exit_dir == "left"    # South → West
+		"bottom": return exit_dir == "right"   # North → East
+	return false
+
+
+## Get corner point for right turns
+## Right turns happen at the "inner" corner where the car's lane meets the exit lane
+func _get_right_turn_corner(entry_dir: String, exit_dir: String, tile_center: Vector2) -> Vector2:
+	# Right turn corner is at the intersection of entry lane and exit lane
+	# Entry lane: East=bottom(+Y), West=top(-Y), South=left(-X), North=right(+X)
+	# Exit lane: East=bottom(+Y), West=top(-Y), South=left(-X), North=right(+X)
+	match entry_dir + "_" + exit_dir:
+		"left_bottom":   # East turning right to South - corner at (left, bottom) = (-LANE, +LANE)
+			return tile_center + Vector2(-LANE_OFFSET, LANE_OFFSET)
+		"right_top":     # West turning right to North - corner at (right, top) = (+LANE, -LANE)
+			return tile_center + Vector2(LANE_OFFSET, -LANE_OFFSET)
+		"top_left":      # South turning right to West - corner at (left, top) = (-LANE, -LANE)
+			return tile_center + Vector2(-LANE_OFFSET, -LANE_OFFSET)
+		"bottom_right":  # North turning right to East - corner at (right, bottom) = (+LANE, +LANE)
+			return tile_center + Vector2(LANE_OFFSET, LANE_OFFSET)
+	return tile_center
+
+
+## Get preparation point for left turns (where car positions before turning)
+## For left turns, the car needs to cross to the opposite side of the road
+## - East pathway (bottom lane) turning left: needs to reach right side first
+## - West pathway (top lane) turning left: needs to reach left side first
+## - South pathway (left lane) turning left: needs to reach bottom side first
+## - North pathway (right lane) turning left: needs to reach top side first
+func _get_left_turn_prep_point(entry_dir: String, tile_center: Vector2) -> Vector2:
+	match entry_dir:
+		"left":   # East pathway - car is in bottom lane, prep at right side
+			return tile_center + Vector2(LANE_OFFSET, LANE_OFFSET)
+		"right":  # West pathway - car is in top lane, prep at left side
+			return tile_center + Vector2(-LANE_OFFSET, -LANE_OFFSET)
+		"top":    # South pathway - car is in left lane, prep at bottom side
+			return tile_center + Vector2(-LANE_OFFSET, LANE_OFFSET)
+		"bottom": # North pathway - car is in right lane, prep at top side
+			return tile_center + Vector2(LANE_OFFSET, -LANE_OFFSET)
+	return tile_center
+
+
+## Get corner point for left turns
+## The corner is the same as the prep point - car turns at this position
+func _get_left_turn_corner(entry_dir: String, exit_dir: String, tile_center: Vector2) -> Vector2:
+	# Left turn corner is at the preparation point
+	# This is where the turn actually happens
+	match entry_dir + "_" + exit_dir:
+		"left_top":      # East turning left to North - corner at (right, bottom)
+			return tile_center + Vector2(LANE_OFFSET, LANE_OFFSET)
+		"right_bottom":  # West turning left to South - corner at (left, top)
+			return tile_center + Vector2(-LANE_OFFSET, -LANE_OFFSET)
+		"top_right":     # South turning left to East - corner at (left, bottom)
+			return tile_center + Vector2(-LANE_OFFSET, LANE_OFFSET)
+		"bottom_left":   # North turning left to West - corner at (right, top)
+			return tile_center + Vector2(LANE_OFFSET, -LANE_OFFSET)
+	return tile_center
 
 
 ## Get the center of an edge (no lane offset)
@@ -549,25 +727,25 @@ func _get_edge_center(dir: String, tile_center: Vector2) -> Vector2:
 
 
 ## Get lane offset for straight paths based on travel direction
-## Lane positions (relative to tile center):
-## - Going East (left_right): bottom-left = (-LANE_OFFSET, +LANE_OFFSET)
-## - Going West (right_left): top-right = (+LANE_OFFSET, -LANE_OFFSET)
-## - Going South (top_bottom): top-left = (-LANE_OFFSET, -LANE_OFFSET)
-## - Going North (bottom_top): bottom-right = (+LANE_OFFSET, +LANE_OFFSET)
+## For STRAIGHT paths, only apply lane offset perpendicular to travel direction:
+## - Going East (left_right): bottom lane = (0, +LANE_OFFSET)
+## - Going West (right_left): top lane = (0, -LANE_OFFSET)
+## - Going South (top_bottom): left lane = (-LANE_OFFSET, 0)
+## - Going North (bottom_top): right lane = (+LANE_OFFSET, 0)
 func _get_straight_lane_offset(entry_dir: String, exit_dir: String) -> Vector2:
 	match entry_dir + "_" + exit_dir:
-		"left_right":  # Going East → bottom-left
-			return Vector2(-LANE_OFFSET, LANE_OFFSET)
-		"right_left":  # Going West → top-right
-			return Vector2(LANE_OFFSET, -LANE_OFFSET)
-		"top_bottom":  # Going South → top-left
-			return Vector2(-LANE_OFFSET, -LANE_OFFSET)
-		"bottom_top":  # Going North → bottom-right
-			return Vector2(LANE_OFFSET, LANE_OFFSET)
+		"left_right":  # Going East → bottom lane (right side of road)
+			return Vector2(0, LANE_OFFSET)
+		"right_left":  # Going West → top lane (right side of road)
+			return Vector2(0, -LANE_OFFSET)
+		"top_bottom":  # Going South → left lane (right side of road)
+			return Vector2(-LANE_OFFSET, 0)
+		"bottom_top":  # Going North → right lane (right side of road)
+			return Vector2(LANE_OFFSET, 0)
 	return Vector2.ZERO
 
 
-## Get edge point for turns (entry or exit)
+## Get edge point for turns (entry or exit) - LEGACY function kept for compatibility
 func _get_turn_edge_point(entry_dir: String, exit_dir: String, tile_center: Vector2, is_entry: bool) -> Vector2:
 	var edge = entry_dir if is_entry else exit_dir
 	var edge_center = _get_edge_center(edge, tile_center)
@@ -580,51 +758,45 @@ func _get_turn_edge_point(entry_dir: String, exit_dir: String, tile_center: Vect
 		return edge_center + offset
 
 
-## Get corner waypoint for turns
+## Get corner waypoint for turns - LEGACY function kept for compatibility
+## Now uses the new dedicated turn corner functions for proper positioning
 func _get_corner_point(entry_dir: String, exit_dir: String, tile_center: Vector2) -> Vector2:
-	var entry_offset = _get_entry_lane_offset(entry_dir)
-	var exit_offset = _get_exit_lane_offset(exit_dir)
-
-	match entry_dir + "_" + exit_dir:
-		# Entering horizontally, exiting vertically
-		"left_top", "left_bottom", "right_top", "right_bottom":
-			return tile_center + Vector2(exit_offset.x, entry_offset.y)
-		# Entering vertically, exiting horizontally
-		"top_left", "top_right", "bottom_left", "bottom_right":
-			return tile_center + Vector2(entry_offset.x, exit_offset.y)
-
-	return tile_center
+	# Use the new right/left turn detection and corner functions
+	if _is_right_turn(entry_dir, exit_dir):
+		return _get_right_turn_corner(entry_dir, exit_dir, tile_center)
+	else:
+		return _get_left_turn_corner(entry_dir, exit_dir, tile_center)
 
 
-## Get lane offset for entry direction
-## Entry direction is where the car is coming FROM (opposite of travel direction)
-## Lane positions (relative to tile center):
-## - Entry "left" = Going East → bottom-left = (-LANE_OFFSET, +LANE_OFFSET)
-## - Entry "right" = Going West → top-right = (+LANE_OFFSET, -LANE_OFFSET)
-## - Entry "top" = Going South → top-left = (-LANE_OFFSET, -LANE_OFFSET)
-## - Entry "bottom" = Going North → bottom-right = (+LANE_OFFSET, +LANE_OFFSET)
+## Get lane offset for entry direction (at the edge of the tile)
+## Entry direction is where the car is coming FROM
+## Lane offset is perpendicular to the edge:
+## - Entry "left" (going East) → bottom of left edge = (0, +LANE_OFFSET)
+## - Entry "right" (going West) → top of right edge = (0, -LANE_OFFSET)
+## - Entry "top" (going South) → left of top edge = (-LANE_OFFSET, 0)
+## - Entry "bottom" (going North) → right of bottom edge = (+LANE_OFFSET, 0)
 func _get_entry_lane_offset(entry_dir: String) -> Vector2:
 	match entry_dir:
-		"left":   return Vector2(-LANE_OFFSET, LANE_OFFSET)   # Going East → bottom-left
-		"right":  return Vector2(LANE_OFFSET, -LANE_OFFSET)   # Going West → top-right
-		"top":    return Vector2(-LANE_OFFSET, -LANE_OFFSET)  # Going South → top-left
-		"bottom": return Vector2(LANE_OFFSET, LANE_OFFSET)    # Going North → bottom-right
+		"left":   return Vector2(0, LANE_OFFSET)    # Going East → bottom lane
+		"right":  return Vector2(0, -LANE_OFFSET)   # Going West → top lane
+		"top":    return Vector2(-LANE_OFFSET, 0)   # Going South → left lane
+		"bottom": return Vector2(LANE_OFFSET, 0)    # Going North → right lane
 	return Vector2.ZERO
 
 
-## Get lane offset for exit direction
+## Get lane offset for exit direction (at the edge of the tile)
 ## Exit direction is where the car is going TO
-## Lane positions (relative to tile center):
-## - Exit "left" = Going West → top-right = (+LANE_OFFSET, -LANE_OFFSET)
-## - Exit "right" = Going East → bottom-left = (-LANE_OFFSET, +LANE_OFFSET)
-## - Exit "top" = Going North → bottom-right = (+LANE_OFFSET, +LANE_OFFSET)
-## - Exit "bottom" = Going South → top-left = (-LANE_OFFSET, -LANE_OFFSET)
+## Lane offset is perpendicular to the edge:
+## - Exit "left" (going West) → top of left edge = (0, -LANE_OFFSET)
+## - Exit "right" (going East) → bottom of right edge = (0, +LANE_OFFSET)
+## - Exit "top" (going North) → right of top edge = (+LANE_OFFSET, 0)
+## - Exit "bottom" (going South) → left of bottom edge = (-LANE_OFFSET, 0)
 func _get_exit_lane_offset(exit_dir: String) -> Vector2:
 	match exit_dir:
-		"left":   return Vector2(LANE_OFFSET, -LANE_OFFSET)   # Going West → top-right
-		"right":  return Vector2(-LANE_OFFSET, LANE_OFFSET)   # Going East → bottom-left
-		"top":    return Vector2(LANE_OFFSET, LANE_OFFSET)    # Going North → bottom-right
-		"bottom": return Vector2(-LANE_OFFSET, -LANE_OFFSET)  # Going South → top-left
+		"left":   return Vector2(0, -LANE_OFFSET)   # Going West → top lane
+		"right":  return Vector2(0, LANE_OFFSET)    # Going East → bottom lane
+		"top":    return Vector2(LANE_OFFSET, 0)    # Going North → right lane
+		"bottom": return Vector2(-LANE_OFFSET, 0)   # Going South → left lane
 	return Vector2.ZERO
 
 

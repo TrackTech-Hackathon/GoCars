@@ -60,6 +60,10 @@ var _timer_active: bool = false
 # Map boundaries for out-of-bounds detection
 var _map_bounds: Rect2 = Rect2(-100, -100, 2000, 2000)  # Default large bounds
 
+# Callback to check if code editor is focused (set by main scene)
+# When this returns true, keyboard shortcuts are disabled
+var is_editor_focused_callback: Callable = Callable()
+
 
 func _ready() -> void:
 	_python_parser = PythonParser.new()
@@ -589,6 +593,10 @@ func _on_interpreter_print_output(message: String) -> void:
 # ============================================
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Skip shortcuts if code editor is focused (player is typing)
+	if is_editor_focused_callback.is_valid() and is_editor_focused_callback.call():
+		return
+
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_SPACE:

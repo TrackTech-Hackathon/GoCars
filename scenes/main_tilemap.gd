@@ -146,6 +146,9 @@ func _ready() -> void:
 	simulation_engine.execution_line_changed.connect(_on_execution_line_changed)
 	simulation_engine.execution_error_occurred.connect(_on_execution_error)
 
+	# Set callback for checking if code editor is focused (to disable shortcuts while typing)
+	simulation_engine.is_editor_focused_callback = _is_code_editor_focused
+
 	# Connect result popup buttons
 	retry_button.pressed.connect(_on_retry_pressed)
 	next_button.pressed.connect(_on_next_pressed)
@@ -199,7 +202,8 @@ func _process(delta: float) -> void:
 			engine_audio.play(engine_loop_start)
 
 	# Handle camera movement (WASD or Arrow keys, Shift for 2x speed)
-	if camera:
+	# Skip if code editor is focused (player is typing)
+	if camera and not _is_code_editor_focused():
 		var camera_velocity = Vector2.ZERO
 		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
 			camera_velocity.y -= 1
@@ -211,8 +215,8 @@ func _process(delta: float) -> void:
 			camera_velocity.x += 1
 
 		if camera_velocity != Vector2.ZERO:
-			var speed = CAMERA_SPEED_FAST if Input.is_key_pressed(KEY_SHIFT) else CAMERA_SPEED
-			camera.position += camera_velocity.normalized() * speed * delta
+			var speed_val = CAMERA_SPEED_FAST if Input.is_key_pressed(KEY_SHIFT) else CAMERA_SPEED
+			camera.position += camera_velocity.normalized() * speed_val * delta
 			_clamp_camera_to_bounds()
 
 	# Cars only spawn once per parking spot at level start
@@ -1016,10 +1020,27 @@ func _do_fast_retry() -> void:
 # Input Handling
 # ============================================
 
+## Check if the code editor currently has focus (player is typing)
+func _is_code_editor_focused() -> bool:
+	# Check if the new UI code editor has focus
+	if window_manager and window_manager.code_editor_window:
+		var code_edit = window_manager.code_editor_window.get_node_or_null("VBoxContainer/ContentContainer/ContentVBox/MainVSplit/HSplit/CodeEdit")
+		if code_edit and code_edit.has_focus():
+			return true
+	# Check if the old code editor has focus
+	if code_editor and code_editor.has_focus():
+		return true
+	return false
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		var ctrl_pressed = event.ctrl_pressed
 
+		# Skip most shortcuts if the code editor is focused (player is typing)
+		# This prevents WASD camera movement, R reset, Space pause, etc. from triggering while typing code
+		var editor_focused = _is_code_editor_focused()
+
+		# F5, Ctrl+Enter, F10, F1 are allowed even when editor is focused (they are editor commands)
 		match event.keycode:
 			KEY_F5:
 				if not run_button.disabled:
@@ -1028,19 +1049,25 @@ func _input(event: InputEvent) -> void:
 				if ctrl_pressed and not run_button.disabled:
 					_on_run_button_pressed()
 			KEY_R:
-				_do_fast_retry()
+				# R for reset - only when NOT in code editor
+				if not editor_focused:
+					_do_fast_retry()
 			KEY_F10:
 				simulation_engine.step()
 				_update_status("Step executed")
 			KEY_EQUAL, KEY_KP_ADD:
-				if ctrl_pressed:
-					simulation_engine.set_speed(simulation_engine.SPEED_FASTER)
-				else:
-					simulation_engine.speed_up()
-				call_deferred("_update_speed_label")
+				# Speed up - only when NOT in code editor
+				if not editor_focused:
+					if ctrl_pressed:
+						simulation_engine.set_speed(simulation_engine.SPEED_FASTER)
+					else:
+						simulation_engine.speed_up()
+					call_deferred("_update_speed_label")
 			KEY_MINUS, KEY_KP_SUBTRACT:
-				simulation_engine.slow_down()
-				call_deferred("_update_speed_label")
+				# Slow down - only when NOT in code editor
+				if not editor_focused:
+					simulation_engine.slow_down()
+					call_deferred("_update_speed_label")
 			KEY_F1:
 				if use_new_ui and window_manager:
 					window_manager.call("_on_readme_requested")
