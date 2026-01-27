@@ -1914,12 +1914,19 @@ func _process_turn(delta: float) -> void:
 		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
 		direction = Vector2.UP.rotated(rotation)
 
+		# CRITICAL: Sync movement direction with visual direction after turn
+		# This ensures _get_current_grid_pos() calculates correct lane offset
+		_current_move_dir = direction
+
 		# Update exit direction to match new facing - critical for NEXT tile entry calculation
 		_last_exit_direction = _vector_to_connection_direction(direction)
 
-		# DO NOT update _entry_direction here - keep it LOCKED until new tile!
-		# This is the key fix for the zigzag problem.
-		# The locked entry direction ensures road detection returns consistent values.
+		# CRITICAL FIX: Update entry direction for path acquisition on same tile
+		# After turning, the car's effective entry is opposite of new facing
+		# (as if it just entered the tile from that direction)
+		# This ensures _acquire_path_for_current_tile() gets the correct path
+		_entry_direction = RoadTile.get_opposite_direction(_last_exit_direction)
+		_locked_entry_direction = _entry_direction
 
 		# Update facing label after turn completes
 		_update_stats_facing()
