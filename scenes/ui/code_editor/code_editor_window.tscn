@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" uid="uid://bpp4egpvi1amx" path="res://assets/UI/Untitled19.png" id="2_0iwse"]
 [ext_resource type="PackedScene" uid="uid://cf1leexpl0rer" path="res://scenes/ui/code_editor/file_explorer.tscn" id="2_file_explorer"]
 [ext_resource type="PackedScene" uid="uid://cdsh2e12boepr" path="res://scenes/ui/code_editor/terminal_panel.tscn" id="3_terminal_panel"]
-[ext_resource type="Texture2D" uid="uid://cmhpkgys7cirg" path="res://scenes/ui/code_editor/Pause Button.png" id="3_ypdp2"]
+[ext_resource type="Texture2D" uid="uid://cmhpkgys7cirg" path="res://assets/UI/Pause Button.png" id="3_ypdp2"]
 [ext_resource type="Texture2D" uid="uid://ust86fnsqddb" path="res://Untitled21_20260121003628.png" id="4_qly7m"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_qly7m"]

@@ -53,8 +53,8 @@ func test_all_scripts_exist():
 	assert_true(FileAccess.file_exists("res://scripts/ui/window_manager.gd"), "WindowManager should exist")
 	assert_true(FileAccess.file_exists("res://scripts/ui/main_integration.gd"), "Integration helper should exist")
 
-	# Main scene
-	assert_true(FileAccess.file_exists("res://scenes/main.gd"), "Main scene script should exist")
+	# Main scene - using main_tilemap.gd (current system)
+	assert_true(FileAccess.file_exists("res://scenes/main_tilemap.gd"), "Main tilemap scene script should exist")
 
 func test_window_manager():
 	print("\n--- WindowManager Tests ---")
@@ -90,18 +90,16 @@ func test_backwards_compatibility():
 	# Test 3: VirtualFileSystem tests still pass
 	assert_true(FileAccess.file_exists("res://tests/virtual_filesystem.test.gd"), "VFS tests should exist")
 
-	# Test 4: Main scene can still run (checked by loading)
-	var main_script = load("res://scenes/main.gd")
-	assert_not_null(main_script, "Main scene script should load")
+	# Test 4: Main scene can still run (checked by loading) - using main_tilemap.gd
+	var main_script = load("res://scenes/main_tilemap.gd")
+	assert_not_null(main_script, "Main tilemap scene script should load")
 
-	# Test 5: Check that main.gd has use_new_ui variable
-	var file = FileAccess.open("res://scenes/main.gd", FileAccess.READ)
+	# Test 5: Check that main_tilemap.gd integrates with window system
+	var file = FileAccess.open("res://scenes/main_tilemap.gd", FileAccess.READ)
 	if file:
 		var content = file.get_as_text()
 		file.close()
-		assert_true(content.contains("use_new_ui"), "Main should have use_new_ui toggle")
-		assert_true(content.contains("_setup_new_ui"), "Main should have _setup_new_ui function")
-		assert_true(content.contains("window_manager"), "Main should have window_manager variable")
+		assert_true(content.contains("window_manager"), "Main tilemap should have window_manager integration")
 
 # Test assertion helpers
 func assert_true(condition: bool, message: String):

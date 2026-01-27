@@ -438,7 +438,10 @@ func _spawn_initial_cars() -> void:
 	# Spawn one car at each spawn point when level loads
 	# This lets players see what cars they're dealing with before running code
 	for spawn in spawn_data:
-		var group = str(spawn.get("group", ""))
+		var group = spawn.get("group", "")
+		# Convert group to string if it's not already
+		if typeof(group) != TYPE_STRING:
+			group = str(group)
 		# Only spawn if this group hasn't spawned yet (one car per parking spot)
 		if group == "" or group not in spawned_groups:
 			_spawn_car_at(spawn)
@@ -456,7 +459,10 @@ func _spawn_new_car() -> void:
 	# Find a spawn point that hasn't been used yet
 	var available_spawns: Array = []
 	for spawn in spawn_data:
-		var group = str(spawn.get("group", ""))
+		var group = spawn.get("group", "")
+		# Convert group to string if it's not already
+		if typeof(group) != TYPE_STRING:
+			group = str(group)
 		if group == "" or group not in spawned_groups:
 			available_spawns.append(spawn)
 
@@ -468,7 +474,10 @@ func _spawn_new_car() -> void:
 	var car = _spawn_car_at(spawn)
 
 	# Track that this group has spawned
-	var group = str(spawn.get("group", ""))
+	var group = spawn.get("group", "")
+	# Convert group to string if it's not already
+	if typeof(group) != TYPE_STRING:
+		group = str(group)
 	if group != "" and group not in spawned_groups:
 		spawned_groups.append(group)
 
@@ -482,7 +491,10 @@ func _spawn_new_car() -> void:
 
 func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	# Get spawn group for this spawn point
-	var group_name = str(spawn.get("group", ""))
+	var group_name = spawn.get("group", "")
+	# Convert group_name to string if it's not already
+	if typeof(group_name) != TYPE_STRING:
+		group_name = str(group_name)
 
 	# Get car configuration from LevelCars config
 	var car_config = _get_car_config_for_group(group_name)

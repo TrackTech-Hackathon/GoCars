@@ -1124,6 +1124,13 @@ text = "Tutorial 1
 visible = false
 text = "20"
 
+[node name="LevelCars" type="Label" parent="LevelSettings"]
+visible = false
+text = "Group A - Random, Random
+Group B - Random, Random
+Group C - Random, Random
+Group D - Random, Random"
+
 [node name="HeartsUI" parent="." instance=ExtResource("3_1su6t")]
 visible = false
 layout_mode = 3

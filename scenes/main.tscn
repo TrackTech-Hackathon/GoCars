@@ -1,7 +1,7 @@
-[gd_scene load_steps=6 format=3 uid="uid://dpu0r01g08cg3"]
+[gd_scene load_steps=6 format=3 uid="uid://cwdsh6q2stgn2"]
 
 [ext_resource type="Script" uid="uid://df74itlomy7yj" path="res://scripts/core/simulation_engine.gd" id="1_sim"]
-[ext_resource type="Script" uid="uid://dqoc4rfbl715i" path="res://scenes/main.gd" id="3_main"]
+[ext_resource type="Script" path="res://scenes/main.gd" id="3_main"]
 [ext_resource type="PackedScene" uid="uid://ctf1l2qvnhxgs" path="res://scenes/entities/stoplight.tscn" id="5_stoplight"]
 [ext_resource type="Theme" uid="uid://oh1p0ojtw4tq" path="res://scenes/ui/panel.tres" id="6_tefeu"]
 [ext_resource type="Texture2D" uid="uid://d3yj5rp36o8e" path="res://icon.svg" id="7_icon"]
