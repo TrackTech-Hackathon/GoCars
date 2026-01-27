@@ -340,7 +340,7 @@ func _action_matches(performed: String, waited: String) -> bool:
 	var mappings = {
 		"run_code": ["player presses run", "player presses f5", "player runs code", "run", "f5"],
 		"open_code_editor": ["player clicks to open code editor", "open editor", "code editor"],
-		"type_code": ["player types", "player writes code", "player adds", "player completes", "type", "car.go()"],
+		"type_code": ["player types", "player writes", "player writes code", "player adds", "player completes", "type", "car.go()"],
 	}
 
 	for key in mappings:

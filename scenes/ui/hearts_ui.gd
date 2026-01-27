@@ -36,14 +36,8 @@ var animation_queue: Array[int] = []  # Queue of heart indices to animate
 
 
 func _ready() -> void:
-	# Try to get heart count from child Label node
-	var count_label = get_node_or_null("HeartCount")
-	if count_label and count_label is Label:
-		var count_text = count_label.text.strip_edges()
-		if count_text.is_valid_int():
-			max_hearts = int(count_text)
-			current_hearts = max_hearts
-		count_label.visible = false  # Hide the configuration label
+	# Heart count is now set by main_tilemap.gd via set_max_hearts()
+	# No longer reads from HeartCount Label
 
 	# Load heart texture
 	if ResourceLoader.exists(heart_texture_path):

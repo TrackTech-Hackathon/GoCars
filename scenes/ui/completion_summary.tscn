@@ -133,7 +133,15 @@ theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxTexture_x6mpm")
 text = " Retry"
 
-[node name="Spacer" type="Control" parent="Panel/VBox/Buttons"]
+[node name="Spacer1" type="Control" parent="Panel/VBox/Buttons"]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+
+[node name="MenuButton" type="Button" parent="Panel/VBox/Buttons"]
+layout_mode = 2
+text = "🏠 Menu"
+
+[node name="Spacer2" type="Control" parent="Panel/VBox/Buttons"]
 custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 

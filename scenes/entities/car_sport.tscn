@@ -15,7 +15,7 @@ shader_parameter/colors_count = 20
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_car"]
 size = Vector2(22, 57)
 
-[node name="CarSport" type="CharacterBody2D"]
+[node name="CarSport" type="CharacterBody2D" groups=["Car"]]
 z_index = 3
 script = ExtResource("1_vehicle")
 vehicle_type = 2

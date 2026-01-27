@@ -120,58 +120,58 @@ const VEHICLE_CONFIG: Dictionary = {
 	VehicleType.SEDAN: {
 		"name": "Sedan",
 		"speed_mult": 1.0,
-		"size_mult": 1.0,
+		"size_mult": 1.3,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
 	VehicleType.ESTATE: {
 		"name": "Estate",
 		"speed_mult": 0.9,
-		"size_mult": 1.2,
+		"size_mult": 1.3,
 		"can_lane_split": false,
-		"stopping_distance": 1.1
+		"stopping_distance": 1.0
 	},
 	VehicleType.SPORT: {
 		"name": "Sport",
 		"speed_mult": 1.4,
-		"size_mult": 1.0,
+		"size_mult": 1.3,
 		"can_lane_split": false,
-		"stopping_distance": 0.9
+		"stopping_distance": 1.0
 	},
 	VehicleType.MICRO: {
 		"name": "Micro",
 		"speed_mult": 1.1,
-		"size_mult": 0.8,
+		"size_mult": 1.3,
 		"can_lane_split": false,
-		"stopping_distance": 0.8
+		"stopping_distance": 1.0
 	},
 	VehicleType.PICKUP: {
 		"name": "Pickup",
 		"speed_mult": 0.8,
 		"size_mult": 1.3,
 		"can_lane_split": false,
-		"stopping_distance": 1.3
+		"stopping_distance": 1.0
 	},
 	VehicleType.JEEPNEY_1: {
 		"name": "Jeepney 1",
 		"speed_mult": 0.7,
-		"size_mult": 1.5,
+		"size_mult": 1.3,
 		"can_lane_split": false,
-		"stopping_distance": 1.4
+		"stopping_distance": 1.0
 	},
 	VehicleType.JEEPNEY_2: {
 		"name": "Jeepney 2",
 		"speed_mult": 0.7,
-		"size_mult": 1.5,
+		"size_mult": 1.3,
 		"can_lane_split": false,
-		"stopping_distance": 1.4
+		"stopping_distance": 1.0
 	},
 	VehicleType.BUS: {
 		"name": "Bus",
 		"speed_mult": 0.6,
-		"size_mult": 1.8,
+		"size_mult": 1.3,
 		"can_lane_split": false,
-		"stopping_distance": 1.6
+		"stopping_distance": 1.0
 	}
 }
 
@@ -225,6 +225,7 @@ var _entry_direction: String = ""    # Direction we entered current tile from
 var _last_exit_direction: String = "" # Direction we exited the previous tile
 var _use_simple_movement: bool = false # After turning, use simple movement until entering new tile
 var _current_move_dir: Vector2 = Vector2.RIGHT  # Stable movement direction for grid calculations
+var _debug_draw_paths: bool = false  # Debug: visualize guideline paths (set to true to see paths)
 
 # Decision locking state (prevents zigzag from continuous re-evaluation)
 var _decision_made_for_tile: bool = false     # True once turn/go executed on this tile
@@ -250,7 +251,8 @@ var _turn_target_rotation: float = 0.0
 var _turn_start_direction: Vector2 = Vector2.ZERO
 
 # Distance threshold for reaching destination
-const DESTINATION_THRESHOLD: float = 10.0
+# Reduced to ensure vehicles (especially buses) park at the true center
+const DESTINATION_THRESHOLD: float = 15.0
 
 # Lane offset - cars drive in center of road (no offset for simpler movement)
 const LANE_OFFSET: float = 0.0
@@ -377,13 +379,20 @@ var _stats_facing_label: Label = null
 var _stats_state_label: Label = null
 
 
+## Area2D for collision detection
+var _collision_area: Area2D = null
+
 func _ready() -> void:
 	# Add to vehicles group for detection
 	add_to_group("vehicles")
+	add_to_group("Car")
 
-	# Set up collision
+	# Set up collision layers for CharacterBody2D (used for physics movement)
 	set_collision_layer_value(1, true)  # Layer 1 for vehicles
 	set_collision_mask_value(1, true)   # Detect other vehicles
+
+	# Setup Area2D for collision detection using the existing CollisionShape2D
+	_setup_collision_area()
 
 	# Apply vehicle type configuration
 	_apply_vehicle_type()
@@ -393,6 +402,30 @@ func _ready() -> void:
 
 	# Setup stats node with labels
 	_setup_stats_node()
+
+
+## Setup Area2D for collision detection - uses existing CollisionShape2D as child
+func _setup_collision_area() -> void:
+	# Create Area2D for detecting overlaps
+	_collision_area = Area2D.new()
+	_collision_area.name = "CollisionArea"
+
+	# Set collision layers - Layer 1 = Cars, Layer 2 = Roads
+	_collision_area.collision_layer = 1  # This is a Car
+	_collision_area.collision_mask = 3   # Detect both Cars (1) and Roads (2)
+
+	add_child(_collision_area)
+
+	# Find the existing CollisionShape2D and duplicate it for the Area2D
+	var existing_shape = get_node_or_null("CollisionShape2D")
+	if existing_shape and existing_shape.shape:
+		var area_shape = CollisionShape2D.new()
+		area_shape.shape = existing_shape.shape.duplicate()
+		_collision_area.add_child(area_shape)
+
+	# Connect area signals for collision detection
+	_collision_area.body_entered.connect(_on_collision_body_entered)
+	_collision_area.area_entered.connect(_on_collision_area_entered)
 
 
 ## Setup the stats node with labels that StatsUIPanel reads
@@ -466,6 +499,34 @@ func _update_stats_speed() -> void:
 func _update_stats_facing() -> void:
 	if _stats_facing_label:
 		_stats_facing_label.text = get_facing_direction_name()
+
+
+## Debug: Draw guideline paths
+func _process(_delta: float) -> void:
+	if _debug_draw_paths:
+		queue_redraw()
+
+
+func _draw() -> void:
+	if not _debug_draw_paths or _current_path.is_empty():
+		return
+	
+	# Draw path waypoints as circles and lines
+	var prev_point = global_position
+	for i in range(_path_index, _current_path.size()):
+		var waypoint = _current_path[i]
+		var local_point = waypoint - global_position
+		
+		# Draw line from previous point to this waypoint
+		if i == _path_index:
+			draw_line(Vector2.ZERO, local_point, Color.GREEN, 2.0)
+		else:
+			var prev_local = _current_path[i-1] - global_position
+			draw_line(prev_local, local_point, Color.YELLOW, 2.0)
+		
+		# Draw waypoint circle
+		draw_circle(local_point, 8.0, Color.RED if i == _path_index else Color.ORANGE)
+		prev_point = waypoint
 
 
 ## Update state label (called every state change)
@@ -637,23 +698,9 @@ func _move(_delta: float) -> void:
 	# Direct position update instead of move_and_slide() to avoid physics-based sliding
 	global_position += velocity * get_physics_process_delta_time()
 
-	# Check for collisions with other vehicles (manual distance check)
-	var vehicles = get_tree().get_nodes_in_group("vehicles")
-	for other_vehicle in vehicles:
-		if other_vehicle == self:
-			continue
-		var dist = global_position.distance_to(other_vehicle.global_position)
-		if dist < 40:  # Collision threshold (roughly car width)
-			# If we hit a crashed car, just this car crashes
-			if other_vehicle.vehicle_state == 0:
-				_on_crash()
-				return
-
-			# If both cars are active, both crash
-			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
-				_on_crash()
-				other_vehicle._on_crash()
-				return
+	# Collision detection is now handled by Area2D signals (_on_collision_body_entered, _on_collision_area_entered)
+	# Check for overlapping bodies using the collision area
+	_check_area_collisions()
 
 
 # ============================================
@@ -847,20 +894,9 @@ func _move_along_path(delta: float) -> void:
 	velocity = move_dir * actual_speed
 	global_position += velocity * delta
 
-	# Check for collisions with other vehicles (manual distance check)
-	var vehicles = get_tree().get_nodes_in_group("vehicles")
-	for other_vehicle in vehicles:
-		if other_vehicle == self:
-			continue
-		var collision_dist = global_position.distance_to(other_vehicle.global_position)
-		if collision_dist < 40:  # Collision threshold (roughly car width)
-			if other_vehicle.vehicle_state == 0:
-				_on_crash()
-				return
-			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
-				_on_crash()
-				other_vehicle._on_crash()
-				return
+	# Collision detection is now handled by Area2D signals (_on_collision_body_entered, _on_collision_area_entered)
+	# Check for overlapping bodies using the collision area
+	_check_area_collisions()
 
 
 ## Convert grid offset to direction string
@@ -914,6 +950,126 @@ func _on_off_road_crash() -> void:
 	_switch_to_crashed_sprite()
 	_update_stats_state()  # Update state label
 	off_road_crash.emit(vehicle_id)
+
+
+## Called when Area2D detects a body entering (CharacterBody2D collision)
+func _on_collision_body_entered(body: Node2D) -> void:
+	# Skip if already crashed
+	if vehicle_state == 0:
+		return
+
+	# Check if body is in "Road" group (road walls/boundaries)
+	if body.is_in_group("Road"):
+		_on_off_road_crash()
+		return
+
+	# Check if body is in "Car" group
+	if body.is_in_group("Car") and body != self:
+		var other_vehicle = body as Vehicle
+		if other_vehicle:
+			# If hit a crashed car, only this car crashes
+			if other_vehicle.vehicle_state == 0:
+				_on_crash()
+				return
+			# If both active, both crash
+			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
+				_on_crash()
+				other_vehicle._on_crash()
+				return
+
+
+## Called when Area2D detects another area entering
+func _on_collision_area_entered(area: Area2D) -> void:
+	# Skip if already crashed
+	if vehicle_state == 0:
+		return
+
+	# Check if area is in "Road" group (road walls/boundaries)
+	if area.is_in_group("Road"):
+		_on_off_road_crash()
+		return
+
+	# Check if the area's parent is in "Road" group
+	var parent = area.get_parent()
+	if parent and parent.is_in_group("Road"):
+		_on_off_road_crash()
+		return
+
+	# Check if the area's parent is in "Car" group
+	if parent and parent.is_in_group("Car") and parent != self:
+		var other_vehicle = parent as Vehicle
+		if other_vehicle:
+			# If hit a crashed car, only this car crashes
+			if other_vehicle.vehicle_state == 0:
+				_on_crash()
+				return
+			# If both active, both crash
+			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
+				_on_crash()
+				other_vehicle._on_crash()
+				return
+
+
+## Check for collisions using Area2D get_overlapping_bodies()
+func _check_area_collisions() -> void:
+	# Skip if already crashed or no collision area
+	if vehicle_state == 0 or _collision_area == null:
+		return
+
+	# Get all overlapping bodies (CharacterBody2D/StaticBody2D nodes)
+	var overlapping_bodies = _collision_area.get_overlapping_bodies()
+	for body in overlapping_bodies:
+		if body == self:
+			continue
+
+		# Check if body is in "Road" group (road walls/boundaries)
+		if body.is_in_group("Road"):
+			_on_off_road_crash()
+			return
+
+		# Check if body is in "Car" group
+		if body.is_in_group("Car"):
+			var other_vehicle = body as Vehicle
+			if other_vehicle:
+				# If hit a crashed car, only this car crashes
+				if other_vehicle.vehicle_state == 0:
+					_on_crash()
+					return
+				# If both active, both crash
+				if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
+					_on_crash()
+					other_vehicle._on_crash()
+					return
+
+	# Also check overlapping areas (from other vehicles' Area2D collision detectors or road areas)
+	var overlapping_areas = _collision_area.get_overlapping_areas()
+	for area in overlapping_areas:
+		# Check if area itself is in "Road" group
+		if area.is_in_group("Road"):
+			_on_off_road_crash()
+			return
+
+		var parent = area.get_parent()
+		if parent == self:
+			continue
+
+		# Check if parent is in "Road" group
+		if parent and parent.is_in_group("Road"):
+			_on_off_road_crash()
+			return
+
+		if parent and parent.is_in_group("Car"):
+			var other_vehicle = parent as Vehicle
+			if other_vehicle:
+				# If hit a crashed car, only this car crashes
+				if other_vehicle.vehicle_state == 0:
+					_on_crash()
+					return
+				# If both active, both crash
+				if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
+					_on_crash()
+					other_vehicle._on_crash()
+					return
 
 
 ## Switch to the crashed sprite from row 2 of the spritesheet
@@ -1204,8 +1360,8 @@ func _is_near_turn_point() -> bool:
 	)
 	# Check distance from car to tile center
 	var dist_to_center = global_position.distance_to(tile_center)
-	# Allow turn detection when within 50 pixels of center
-	return dist_to_center < 50.0
+	# Only allow turn detection when very close to center (in the middle of the road)
+	return dist_to_center < 10
 
 
 ## Check if there's a road to the left of the car (short name)

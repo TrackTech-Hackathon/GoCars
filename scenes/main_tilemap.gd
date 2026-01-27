@@ -22,13 +22,16 @@ const RoadTileProxy = preload("res://scripts/map_editor/road_tile_proxy.gd")
 var window_manager: Variant = null
 var use_new_ui: bool = true
 
-# Result popup elements
+# Result popup elements (old system - deprecated)
 @onready var result_popup: Panel = $UI/ResultPopup
 @onready var result_title: Label = $UI/ResultPopup/ResultTitle
 @onready var result_message: Label = $UI/ResultPopup/ResultMessage
 @onready var retry_button: Button = $UI/ResultPopup/RetryButton
 @onready var next_button: Button = $UI/ResultPopup/NextButton
 var menu_button: Button = null  # Created dynamically
+
+# Completion Summary UI (new system)
+var completion_summary: CompletionSummary = null
 
 # Help panel elements
 @onready var help_panel: Panel = $UI/HelpPanel
@@ -92,6 +95,12 @@ var level_cars_config: Dictionary = {}  # group_name -> Array of {type, color} o
 # Spawned stoplights (from stoplight tiles)
 var _spawned_stoplights: Array = []
 
+# Stoplight hover UI
+var stoplight_code_popup: Variant = null  # StoplightCodePopup instance
+var _hovered_stoplight: Variant = null  # Currently hovered stoplight
+var _pinned_stoplight: Variant = null  # Stoplight pinned by click
+var _popup_pinned: bool = false  # Whether the popup is pinned open
+
 # Tile editing state
 var is_editing_enabled: bool = true
 var is_building_enabled: bool = false  # Whether building roads is enabled for this level
@@ -110,9 +119,13 @@ var selection_highlight: ColorRect = null
 var level_timer: float = 0.0
 var timer_running: bool = false
 var level_won: bool = false
+var level_failed: bool = false  # Prevents victory logic after failure
 var code_is_running: bool = false  # True when code is executing (cars moving from code)
 var current_level_id: String = ""
 var current_level_display_name: String = ""
+
+# Track last heart loss cause for better failure hints
+var last_heart_loss_cause: String = "crash"  # crash, red_light, off_road
 
 # Hearts UI (loaded from level)
 var hearts_ui: Node = null
@@ -132,6 +145,9 @@ func _ready() -> void:
 	# Create stats UI panel
 	_setup_stats_ui_panel()
 
+	# Initialize Completion Summary UI
+	_init_completion_summary()
+
 	# Connect UI signals
 	run_button.pressed.connect(_on_run_button_pressed)
 
@@ -145,6 +161,9 @@ func _ready() -> void:
 	simulation_engine.level_failed.connect(_on_level_failed)
 	simulation_engine.execution_line_changed.connect(_on_execution_line_changed)
 	simulation_engine.execution_error_occurred.connect(_on_execution_error)
+
+	# Set callback for checking if code editor is focused (to disable shortcuts while typing)
+	simulation_engine.is_editor_focused_callback = _is_code_editor_focused
 
 	# Connect result popup buttons
 	retry_button.pressed.connect(_on_retry_pressed)
@@ -161,6 +180,9 @@ func _ready() -> void:
 	
 	# Create menu panel
 	_create_menu_panel()
+
+	# Setup stoplight code popup
+	_setup_stoplight_popup()
 
 	# Note: Stoplights are spawned from tiles when level is loaded
 
@@ -199,7 +221,8 @@ func _process(delta: float) -> void:
 			engine_audio.play(engine_loop_start)
 
 	# Handle camera movement (WASD or Arrow keys, Shift for 2x speed)
-	if camera:
+	# Skip if code editor is focused (player is typing)
+	if camera and not _is_code_editor_focused():
 		var camera_velocity = Vector2.ZERO
 		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
 			camera_velocity.y -= 1
@@ -211,8 +234,8 @@ func _process(delta: float) -> void:
 			camera_velocity.x += 1
 
 		if camera_velocity != Vector2.ZERO:
-			var speed = CAMERA_SPEED_FAST if Input.is_key_pressed(KEY_SHIFT) else CAMERA_SPEED
-			camera.position += camera_velocity.normalized() * speed * delta
+			var speed_val = CAMERA_SPEED_FAST if Input.is_key_pressed(KEY_SHIFT) else CAMERA_SPEED
+			camera.position += camera_velocity.normalized() * speed_val * delta
 			_clamp_camera_to_bounds()
 
 	# Cars only spawn once per parking spot at level start
@@ -234,6 +257,9 @@ func _process(delta: float) -> void:
 
 	# Update preview tile position
 	_update_preview_tile()
+
+	# Check for stoplight hover
+	_check_stoplight_hover()
 
 
 func _update_preview_tile() -> void:
@@ -358,7 +384,9 @@ func _load_level(index: int) -> void:
 	level_timer = 0.0
 	timer_running = true  # Timer starts immediately on level load
 	level_won = false
+	level_failed = false  # Reset failure flag for new level
 	code_is_running = false  # Code not running yet - timer at 1x speed
+	last_heart_loss_cause = "crash"  # Reset to default cause
 	_update_timer_label()
 
 	# Calculate camera bounds and set initial position
@@ -763,6 +791,7 @@ func _on_car_reached_destination(car_id: String) -> void:
 
 
 func _on_car_crashed(car_id: String) -> void:
+	last_heart_loss_cause = "crash"
 	_lose_heart()
 	_update_status("Car '%s' crashed! Lost 1 heart" % car_id)
 	if engine_audio and engine_audio.playing:
@@ -772,6 +801,7 @@ func _on_car_crashed(car_id: String) -> void:
 
 
 func _on_car_off_road(car_id: String) -> void:
+	last_heart_loss_cause = "off_road"
 	_lose_heart()
 	_update_status("Car '%s' went off-road! Lost 1 heart" % car_id)
 	if engine_audio and engine_audio.playing:
@@ -781,15 +811,16 @@ func _on_car_off_road(car_id: String) -> void:
 
 
 func _on_car_ran_red_light(vehicle_id: String, _stoplight_id: String) -> void:
-	hearts -= 1
-	_update_hearts_label()
+	last_heart_loss_cause = "red_light"
+	_lose_heart()
 	_update_status("%s ran a red light! (-1 heart)" % vehicle_id)
-	if hearts <= 0:
-		_update_status("GAME OVER - Press R to Reset")
-		status_label.add_theme_color_override("font_color", Color.RED)
 
 
 func _on_level_completed(stars: int) -> void:
+	# Don't show victory if already failed (race condition prevention)
+	if level_failed:
+		return
+
 	_update_status("Level Complete! Stars: %s" % stars)
 	_show_victory_popup(stars)
 
@@ -854,20 +885,13 @@ func _show_victory_popup(stars: int) -> void:
 	level_won = true
 
 	# Save best time
-	var is_new_best = false
+	var best_time = 0.0
 	if GameData:
-		is_new_best = GameData.save_best_time(current_level_id, level_timer)
+		GameData.save_best_time(current_level_id, level_timer)
+		best_time = GameData.get_best_time(current_level_id)
 		GameData.mark_level_completed(current_level_id)
 
-	result_title.text = "%s\nCOMPLETE!" % current_level_display_name
-
-	var star_display = ""
-	for i in range(3):
-		if i < stars:
-			star_display += "[*]"
-		else:
-			star_display += "[ ]"
-
+	# Count cars at destination
 	var cars_completed = 0
 	var total_cars = 0
 	var vehicles = get_tree().get_nodes_in_group("vehicles")
@@ -876,61 +900,61 @@ func _show_victory_popup(stars: int) -> void:
 		if vehicle.at_end():
 			cars_completed += 1
 
-	var message_parts: Array = []
-	message_parts.append("Stars: %s" % star_display)
-
-	# Show time with best time
-	var time_str = "Time: %s" % _format_time(level_timer)
-	if is_new_best:
-		time_str += " (NEW BEST!)"
-	elif GameData and GameData.has_best_time(current_level_id):
-		time_str += " (Best: %s)" % _format_time(GameData.get_best_time(current_level_id))
-	message_parts.append(time_str)
-
-	message_parts.append("Cars: %d/%d" % [cars_completed, total_cars])
-	message_parts.append("Hearts remaining: %d" % hearts)
-
-	result_message.text = "\n".join(message_parts)
-
 	# Check if there's a next level
 	var has_next_level = (current_level_index + 1) < level_loader.get_level_count()
-	next_button.visible = has_next_level
-	if menu_button:
-		menu_button.visible = true
 
-	result_popup.visible = true
+	# Show completion summary
+	if completion_summary:
+		completion_summary.show_victory(
+			current_level_display_name,
+			stars,
+			level_timer,
+			best_time,
+			cars_completed,
+			total_cars,
+			hearts,
+			initial_hearts,
+			has_next_level
+		)
 
 
 func _show_failure_popup(reason: String) -> void:
 	# Stop timer on failure (don't save time)
 	timer_running = false
 
-	result_title.text = "%s\nFAILED" % current_level_display_name
+	# Generate contextual hint based on failure reason
+	var hint = ""
 
-	var message_parts: Array = []
-	message_parts.append(reason)
-	message_parts.append("")
+	# Check if failure is due to running out of hearts
+	if reason.to_lower().find("out of hearts") >= 0:
+		# Use the tracked cause for more specific hints
+		match last_heart_loss_cause:
+			"crash":
+				hint = "💡 Too many vehicle collisions! Avoid other cars on the road."
+			"off_road":
+				hint = "💡 Your cars kept driving off the road! Stay on the pavement."
+			"red_light":
+				hint = "💡 Too many red light violations! Use if statements to check stoplight.is_red()"
+			_:
+				hint = "💡 Too many mistakes! Watch your code carefully."
+	elif reason.to_lower().find("time") >= 0:
+		hint = "💡 Try to be more efficient with your code."
+	elif reason.to_lower().find("infinite") >= 0 or reason.to_lower().find("loop") >= 0:
+		hint = "💡 Check your code for infinite loops."
+	elif reason.to_lower().find("map") >= 0 or reason.to_lower().find("boundary") >= 0:
+		hint = "💡 Keep cars on the road!"
+	elif reason.to_lower().find("error") >= 0 or reason.to_lower().find("syntax") >= 0:
+		hint = "💡 Check your Python syntax."
+	else:
+		hint = "💡 Press R to retry the level."
 
-	if reason.find("hearts") >= 0 or reason.find("Hearts") >= 0:
-		message_parts.append("Too many crashes!")
-	elif reason.find("Time") >= 0 or reason.find("time") >= 0:
-		message_parts.append("Try to be more efficient.")
-	elif reason.find("infinite loop") >= 0:
-		message_parts.append("Check your code for infinite loops.")
-		message_parts.append("Use break or proper conditions.")
-	elif reason.find("map") >= 0 or reason.find("boundary") >= 0:
-		message_parts.append("Keep cars on the road!")
-	elif reason.find("Error") >= 0 or reason.find("error") >= 0:
-		message_parts.append("Check your Python syntax.")
-
-	message_parts.append("")
-	message_parts.append("Press R to retry")
-
-	result_message.text = "\n".join(message_parts)
-	next_button.visible = false
-	if menu_button:
-		menu_button.visible = true
-	result_popup.visible = true
+	# Show completion summary with failure
+	if completion_summary:
+		completion_summary.show_failure(
+			current_level_display_name,
+			reason,
+			hint
+		)
 
 
 func _hide_result_popup() -> void:
@@ -948,6 +972,29 @@ func _on_retry_pressed() -> void:
 
 func _on_next_pressed() -> void:
 	_hide_result_popup()
+	_load_next_level()
+
+
+func _on_completion_summary_retry() -> void:
+	if completion_summary:
+		completion_summary.hide()
+	# Reset timer when pressing Retry from game over screen
+	level_timer = 0.0
+	timer_running = true
+	_update_timer_label()
+	_do_fast_retry()
+
+
+func _on_completion_summary_menu() -> void:
+	if completion_summary:
+		completion_summary.hide()
+	# Return to main menu
+	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/MainMenu.tscn")
+
+
+func _on_completion_summary_next() -> void:
+	if completion_summary:
+		completion_summary.hide()
 	_load_next_level()
 
 
@@ -1001,6 +1048,8 @@ func _do_fast_retry() -> void:
 	# Timer only resets from game over screen buttons (Retry/Next Level)
 	# Timer keeps running (was started on level load)
 	level_won = false
+	level_failed = false
+	last_heart_loss_cause = "crash"  # Reset to default cause
 
 	# Code stopped running - timer goes back to 1x speed
 	code_is_running = false
@@ -1016,10 +1065,33 @@ func _do_fast_retry() -> void:
 # Input Handling
 # ============================================
 
+## Check if the code editor currently has focus (player is typing)
+func _is_code_editor_focused() -> bool:
+	# Check if the new UI code editor has focus
+	if window_manager and window_manager.code_editor_window:
+		var code_edit = window_manager.code_editor_window.get_node_or_null("VBoxContainer/ContentContainer/ContentVBox/MainVSplit/HSplit/CodeEdit")
+		if code_edit and code_edit.has_focus():
+			return true
+	# Check if the old code editor has focus
+	if code_editor and code_editor.has_focus():
+		return true
+	return false
+
 func _input(event: InputEvent) -> void:
+	# Handle stoplight pin toggle on mouse click early so UI doesn't consume it
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _toggle_stoplight_popup_on_click():
+			event.accept()
+			return
+
 	if event is InputEventKey and event.pressed:
 		var ctrl_pressed = event.ctrl_pressed
 
+		# Skip most shortcuts if the code editor is focused (player is typing)
+		# This prevents WASD camera movement, R reset, Space pause, etc. from triggering while typing code
+		var editor_focused = _is_code_editor_focused()
+
+		# F5, Ctrl+Enter, F10, F1 are allowed even when editor is focused (they are editor commands)
 		match event.keycode:
 			KEY_F5:
 				if not run_button.disabled:
@@ -1028,19 +1100,25 @@ func _input(event: InputEvent) -> void:
 				if ctrl_pressed and not run_button.disabled:
 					_on_run_button_pressed()
 			KEY_R:
-				_do_fast_retry()
+				# R for reset - only when NOT in code editor
+				if not editor_focused:
+					_do_fast_retry()
 			KEY_F10:
 				simulation_engine.step()
 				_update_status("Step executed")
 			KEY_EQUAL, KEY_KP_ADD:
-				if ctrl_pressed:
-					simulation_engine.set_speed(simulation_engine.SPEED_FASTER)
-				else:
-					simulation_engine.speed_up()
-				call_deferred("_update_speed_label")
+				# Speed up - only when NOT in code editor
+				if not editor_focused:
+					if ctrl_pressed:
+						simulation_engine.set_speed(simulation_engine.SPEED_FASTER)
+					else:
+						simulation_engine.speed_up()
+					call_deferred("_update_speed_label")
 			KEY_MINUS, KEY_KP_SUBTRACT:
-				simulation_engine.slow_down()
-				call_deferred("_update_speed_label")
+				# Slow down - only when NOT in code editor
+				if not editor_focused:
+					simulation_engine.slow_down()
+					call_deferred("_update_speed_label")
 			KEY_F1:
 				if use_new_ui and window_manager:
 					window_manager.call("_on_readme_requested")
@@ -1059,6 +1137,45 @@ func _unhandled_input(event: InputEvent) -> void:
 			_handle_zoom_in()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_handle_zoom_out()
+
+
+# Toggle pinning/unpinning of stoplight popup on click
+func _toggle_stoplight_popup_on_click() -> bool:
+	if stoplight_code_popup == null or _spawned_stoplights.is_empty():
+		return false
+
+	var mouse_pos = get_global_mouse_position()
+	var click_distance = 55.0  # Slightly larger than hover to make clicks easy
+
+	# Find clicked stoplight
+	var clicked: Variant = null
+	for stoplight in _spawned_stoplights:
+		if stoplight == null or not is_instance_valid(stoplight):
+			continue
+		if mouse_pos.distance_to(stoplight.global_position) <= click_distance:
+			clicked = stoplight
+			break
+
+	if clicked == null:
+		return false
+
+	# Toggle pin state
+	if _popup_pinned and _pinned_stoplight == clicked:
+		# Unpin and hide
+		_popup_pinned = false
+		_pinned_stoplight = null
+		_hovered_stoplight = null
+		stoplight_code_popup.hide_popup()
+	else:
+		# Pin to this stoplight
+		_popup_pinned = true
+		_pinned_stoplight = clicked
+		_hovered_stoplight = clicked
+		var level_settings = LevelSettings.from_node(current_level_node) if current_level_node else null
+		var editable = level_settings.stoplight_code_editable if level_settings else false
+		stoplight_code_popup.show_for_stoplight(clicked, editable)
+
+	return true
 
 
 # ============================================
@@ -1695,6 +1812,26 @@ func _setup_stats_ui_panel() -> void:
 		push_warning("Could not load StatsUIPanel scene")
 
 
+func _init_completion_summary() -> void:
+	var summary_scene = load("res://scenes/ui/completion_summary.tscn")
+	if summary_scene:
+		completion_summary = summary_scene.instantiate()
+		if completion_summary:
+			# Add to UI layer
+			var ui = get_node_or_null("UI")
+			if ui:
+				ui.add_child(completion_summary)
+			else:
+				add_child(completion_summary)
+
+			# Connect signals
+			completion_summary.retry_pressed.connect(_on_completion_summary_retry)
+			completion_summary.menu_pressed.connect(_on_completion_summary_menu)
+			completion_summary.next_level_pressed.connect(_on_completion_summary_next)
+	else:
+		push_warning("Could not load CompletionSummary scene")
+
+
 # ============================================
 # New UI System
 # ============================================
@@ -1929,13 +2066,16 @@ func _load_level_hearts() -> void:
 				break
 
 	if hearts_ui:
-		# HeartsUI found - use its configuration
-		if hearts_ui.has_method("get_max_hearts"):
-			initial_hearts = hearts_ui.get_max_hearts()
+		# Get level settings for heart count (with backward compatibility)
+		var settings = LevelSettings.from_node(current_level_node)
+
+		# Configure hearts from level settings
+		if hearts_ui.has_method("set_max_hearts"):
+			hearts_ui.set_max_hearts(settings.starting_hearts)
+			initial_hearts = settings.starting_hearts
 			hearts = initial_hearts
-		elif hearts_ui.has_method("set_max_hearts"):
-			# Already initialized from label
-			initial_hearts = hearts_ui.max_hearts if "max_hearts" in hearts_ui else 3
+		else:
+			initial_hearts = settings.starting_hearts
 			hearts = initial_hearts
 
 		# Move hearts UI to our UI layer
@@ -1974,6 +2114,17 @@ func _lose_heart() -> void:
 	_update_hearts_label()
 
 	if hearts <= 0:
+		# Mark level as failed to prevent victory logic from running
+		level_failed = true
+		timer_running = false
+
+		# Stop all cars immediately so they can't reach destinations
+		_stop_all_cars()
+
+		# Stop spawning new cars
+		is_spawning_cars = false
+
+		# Show failure popup
 		_show_failure_popup("Out of hearts!")
 
 
@@ -1992,37 +2143,17 @@ func _load_level_build_roads() -> void:
 	if current_level_node == null:
 		return
 
-	# Look for LevelSettings/LevelBuildRoads label
-	var level_settings = current_level_node.get_node_or_null("LevelSettings")
-	if level_settings == null:
-		# No settings node - disable building by default
-		is_building_enabled = false
-		road_cards = 0
-		initial_road_cards = 0
-		_update_road_cards_label()
-		return
+	# Get level settings (with backward compatibility for Label-based config)
+	var settings = LevelSettings.from_node(current_level_node)
 
-	var build_roads_label = level_settings.get_node_or_null("LevelBuildRoads")
-	if build_roads_label and build_roads_label is Label:
-		var build_roads_text = build_roads_label.text.strip_edges()
-		var build_roads_count = int(build_roads_text)
-
-		if build_roads_count <= 0:
-			# 0 = Building disabled, no roads UI
-			is_building_enabled = false
-			road_cards = 0
-			initial_road_cards = 0
-			if road_cards_label:
-				road_cards_label.visible = false
-		else:
-			# 1+ = Building enabled with specified count
-			is_building_enabled = true
-			road_cards = build_roads_count
-			initial_road_cards = build_roads_count
-			if road_cards_label:
-				road_cards_label.visible = true
+	# Configure road building from settings
+	if settings.build_mode_enabled:
+		is_building_enabled = true
+		road_cards = settings.road_cards
+		initial_road_cards = settings.road_cards
+		if road_cards_label:
+			road_cards_label.visible = true
 	else:
-		# No LevelBuildRoads label found - disable building
 		is_building_enabled = false
 		road_cards = 0
 		initial_road_cards = 0
@@ -2291,3 +2422,63 @@ func _notify_tutorial_action(action: String) -> void:
 			print("Main: TutorialManager not found")
 		elif not TutorialManager.is_active():
 			print("Main: TutorialManager not active")
+
+# ============================================
+# Stoplight Popup UI Functions
+# ============================================
+
+## Setup the stoplight code popup
+func _setup_stoplight_popup() -> void:
+	if stoplight_code_popup != null:
+		return  # Already setup
+	
+	var popup_scene = load("res://scenes/ui/stoplight_code_popup.tscn")
+	if popup_scene == null:
+		push_error("Could not load stoplight_code_popup.tscn")
+		return
+	
+	stoplight_code_popup = popup_scene.instantiate()
+	add_child(stoplight_code_popup)
+	print("Main: Stoplight popup created and added to scene")
+
+
+## Check if mouse is hovering over a stoplight and show popup
+func _check_stoplight_hover() -> void:
+	if stoplight_code_popup == null or _spawned_stoplights.is_empty():
+		return
+
+	# If popup is pinned by click, ignore hover logic
+	if _popup_pinned:
+		return
+	
+	var mouse_pos = get_global_mouse_position()
+	var hover_distance = 40.0  # Hover range
+	var found_stoplight = null
+	
+	# Find closest stoplight within hover range
+	for stoplight in _spawned_stoplights:
+		if stoplight == null or not is_instance_valid(stoplight):
+			continue
+		
+		var distance = mouse_pos.distance_to(stoplight.global_position)
+		# Debug: print distance for first stoplight
+		#print("Stoplight %s distance: %.1f" % [stoplight.stoplight_id, distance])
+		
+		if distance <= hover_distance:
+			found_stoplight = stoplight
+			break
+	
+	# Update popup based on hover state
+	if found_stoplight != _hovered_stoplight:
+		_hovered_stoplight = found_stoplight
+		
+		if _hovered_stoplight != null:
+			# Show popup for hovered stoplight
+			print("Main: Showing popup for stoplight %s" % _hovered_stoplight.stoplight_id)
+			var level_settings = LevelSettings.from_node(current_level_node) if current_level_node else null
+			var editable = level_settings.stoplight_code_editable if level_settings else false
+			stoplight_code_popup.show_for_stoplight(_hovered_stoplight, editable)
+		else:
+			# Hide popup
+			if stoplight_code_popup:
+				stoplight_code_popup.hide_popup()

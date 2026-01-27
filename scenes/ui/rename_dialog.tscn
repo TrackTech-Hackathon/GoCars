@@ -1,11 +1,13 @@
 [gd_scene load_steps=2 format=3 uid="uid://cq8jx7y5wqr2m"]
 
-[ext_resource type="Script" path="res://scripts/ui/rename_dialog.gd" id="1_rename"]
+[ext_resource type="Script" uid="uid://dufpmbnmks3r1" path="res://scripts/ui/rename_dialog.gd" id="1_rename"]
 
 [node name="RenameDialog" type="PopupPanel"]
+oversampling_override = 1.0
 title = "Rename File"
 initial_position = 2
 size = Vector2i(400, 180)
+visible = true
 script = ExtResource("1_rename")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]

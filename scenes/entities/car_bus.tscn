@@ -15,7 +15,7 @@ shader_parameter/colors_count = 20
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bus"]
 size = Vector2(32, 80)
 
-[node name="CarBus" type="CharacterBody2D"]
+[node name="CarBus" type="CharacterBody2D" groups=["Car"]]
 z_index = 3
 texture_filter = 1
 script = ExtResource("1_vehicle")
