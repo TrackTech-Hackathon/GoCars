@@ -520,134 +520,15 @@ func get_guideline_path(grid_pos: Vector2i, entry_dir: String, exit_dir: String)
 
 ## Calculate waypoint path from entry to exit direction
 ## Waypoints are in world coordinates
-## NEW PATHWAY LOGIC:
-## - East pathway (going right): travels in bottom-left lane
-## - West pathway (going left): travels in top-right lane
-## - South pathway (going down): travels in top-left lane
-## - North pathway (going up): travels in bottom-right lane
+## SIMPLIFIED: Only 1 waypoint per tile at the exit edge center (turning point)
 func _calculate_path_waypoints(grid_pos: Vector2i, entry_dir: String, exit_dir: String) -> Array:
 	var points: Array = []
 	var tile_center = Vector2(map_to_local(grid_pos))
 
-	# Check if this is a parking tile - parking uses tile center
-	var tile_type = get_tile_type_at(grid_pos)
-	var is_parking = tile_type in SPAWN_PARKING_TILES or tile_type in DEST_PARKING_TILES
-
-	if is_parking:
-		# For parking tiles, path goes to/from tile center
-		return _calculate_parking_path(grid_pos, entry_dir, exit_dir, tile_center)
-
-	# Check if this is a straight path or a turn
-	var is_straight = _get_axis(entry_dir) == _get_axis(exit_dir)
-
-	if is_straight:
-		# Straight path - use lane offset based on travel direction
-		var lane_offset = _get_straight_lane_offset(entry_dir, exit_dir)
-		var entry_point = _get_edge_center(entry_dir, tile_center) + lane_offset
-		var exit_point = _get_edge_center(exit_dir, tile_center) + lane_offset
-		points.append(entry_point)
-		points.append(exit_point)
-	else:
-		# Turn - calculate turn path with proper positioning
-		points = _calculate_turn_path(entry_dir, exit_dir, tile_center)
-
-	return points
-
-
-## Calculate path through a parking tile (spawn or destination)
-## Parking tiles use center positions
-func _calculate_parking_path(grid_pos: Vector2i, entry_dir: String, exit_dir: String, tile_center: Vector2) -> Array:
-	var points: Array = []
-	var tile_type = get_tile_type_at(grid_pos)
-
-	# Check if this is a spawn parking tile (car exits from here)
-	if tile_type in SPAWN_PARKING_TILES:
-		# Spawn: start at center, exit through connection
-		# Position based on exit direction (which lane the car will use)
-		var spawn_pos = _get_spawn_center_position(exit_dir, tile_center)
-		var exit_offset = _get_exit_lane_offset(exit_dir)
-		var exit_point = _get_edge_center(exit_dir, tile_center) + exit_offset
-		points.append(spawn_pos)
-		points.append(exit_point)
-
-	# Destination parking tile (car enters here)
-	elif tile_type in DEST_PARKING_TILES:
-		# Destination: enter through connection, stop at center
-		var entry_offset = _get_entry_lane_offset(entry_dir)
-		var entry_point = _get_edge_center(entry_dir, tile_center) + entry_offset
-		var dest_pos = _get_destination_center_position(entry_dir, tile_center)
-		points.append(entry_point)
-		points.append(dest_pos)
-
-	return points
-
-
-## Get spawn position at center of parking tile based on exit direction
-## - East pathway: center-bottom
-## - West pathway: center-top
-## - South pathway: center-left
-## - North pathway: center-right
-func _get_spawn_center_position(exit_dir: String, tile_center: Vector2) -> Vector2:
-	match exit_dir:
-		"right":  # East pathway - center-bottom
-			return tile_center + Vector2(0, LANE_OFFSET)
-		"left":   # West pathway - center-top
-			return tile_center + Vector2(0, -LANE_OFFSET)
-		"bottom": # South pathway - center-left
-			return tile_center + Vector2(-LANE_OFFSET, 0)
-		"top":    # North pathway - center-right
-			return tile_center + Vector2(LANE_OFFSET, 0)
-	return tile_center
-
-
-## Get destination stop position at center of parking tile based on entry direction
-## - East pathway (entering from left): center-bottom
-## - West pathway (entering from right): center-top
-## - South pathway (entering from top): center-left
-## - North pathway (entering from bottom): center-right
-func _get_destination_center_position(entry_dir: String, tile_center: Vector2) -> Vector2:
-	match entry_dir:
-		"left":   # East pathway - center-bottom
-			return tile_center + Vector2(0, LANE_OFFSET)
-		"right":  # West pathway - center-top
-			return tile_center + Vector2(0, -LANE_OFFSET)
-		"top":    # South pathway - center-left
-			return tile_center + Vector2(-LANE_OFFSET, 0)
-		"bottom": # North pathway - center-right
-			return tile_center + Vector2(LANE_OFFSET, 0)
-	return tile_center
-
-
-## Calculate turn path with proper positioning
-## Turn logic:
-## - Right turns: turn in place (simpler path)
-## - Left turns: need to move across to the other lane before turning
-func _calculate_turn_path(entry_dir: String, exit_dir: String, tile_center: Vector2) -> Array:
-	var points: Array = []
-	var is_right_turn = _is_right_turn(entry_dir, exit_dir)
-
-	# Get entry and exit lane positions
-	var entry_offset = _get_entry_lane_offset(entry_dir)
-	var exit_offset = _get_exit_lane_offset(exit_dir)
-	var entry_point = _get_edge_center(entry_dir, tile_center) + entry_offset
-	var exit_point = _get_edge_center(exit_dir, tile_center) + exit_offset
-
-	if is_right_turn:
-		# Right turn: simple corner path
-		# The corner is where entry lane meets exit lane
-		var corner = _get_right_turn_corner(entry_dir, exit_dir, tile_center)
-		points.append(entry_point)
-		points.append(corner)
-		points.append(exit_point)
-	else:
-		# Left turn: need to cross to the opposite lane first
-		# Move to the preparation point, then turn corner, then exit
-		var prep_point = _get_left_turn_prep_point(entry_dir, tile_center)
-		var corner = _get_left_turn_corner(entry_dir, exit_dir, tile_center)
-		points.append(entry_point)
-		points.append(prep_point)
-		points.append(corner)
-		points.append(exit_point)
+	# Only add the exit waypoint - positioned at the center of the exit edge
+	# This is the "turning point" where the car should be when moving to the next tile
+	var exit_point = _get_edge_center(exit_dir, tile_center)
+	points.append(exit_point)
 
 	return points
 

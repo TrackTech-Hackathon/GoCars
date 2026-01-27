@@ -225,6 +225,7 @@ var _entry_direction: String = ""    # Direction we entered current tile from
 var _last_exit_direction: String = "" # Direction we exited the previous tile
 var _use_simple_movement: bool = false # After turning, use simple movement until entering new tile
 var _current_move_dir: Vector2 = Vector2.RIGHT  # Stable movement direction for grid calculations
+var _debug_draw_paths: bool = false  # Debug: visualize guideline paths (set to true to see paths)
 
 # Decision locking state (prevents zigzag from continuous re-evaluation)
 var _decision_made_for_tile: bool = false     # True once turn/go executed on this tile
@@ -497,6 +498,34 @@ func _update_stats_speed() -> void:
 func _update_stats_facing() -> void:
 	if _stats_facing_label:
 		_stats_facing_label.text = get_facing_direction_name()
+
+
+## Debug: Draw guideline paths
+func _process(_delta: float) -> void:
+	if _debug_draw_paths:
+		queue_redraw()
+
+
+func _draw() -> void:
+	if not _debug_draw_paths or _current_path.is_empty():
+		return
+	
+	# Draw path waypoints as circles and lines
+	var prev_point = global_position
+	for i in range(_path_index, _current_path.size()):
+		var waypoint = _current_path[i]
+		var local_point = waypoint - global_position
+		
+		# Draw line from previous point to this waypoint
+		if i == _path_index:
+			draw_line(Vector2.ZERO, local_point, Color.GREEN, 2.0)
+		else:
+			var prev_local = _current_path[i-1] - global_position
+			draw_line(prev_local, local_point, Color.YELLOW, 2.0)
+		
+		# Draw waypoint circle
+		draw_circle(local_point, 8.0, Color.RED if i == _path_index else Color.ORANGE)
+		prev_point = waypoint
 
 
 ## Update state label (called every state change)
@@ -1300,8 +1329,8 @@ func _is_near_turn_point() -> bool:
 	)
 	# Check distance from car to tile center
 	var dist_to_center = global_position.distance_to(tile_center)
-	# Allow turn detection when within 50 pixels of center
-	return dist_to_center < 50.0
+	# Only allow turn detection when very close to center (in the middle of the road)
+	return dist_to_center < 10
 
 
 ## Check if there's a road to the left of the car (short name)
