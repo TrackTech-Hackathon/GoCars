@@ -384,11 +384,7 @@ func get_available_exits(grid_pos: Vector2i, entry_dir: String) -> Array:
 
 ## Get spawn positions with their spawn direction
 ## Returns array of dictionaries: {position: Vector2, direction: Vector2, rotation: float, entry_dir: String, group: SpawnGroup}
-## NEW: Spawn positions are at the CENTER of the parking tile with appropriate lane offset
-## - East pathway: center-bottom
-## - West pathway: center-top
-## - South pathway: center-left
-## - North pathway: center-right
+## Spawn positions are at the TRUE CENTER of the parking tile (no lane offset)
 func get_spawn_data() -> Array:
 	var spawn_data: Array = []
 
@@ -401,34 +397,31 @@ func get_spawn_data() -> Array:
 		data["group"] = get_tile_group(tile_type)
 		data["group_name"] = get_group_name(data["group"])
 
-		# NEW: Spawn positions are at tile center with lane offset based on exit direction
-		# - Going East (exit right): center-bottom = (0, +LANE_OFFSET)
-		# - Going West (exit left): center-top = (0, -LANE_OFFSET)
-		# - Going South (exit bottom): center-left = (-LANE_OFFSET, 0)
-		# - Going North (exit top): center-right = (+LANE_OFFSET, 0)
+		# Spawn positions are at the TRUE CENTER of the tile (no offset)
+		# This ensures all vehicle sizes (including bus) fit properly in the parking spot
 
 		# Check direction based on tile type (handle all groups)
 		if tile_type in [TileType.SPAWN_PARKING_S_A, TileType.SPAWN_PARKING_S_B, TileType.SPAWN_PARKING_S_C, TileType.SPAWN_PARKING_S_D]:
-			# Car exits through SOUTH (bottom), faces DOWN → center-left
-			data["position"] = world_pos + Vector2(-LANE_OFFSET, 0)
+			# Car exits through SOUTH (bottom), faces DOWN
+			data["position"] = world_pos  # TRUE CENTER
 			data["direction"] = Vector2.DOWN
 			data["rotation"] = PI
 			data["entry_dir"] = "top"
 		elif tile_type in [TileType.SPAWN_PARKING_N_A, TileType.SPAWN_PARKING_N_B, TileType.SPAWN_PARKING_N_C, TileType.SPAWN_PARKING_N_D]:
-			# Car exits through NORTH (top), faces UP → center-right
-			data["position"] = world_pos + Vector2(LANE_OFFSET, 0)
+			# Car exits through NORTH (top), faces UP
+			data["position"] = world_pos  # TRUE CENTER
 			data["direction"] = Vector2.UP
 			data["rotation"] = 0.0
 			data["entry_dir"] = "bottom"
 		elif tile_type in [TileType.SPAWN_PARKING_E_A, TileType.SPAWN_PARKING_E_B, TileType.SPAWN_PARKING_E_C, TileType.SPAWN_PARKING_E_D]:
-			# Car exits through EAST (right), faces RIGHT → center-bottom
-			data["position"] = world_pos + Vector2(0, LANE_OFFSET)
+			# Car exits through EAST (right), faces RIGHT
+			data["position"] = world_pos  # TRUE CENTER
 			data["direction"] = Vector2.RIGHT
 			data["rotation"] = PI / 2
 			data["entry_dir"] = "left"
 		elif tile_type in [TileType.SPAWN_PARKING_W_A, TileType.SPAWN_PARKING_W_B, TileType.SPAWN_PARKING_W_C, TileType.SPAWN_PARKING_W_D]:
-			# Car exits through WEST (left), faces LEFT → center-top
-			data["position"] = world_pos + Vector2(0, -LANE_OFFSET)
+			# Car exits through WEST (left), faces LEFT
+			data["position"] = world_pos  # TRUE CENTER
 			data["direction"] = Vector2.LEFT
 			data["rotation"] = -PI / 2
 			data["entry_dir"] = "right"
@@ -441,11 +434,7 @@ func get_spawn_data() -> Array:
 
 ## Get destination positions with their entry direction
 ## Returns array of dictionaries: {position: Vector2, entry_dir: String, grid_pos: Vector2i, group: SpawnGroup}
-## NEW: Destination stop positions are at the CENTER of the parking tile with appropriate lane offset
-## - East pathway (entering from left): center-bottom
-## - West pathway (entering from right): center-top
-## - South pathway (entering from top): center-left
-## - North pathway (entering from bottom): center-right
+## Destination stop positions are at the TRUE CENTER of the parking tile (no lane offset)
 func get_destination_data() -> Array:
 	var dest_data: Array = []
 
@@ -458,28 +447,25 @@ func get_destination_data() -> Array:
 		data["group"] = get_tile_group(tile_type)
 		data["group_name"] = get_group_name(data["group"])
 
-		# NEW: Parking positions are at tile center with lane offset based on entry direction
-		# - East pathway (entering from left): center-bottom = (0, +LANE_OFFSET)
-		# - West pathway (entering from right): center-top = (0, -LANE_OFFSET)
-		# - South pathway (entering from top): center-left = (-LANE_OFFSET, 0)
-		# - North pathway (entering from bottom): center-right = (+LANE_OFFSET, 0)
+		# Destination positions are at the TRUE CENTER of the tile (no offset)
+		# This ensures all vehicle sizes (including bus) fit properly in the parking spot
 
 		# Check direction based on tile type (handle all groups)
 		if tile_type in [TileType.DEST_PARKING_S_A, TileType.DEST_PARKING_S_B, TileType.DEST_PARKING_S_C, TileType.DEST_PARKING_S_D]:
-			# Car enters through SOUTH connection (traveling North into parking) → center-right
-			data["position"] = world_pos + Vector2(LANE_OFFSET, 0)
+			# Car enters through SOUTH connection (traveling North into parking)
+			data["position"] = world_pos  # TRUE CENTER
 			data["entry_dir"] = "bottom"
 		elif tile_type in [TileType.DEST_PARKING_N_A, TileType.DEST_PARKING_N_B, TileType.DEST_PARKING_N_C, TileType.DEST_PARKING_N_D]:
-			# Car enters through NORTH connection (traveling South into parking) → center-left
-			data["position"] = world_pos + Vector2(-LANE_OFFSET, 0)
+			# Car enters through NORTH connection (traveling South into parking)
+			data["position"] = world_pos  # TRUE CENTER
 			data["entry_dir"] = "top"
 		elif tile_type in [TileType.DEST_PARKING_E_A, TileType.DEST_PARKING_E_B, TileType.DEST_PARKING_E_C, TileType.DEST_PARKING_E_D]:
-			# Car enters through EAST connection (traveling West into parking) → center-top
-			data["position"] = world_pos + Vector2(0, -LANE_OFFSET)
+			# Car enters through EAST connection (traveling West into parking)
+			data["position"] = world_pos  # TRUE CENTER
 			data["entry_dir"] = "right"
 		elif tile_type in [TileType.DEST_PARKING_W_A, TileType.DEST_PARKING_W_B, TileType.DEST_PARKING_W_C, TileType.DEST_PARKING_W_D]:
-			# Car enters through WEST connection (traveling East into parking) → center-bottom
-			data["position"] = world_pos + Vector2(0, LANE_OFFSET)
+			# Car enters through WEST connection (traveling East into parking)
+			data["position"] = world_pos  # TRUE CENTER
 			data["entry_dir"] = "left"
 
 		data["grid_pos"] = dest_pos

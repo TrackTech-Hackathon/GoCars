@@ -120,28 +120,28 @@ const VEHICLE_CONFIG: Dictionary = {
 	VehicleType.SEDAN: {
 		"name": "Sedan",
 		"speed_mult": 1.0,
-		"size_mult": 1.0,
+		"size_mult": 1.3,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
 	VehicleType.ESTATE: {
 		"name": "Estate",
 		"speed_mult": 0.9,
-		"size_mult": 1.2,
+		"size_mult": 1.3,
 		"can_lane_split": false,
 		"stopping_distance": 1.1
 	},
 	VehicleType.SPORT: {
 		"name": "Sport",
 		"speed_mult": 1.4,
-		"size_mult": 1.0,
+		"size_mult": 1.3,
 		"can_lane_split": false,
 		"stopping_distance": 0.9
 	},
 	VehicleType.MICRO: {
 		"name": "Micro",
 		"speed_mult": 1.1,
-		"size_mult": 0.8,
+		"size_mult": 1.3,
 		"can_lane_split": false,
 		"stopping_distance": 0.8
 	},
@@ -155,21 +155,21 @@ const VEHICLE_CONFIG: Dictionary = {
 	VehicleType.JEEPNEY_1: {
 		"name": "Jeepney 1",
 		"speed_mult": 0.7,
-		"size_mult": 1.5,
+		"size_mult": 1.3,
 		"can_lane_split": false,
 		"stopping_distance": 1.4
 	},
 	VehicleType.JEEPNEY_2: {
 		"name": "Jeepney 2",
 		"speed_mult": 0.7,
-		"size_mult": 1.5,
+		"size_mult": 1.3,
 		"can_lane_split": false,
 		"stopping_distance": 1.4
 	},
 	VehicleType.BUS: {
 		"name": "Bus",
 		"speed_mult": 0.6,
-		"size_mult": 1.8,
+		"size_mult": 1.3,
 		"can_lane_split": false,
 		"stopping_distance": 1.6
 	}
@@ -251,7 +251,8 @@ var _turn_target_rotation: float = 0.0
 var _turn_start_direction: Vector2 = Vector2.ZERO
 
 # Distance threshold for reaching destination
-const DESTINATION_THRESHOLD: float = 50.0
+# Reduced to ensure vehicles (especially buses) park at the true center
+const DESTINATION_THRESHOLD: float = 15.0
 
 # Lane offset - cars drive in center of road (no offset for simpler movement)
 const LANE_OFFSET: float = 0.0
@@ -957,6 +958,11 @@ func _on_collision_body_entered(body: Node2D) -> void:
 	if vehicle_state == 0:
 		return
 
+	# Check if body is in "Road" group (road walls/boundaries)
+	if body.is_in_group("Road"):
+		_on_off_road_crash()
+		return
+
 	# Check if body is in "Car" group
 	if body.is_in_group("Car") and body != self:
 		var other_vehicle = body as Vehicle
@@ -978,8 +984,18 @@ func _on_collision_area_entered(area: Area2D) -> void:
 	if vehicle_state == 0:
 		return
 
-	# Check if the area's parent is in "Car" group
+	# Check if area is in "Road" group (road walls/boundaries)
+	if area.is_in_group("Road"):
+		_on_off_road_crash()
+		return
+
+	# Check if the area's parent is in "Road" group
 	var parent = area.get_parent()
+	if parent and parent.is_in_group("Road"):
+		_on_off_road_crash()
+		return
+
+	# Check if the area's parent is in "Car" group
 	if parent and parent.is_in_group("Car") and parent != self:
 		var other_vehicle = parent as Vehicle
 		if other_vehicle:
@@ -1000,11 +1016,16 @@ func _check_area_collisions() -> void:
 	if vehicle_state == 0 or _collision_area == null:
 		return
 
-	# Get all overlapping bodies (CharacterBody2D nodes)
+	# Get all overlapping bodies (CharacterBody2D/StaticBody2D nodes)
 	var overlapping_bodies = _collision_area.get_overlapping_bodies()
 	for body in overlapping_bodies:
 		if body == self:
 			continue
+
+		# Check if body is in "Road" group (road walls/boundaries)
+		if body.is_in_group("Road"):
+			_on_off_road_crash()
+			return
 
 		# Check if body is in "Car" group
 		if body.is_in_group("Car"):
@@ -1020,12 +1041,22 @@ func _check_area_collisions() -> void:
 					other_vehicle._on_crash()
 					return
 
-	# Also check overlapping areas (from other vehicles' Area2D collision detectors)
+	# Also check overlapping areas (from other vehicles' Area2D collision detectors or road areas)
 	var overlapping_areas = _collision_area.get_overlapping_areas()
 	for area in overlapping_areas:
+		# Check if area itself is in "Road" group
+		if area.is_in_group("Road"):
+			_on_off_road_crash()
+			return
+
 		var parent = area.get_parent()
 		if parent == self:
 			continue
+
+		# Check if parent is in "Road" group
+		if parent and parent.is_in_group("Road"):
+			_on_off_road_crash()
+			return
 
 		if parent and parent.is_in_group("Car"):
 			var other_vehicle = parent as Vehicle
