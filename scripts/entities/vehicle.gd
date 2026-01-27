@@ -248,12 +248,20 @@ var _turn_progress: float = 0.0
 var _turn_start_rotation: float = 0.0
 var _turn_target_rotation: float = 0.0
 var _turn_start_direction: Vector2 = Vector2.ZERO
+var _turn_start_position: Vector2 = Vector2.ZERO  # Position at start of turn
+var _turn_target_position: Vector2 = Vector2.ZERO  # Target position after turn
+
+# Left turn preparation (car moves to opposite lane before turning)
+var _preparing_left_turn: bool = false
+var _left_turn_target_position: Vector2 = Vector2.ZERO  # Position to reach before turning left
+var _pending_turn_direction: String = ""  # Store the turn direction while preparing
 
 # Distance threshold for reaching destination
 const DESTINATION_THRESHOLD: float = 10.0
 
-# Lane offset - cars drive in center of road (no offset for simpler movement)
-const LANE_OFFSET: float = 0.0
+# Lane offset - cars drive on the right side of the road
+# This matches the LANE_OFFSET in RoadTileMapLayer (25.0 pixels)
+const LANE_OFFSET: float = 25.0
 
 # Distance at which vehicle detects stoplights (in pixels)
 const STOPLIGHT_DETECTION_RANGE: float = 100.0
@@ -266,6 +274,9 @@ const INTERSECTION_DETECTION_RANGE: float = 30.0
 
 # Turn animation duration in seconds
 const TURN_DURATION: float = 0.3
+
+# Collision radius (calculated from collision shape, used for car-to-car collision)
+var _collision_radius: float = 20.0  # Default fallback
 
 # Road checker reference (main scene with road_tiles Dictionary)
 var _road_checker: Node = null
@@ -384,9 +395,13 @@ func _ready() -> void:
 	# Set up collision
 	set_collision_layer_value(1, true)  # Layer 1 for vehicles
 	set_collision_mask_value(1, true)   # Detect other vehicles
+	set_collision_mask_value(3, true)   # Detect road boundaries (layer 3)
 
 	# Apply vehicle type configuration
 	_apply_vehicle_type()
+
+	# Calculate collision radius from collision shape
+	_calculate_collision_radius()
 
 	# Find and register wheels
 	_setup_wheels()
@@ -447,6 +462,30 @@ func _update_stats_type() -> void:
 func _update_stats_color() -> void:
 	if _stats_color_label:
 		_stats_color_label.text = get_color_name()
+
+
+## Calculate collision radius from the collision shape
+## Uses the smaller dimension of the shape for more accurate collision
+func _calculate_collision_radius() -> void:
+	var collision_shape = get_node_or_null("CollisionShape2D")
+	if collision_shape == null or collision_shape.shape == null:
+		_collision_radius = 20.0  # Default fallback
+		return
+
+	if collision_shape.shape is RectangleShape2D:
+		var rect = collision_shape.shape as RectangleShape2D
+		# Use the smaller dimension as radius for more accurate collision
+		_collision_radius = minf(rect.size.x, rect.size.y) / 2.0
+	elif collision_shape.shape is CircleShape2D:
+		var circle = collision_shape.shape as CircleShape2D
+		_collision_radius = circle.radius
+	else:
+		_collision_radius = 20.0  # Default fallback
+
+
+## Get the collision radius for this vehicle
+func get_collision_radius() -> float:
+	return _collision_radius
 
 
 ## Update group label (called when spawned)
@@ -589,6 +628,11 @@ func _physics_process(delta: float) -> void:
 		_process_turn(delta)
 		return
 
+	# Handle left turn preparation (moving to opposite lane before turning)
+	if _preparing_left_turn:
+		_process_left_turn_prep(delta)
+		return
+
 	# Check for red light violations (player must code stoplight handling!)
 	if _is_moving:
 		_check_red_light_violation()
@@ -620,7 +664,7 @@ func _physics_process(delta: float) -> void:
 				_is_moving = false
 				_wants_to_move = false
 				velocity = Vector2.ZERO
-				# Move command completed - process next command
+				# No snapping - car stays where guideline path placed it
 				_command_completed()
 
 
@@ -637,13 +681,15 @@ func _move(_delta: float) -> void:
 	# Direct position update instead of move_and_slide() to avoid physics-based sliding
 	global_position += velocity * get_physics_process_delta_time()
 
-	# Check for collisions with other vehicles (manual distance check)
+	# Check for collisions with other vehicles (using actual collision radii)
 	var vehicles = get_tree().get_nodes_in_group("vehicles")
 	for other_vehicle in vehicles:
 		if other_vehicle == self:
 			continue
 		var dist = global_position.distance_to(other_vehicle.global_position)
-		if dist < 40:  # Collision threshold (roughly car width)
+		# Use combined collision radii for accurate collision detection
+		var collision_threshold = _collision_radius + other_vehicle.get_collision_radius()
+		if dist < collision_threshold:
 			# If we hit a crashed car, just this car crashes
 			if other_vehicle.vehicle_state == 0:
 				_on_crash()
@@ -853,7 +899,9 @@ func _move_along_path(delta: float) -> void:
 		if other_vehicle == self:
 			continue
 		var collision_dist = global_position.distance_to(other_vehicle.global_position)
-		if collision_dist < 40:  # Collision threshold (roughly car width)
+		# Use combined collision radii for accurate collision detection
+		var collision_threshold = _collision_radius + other_vehicle.get_collision_radius()
+		if collision_dist < collision_threshold:
 			if other_vehicle.vehicle_state == 0:
 				_on_crash()
 				return
@@ -861,6 +909,9 @@ func _move_along_path(delta: float) -> void:
 				_on_crash()
 				other_vehicle._on_crash()
 				return
+
+	# Check for collisions with road boundaries (group "road_boundary")
+	_check_road_boundary_collision()
 
 
 ## Convert grid offset to direction string
@@ -889,15 +940,30 @@ func _check_destination() -> void:
 		for dest in _all_destinations:
 			var distance = global_position.distance_to(dest)
 			if distance < DESTINATION_THRESHOLD:
-				stop()
+				_park_at_destination(dest)
 				reached_destination.emit(vehicle_id)
 				return
 	# Fallback to single destination for backwards compatibility
 	elif destination != Vector2.ZERO:
 		var distance = global_position.distance_to(destination)
 		if distance < DESTINATION_THRESHOLD:
-			stop()
+			_park_at_destination(destination)
 			reached_destination.emit(vehicle_id)
+
+
+## Park the vehicle at the destination position
+## Unlike normal stop, this snaps to the exact destination position
+func _park_at_destination(dest_pos: Vector2) -> void:
+	_is_moving = false
+	_wants_to_move = false
+	velocity = Vector2.ZERO
+	_tiles_to_move = 0
+	# Snap to exact destination position (which already includes lane offset)
+	global_position = dest_pos
+	_update_stats_state()
+	# Clear command queue since we've reached destination
+	_command_queue.clear()
+	_current_command = {}
 
 
 func _on_crash() -> void:
@@ -914,6 +980,50 @@ func _on_off_road_crash() -> void:
 	_switch_to_crashed_sprite()
 	_update_stats_state()  # Update state label
 	off_road_crash.emit(vehicle_id)
+
+
+## Check for collisions with road boundary objects (group "road_boundary")
+## Road boundaries are StaticBody2D or Area2D objects placed in the level
+## to define areas where cars should crash
+func _check_road_boundary_collision() -> void:
+	if vehicle_state == 0:  # Already crashed
+		return
+
+	# Check for collision with road boundary nodes
+	var road_boundaries = get_tree().get_nodes_in_group("road_boundary")
+	for boundary in road_boundaries:
+		if boundary is Area2D:
+			# Use Area2D overlap check
+			if boundary.has_method("overlaps_body") and boundary.overlaps_body(self):
+				_on_road_boundary_crash()
+				return
+		elif boundary is StaticBody2D:
+			# Check distance to collision shape center
+			var collision_shape = boundary.get_node_or_null("CollisionShape2D")
+			if collision_shape and collision_shape.shape:
+				var shape_center = boundary.global_position
+				if collision_shape.shape is RectangleShape2D:
+					var rect_shape = collision_shape.shape as RectangleShape2D
+					var half_extents = rect_shape.size / 2.0
+					# Check if car position is inside the rectangle (AABB check)
+					var local_pos = global_position - shape_center
+					if abs(local_pos.x) < half_extents.x and abs(local_pos.y) < half_extents.y:
+						_on_road_boundary_crash()
+						return
+				elif collision_shape.shape is CircleShape2D:
+					var circle_shape = collision_shape.shape as CircleShape2D
+					if global_position.distance_to(shape_center) < circle_shape.radius:
+						_on_road_boundary_crash()
+						return
+
+
+## Called when vehicle collides with a road boundary
+func _on_road_boundary_crash() -> void:
+	stop()
+	vehicle_state = 0  # Mark as crashed
+	_switch_to_crashed_sprite()
+	_update_stats_state()  # Update state label
+	off_road_crash.emit(vehicle_id)  # Use same signal as off-road
 
 
 ## Switch to the crashed sprite from row 2 of the spritesheet
@@ -1064,6 +1174,7 @@ func _exec_stop() -> void:
 	_wants_to_move = false
 	velocity = Vector2.ZERO
 	_tiles_to_move = 0
+	# No snapping - car stays where it is (already in correct lane from guideline path)
 	_update_stats_state()  # Update state label
 	_command_completed()
 
@@ -1072,11 +1183,53 @@ func _exec_turn(turn_direction: String) -> void:
 	if turn_direction == "left" or turn_direction == "right":
 		# LOCK decision for this tile (prevents zigzag from re-evaluation)
 		_decision_made_for_tile = true
-		# ALWAYS rotate immediately - bad code will crash, good code checked first
-		_execute_turn(turn_direction)
-		# Turn completion is handled in _process_turn()
+
+		if turn_direction == "right":
+			# Right turn: Turn immediately at current position
+			_execute_turn(turn_direction)
+			# Turn completion is handled in _process_turn()
+		else:
+			# Left turn: Need to move to opposite lane position first
+			_prepare_left_turn()
 	else:
 		_command_completed()
+
+
+## Prepare for a left turn by moving to the opposite lane position first
+func _prepare_left_turn() -> void:
+	_preparing_left_turn = true
+	_pending_turn_direction = "left"
+	_is_moving = true
+	_wants_to_move = true
+
+	# Calculate target position for left turn preparation
+	# This is the opposite side of the current lane (crossing the road)
+	var tile_center = _get_current_tile_center()
+	_left_turn_target_position = tile_center + _get_left_turn_prep_offset(direction)
+
+
+## Get the offset for left turn preparation position
+## This is where the car needs to be before starting a left turn
+## Going East: move from bottom-left to bottom-RIGHT (+X offset)
+## Going West: move from top-right to top-LEFT (-X offset)
+## Going South: move from top-left to BOTTOM-left (+Y offset)
+## Going North: move from bottom-right to TOP-right (-Y offset)
+func _get_left_turn_prep_offset(dir: Vector2) -> Vector2:
+	var normalized_dir = dir.normalized()
+	if abs(normalized_dir.x) > abs(normalized_dir.y):
+		if normalized_dir.x > 0:
+			# Going East → need bottom-RIGHT for left turn
+			return Vector2(LANE_OFFSET, LANE_OFFSET)
+		else:
+			# Going West → need top-LEFT for left turn
+			return Vector2(-LANE_OFFSET, -LANE_OFFSET)
+	else:
+		if normalized_dir.y > 0:
+			# Going South → need BOTTOM-left for left turn
+			return Vector2(-LANE_OFFSET, LANE_OFFSET)
+		else:
+			# Going North → need TOP-right for left turn
+			return Vector2(LANE_OFFSET, -LANE_OFFSET)
 
 
 func _exec_wait(seconds: float) -> void:
@@ -1093,7 +1246,54 @@ func _exec_move(tiles: int) -> void:
 	_wants_to_move = true
 	# Track the direction we're moving so we don't turn back to it
 	_last_move_direction = direction
+	# Initialize movement direction for grid calculations
+	_current_move_dir = direction
 	# Move completion is handled in _physics_process()
+
+
+## Get the lane offset vector based on travel direction
+## Right-hand traffic: offset to the RIGHT of travel direction (90° clockwise)
+## - Going East (right): right side is South (+Y) → offset (0, +LANE_OFFSET)
+## - Going West (left): right side is North (-Y) → offset (0, -LANE_OFFSET)
+## - Going South (down): right side is West (-X) → offset (-LANE_OFFSET, 0)
+## - Going North (up): right side is East (+X) → offset (+LANE_OFFSET, 0)
+func _get_lane_offset_for_direction(dir: Vector2) -> Vector2:
+	var normalized_dir = dir.normalized()
+	# Use threshold to determine cardinal direction
+	if abs(normalized_dir.x) > abs(normalized_dir.y):
+		if normalized_dir.x > 0:
+			# Going East (right) → offset down (+Y)
+			return Vector2(0, LANE_OFFSET)
+		else:
+			# Going West (left) → offset up (-Y)
+			return Vector2(0, -LANE_OFFSET)
+	else:
+		if normalized_dir.y > 0:
+			# Going South (down) → offset left (-X)
+			return Vector2(-LANE_OFFSET, 0)
+		else:
+			# Going North (up) → offset right (+X)
+			return Vector2(LANE_OFFSET, 0)
+
+
+## Get the tile center position for the current tile
+func _get_current_tile_center() -> Vector2:
+	var grid_pos = _get_raw_grid_pos()
+	return Vector2(grid_pos.x * TILE_SIZE + TILE_SIZE / 2, grid_pos.y * TILE_SIZE + TILE_SIZE / 2)
+
+
+## Get the proper lane position for the current direction at the current tile center
+func _get_lane_position_at_tile_center() -> Vector2:
+	var tile_center = _get_current_tile_center()
+	var lane_offset = _get_lane_offset_for_direction(direction)
+	return tile_center + lane_offset
+
+
+## Snap vehicle position to the correct lane position for current direction
+## Called when stopping to ensure car is in proper lane
+func _snap_to_lane_position() -> void:
+	var target_pos = _get_lane_position_at_tile_center()
+	global_position = target_pos
 
 
 ## Get the grid position of the tile the car is currently on (compensating for lane offset)
@@ -1540,6 +1740,10 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Reset turn state
 	_is_turning = false
 	_turn_progress = 0.0
+	# Reset left turn preparation state
+	_preparing_left_turn = false
+	_left_turn_target_position = Vector2.ZERO
+	_pending_turn_direction = ""
 	# Reset auto-navigate
 	auto_navigate = false
 	_nav_check_timer = 0.0
@@ -1648,7 +1852,9 @@ func _check_intersection_for_turn() -> void:
 			return
 
 
-## Execute a turn (starts smooth rotation animation)
+## Execute a turn (starts smooth rotation animation with lane position transition)
+## Right turns: Turn in place at current position (no movement, just rotate)
+## Left turns: Already moved to correct position via _prepare_left_turn(), now just rotate
 func _execute_turn(turn_direction: String) -> void:
 	if turn_direction == "":
 		return
@@ -1658,17 +1864,115 @@ func _execute_turn(turn_direction: String) -> void:
 	_turn_progress = 0.0
 	_turn_start_rotation = rotation
 	_turn_start_direction = direction
+	_turn_start_position = global_position
 
 	if turn_direction == "left":
 		_turn_target_rotation = rotation - PI / 2
 	elif turn_direction == "right":
 		_turn_target_rotation = rotation + PI / 2
 
+	# For BOTH left and right turns: turn in place at current position
+	# - Right turns: car is already in correct lane position, just rotate
+	# - Left turns: car was moved to correct position by _prepare_left_turn(), just rotate
+	# NO SNAPPING - car stays exactly where it is and rotates
+	_turn_target_position = global_position
+
 	# Clear the queued turn
 	queued_turn = ""
 
 
-## Process smooth turn animation
+## Calculate the target position after a turn based on turn direction
+## This implements the lane transition rules:
+## - Right turn: Turn at current lane position to new direction's lane
+## - Left turn: Cross to opposite lane position, then turn to new direction's lane
+func _get_turn_target_position(turn_dir: String, tile_center: Vector2, new_direction: Vector2) -> Vector2:
+	# Get the lane offset for the new direction (where we'll end up)
+	var new_lane_offset = _get_lane_offset_for_direction(new_direction)
+	return tile_center + new_lane_offset
+
+
+## Get the correct starting position for a turn
+## For left turns, we need to move to the opposite lane first
+func _get_turn_start_position_for_left_turn() -> Vector2:
+	var tile_center = _get_current_tile_center()
+	# For left turn, start position should be on the OPPOSITE side
+	# e.g., if going East (lane is bottom), left turn starts from bottom-RIGHT
+	var opposite_offset = _get_opposite_lane_offset_for_direction(direction)
+	return tile_center + opposite_offset
+
+
+## Get the opposite lane offset (for left turns that cross the road)
+## Going East: normal offset is (0, +LANE_OFFSET) bottom, opposite is (0, +LANE_OFFSET) but on RIGHT side = (+LANE_OFFSET, +LANE_OFFSET)
+## Actually, for smooth left turns:
+## - Going East and turning left: need to be at bottom-RIGHT before turning to face North
+## - Going West and turning left: need to be at top-LEFT before turning to face South
+## - Going South and turning left: need to be at BOTTOM-left before turning to face East
+## - Going North and turning left: need to be at TOP-right before turning to face West
+func _get_opposite_lane_offset_for_direction(dir: Vector2) -> Vector2:
+	var normalized_dir = dir.normalized()
+	if abs(normalized_dir.x) > abs(normalized_dir.y):
+		if normalized_dir.x > 0:
+			# Going East → for left turn, need bottom-RIGHT position
+			return Vector2(LANE_OFFSET, LANE_OFFSET)
+		else:
+			# Going West → for left turn, need top-LEFT position
+			return Vector2(-LANE_OFFSET, -LANE_OFFSET)
+	else:
+		if normalized_dir.y > 0:
+			# Going South → for left turn, need BOTTOM-left position
+			return Vector2(-LANE_OFFSET, LANE_OFFSET)
+		else:
+			# Going North → for left turn, need TOP-right position
+			return Vector2(LANE_OFFSET, -LANE_OFFSET)
+
+
+## Process left turn preparation - move to opposite lane position before turning
+func _process_left_turn_prep(delta: float) -> void:
+	# Check if car is on a road tile
+	if _road_checker != null:
+		if not _is_on_road():
+			_on_off_road_crash()
+			return
+
+	# Move toward the left turn target position
+	var to_target = _left_turn_target_position - global_position
+	var dist = to_target.length()
+
+	# Check if reached the target position
+	if dist < 5.0:
+		# Reached position, now execute the actual left turn
+		_preparing_left_turn = false
+		_is_moving = false
+		global_position = _left_turn_target_position  # Snap to exact position
+		_execute_turn(_pending_turn_direction)
+		_pending_turn_direction = ""
+		return
+
+	# Move toward target position
+	var move_dir = to_target.normalized()
+	var actual_speed = speed * speed_multiplier * type_speed_mult
+	velocity = move_dir * actual_speed
+	global_position += velocity * delta
+
+	# Check for collisions (using actual collision radii)
+	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	for other_vehicle in vehicles:
+		if other_vehicle == self:
+			continue
+		var collision_dist = global_position.distance_to(other_vehicle.global_position)
+		# Use combined collision radii for accurate collision detection
+		var collision_threshold = _collision_radius + other_vehicle.get_collision_radius()
+		if collision_dist < collision_threshold:
+			if other_vehicle.vehicle_state == 0:
+				_on_crash()
+				return
+			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
+				_on_crash()
+				other_vehicle._on_crash()
+				return
+
+
+## Process smooth turn animation with lane position transition
 func _process_turn(delta: float) -> void:
 	_turn_progress += delta / TURN_DURATION
 
@@ -1677,8 +1981,9 @@ func _process_turn(delta: float) -> void:
 		_turn_progress = 1.0
 		_is_turning = false
 
-		# Snap to exact target rotation
+		# Snap to exact target rotation and position
 		rotation = _turn_target_rotation
+		global_position = _turn_target_position
 		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
 		direction = Vector2.UP.rotated(rotation)
 
@@ -1702,9 +2007,10 @@ func _process_turn(delta: float) -> void:
 		# Turn command completed - process next command
 		_command_completed()
 	else:
-		# Interpolate rotation smoothly (ease in-out)
+		# Interpolate rotation and position smoothly (ease in-out)
 		var t = _ease_in_out(_turn_progress)
 		rotation = lerp(_turn_start_rotation, _turn_target_rotation, t)
+		global_position = _turn_start_position.lerp(_turn_target_position, t)
 		# Since rotation includes PI/2 offset (sprite faces UP), use UP.rotated instead
 		direction = Vector2.UP.rotated(rotation)
 

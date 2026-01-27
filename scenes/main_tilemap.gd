@@ -83,6 +83,11 @@ var spawn_data: Array = []  # From road layer
 var destination_data: Array = []  # From road layer
 var is_spawning_cars: bool = false
 var next_car_id: int = 1
+var spawned_groups: Array = []  # Track which spawn groups have already spawned a car
+
+# LevelCars configuration - parsed from LevelSettings/LevelCars label
+# Format: "Group A - Type, Color, Type, Color\nGroup B - Random, Random"
+var level_cars_config: Dictionary = {}  # group_name -> Array of {type, color} options
 
 # Spawned stoplights (from stoplight tiles)
 var _spawned_stoplights: Array = []
@@ -210,12 +215,8 @@ func _process(delta: float) -> void:
 			camera.position += camera_velocity.normalized() * speed * delta
 			_clamp_camera_to_bounds()
 
-	# Handle car spawning
-	if is_spawning_cars:
-		car_spawn_timer += delta
-		if car_spawn_timer >= CAR_SPAWN_INTERVAL:
-			car_spawn_timer = 0.0
-			_spawn_new_car()
+	# Cars only spawn once per parking spot at level start
+	# No continuous spawning during gameplay
 
 	# Update level timer
 	# Timer pauses when game is paused
@@ -365,6 +366,9 @@ func _load_level(index: int) -> void:
 	_set_initial_camera_position()
 	_clamp_camera_to_bounds()
 
+	# Load car spawning configuration
+	_load_level_cars_config()
+
 	# Spawn initial cars at game start (before player runs code)
 	_spawn_initial_cars()
 
@@ -428,20 +432,45 @@ func get_tile_size() -> float:
 # ============================================
 
 func _spawn_initial_cars() -> void:
+	# Reset spawned groups tracking
+	spawned_groups.clear()
+
 	# Spawn one car at each spawn point when level loads
 	# This lets players see what cars they're dealing with before running code
 	for spawn in spawn_data:
-		_spawn_car_at(spawn)
+		var group = spawn.get("group", "")
+		# Only spawn if this group hasn't spawned yet (one car per parking spot)
+		if group == "" or group not in spawned_groups:
+			_spawn_car_at(spawn)
+			if group != "":
+				spawned_groups.append(group)
 
 
 func _spawn_new_car() -> void:
-	# Spawn at a random spawn point
+	# Cars only spawn once per parking spot - no continuous spawning
+	# This function is now only called for initial spawning or manual triggers
 	if spawn_data.is_empty():
 		_update_status("No spawn points available!")
 		return
 
-	var spawn = spawn_data[randi() % spawn_data.size()]
+	# Find a spawn point that hasn't been used yet
+	var available_spawns: Array = []
+	for spawn in spawn_data:
+		var group = spawn.get("group", "")
+		if group == "" or group not in spawned_groups:
+			available_spawns.append(spawn)
+
+	if available_spawns.is_empty():
+		_update_status("All spawn points have been used!")
+		return
+
+	var spawn = available_spawns[randi() % available_spawns.size()]
 	var car = _spawn_car_at(spawn)
+
+	# Track that this group has spawned
+	var group = spawn.get("group", "")
+	if group != "" and group not in spawned_groups:
+		spawned_groups.append(group)
 
 	# Execute current code on the new car
 	if car and is_spawning_cars:
@@ -452,19 +481,36 @@ func _spawn_new_car() -> void:
 
 
 func _spawn_car_at(spawn: Dictionary) -> Vehicle:
-	# Load a random car scene
-	var car_scenes = [
-		"res://scenes/entities/car_sedan.tscn",
-		"res://scenes/entities/car_estate.tscn",
-		"res://scenes/entities/car_sport.tscn",
-		"res://scenes/entities/car_micro.tscn",
-		"res://scenes/entities/car_pickup.tscn",
-		"res://scenes/entities/car_jeepney.tscn",
-		"res://scenes/entities/car_jeepney_2.tscn",
-		"res://scenes/entities/car_bus.tscn"
-	]
-	var random_index = randi() % car_scenes.size()
-	var vehicle_scene = load(car_scenes[random_index])
+	# Get spawn group for this spawn point
+	var group_name = spawn.get("group", "")
+
+	# Get car configuration from LevelCars config
+	var car_config = _get_car_config_for_group(group_name)
+	var car_type = car_config.get("type", "Random")
+	var car_color = car_config.get("color", "Random")
+
+	# Determine which scene to load
+	var vehicle_scene: Resource = null
+	var scene_path = _get_scene_path_for_type(car_type)
+
+	if scene_path != "":
+		# Specific type requested
+		vehicle_scene = load(scene_path)
+	else:
+		# Random type - pick from all available
+		var car_scenes = [
+			"res://scenes/entities/car_sedan.tscn",
+			"res://scenes/entities/car_estate.tscn",
+			"res://scenes/entities/car_sport.tscn",
+			"res://scenes/entities/car_micro.tscn",
+			"res://scenes/entities/car_pickup.tscn",
+			"res://scenes/entities/car_jeepney.tscn",
+			"res://scenes/entities/car_jeepney_2.tscn",
+			"res://scenes/entities/car_bus.tscn"
+		]
+		var random_index = randi() % car_scenes.size()
+		vehicle_scene = load(car_scenes[random_index])
+
 	if vehicle_scene == null:
 		_update_status("Error: Could not load vehicle scene")
 		return null
@@ -501,8 +547,14 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 		# Also set first one as fallback for backwards compatibility
 		new_car.destination = destination_data[0]["position"]
 
-	# Set random color
-	new_car.set_random_color()
+	# Set color based on LevelCars config
+	var color_index = _get_color_index_for_name(car_color)
+	if color_index >= 0:
+		# Specific color requested
+		new_car.set_color_palette_index(color_index)
+	else:
+		# Random color - uses rarity system
+		new_car.set_random_color()
 
 	# Add to scene
 	$GameWorld.add_child(new_car)
@@ -524,7 +576,8 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 		new_car.add_stoplight(stoplight)
 
 	var group_str = new_car.get_spawn_group_name()
-	_update_status("Spawned %s: %s (Group %s)" % [new_car.get_vehicle_type_name(), new_car.vehicle_id, group_str])
+	var color_str = new_car.get_color_name() if new_car.has_method("get_color_name") else "?"
+	_update_status("Spawned %s (%s): %s (Group %s)" % [new_car.get_vehicle_type_name(), color_str, new_car.vehicle_id, group_str])
 	return new_car
 
 
@@ -2010,6 +2063,122 @@ func _can_select_tile(grid_pos: Vector2i) -> bool:
 func _can_remove_tile(grid_pos: Vector2i) -> bool:
 	var permission = _get_build_permission(grid_pos)
 	return permission >= 2  # Only permission 2 allows removal
+
+
+# ============================================
+# Level Cars Configuration
+# ============================================
+
+## Load car spawning configuration from level's LevelSettings/LevelCars label
+## Format: "Group A - Type, Color, Type, Color\nGroup B - Random, Random"
+## Default: Each group gets "Random, Random"
+func _load_level_cars_config() -> void:
+	level_cars_config.clear()
+
+	# Set default config for all groups (Random, Random)
+	level_cars_config["A"] = [{"type": "Random", "color": "Random"}]
+	level_cars_config["B"] = [{"type": "Random", "color": "Random"}]
+	level_cars_config["C"] = [{"type": "Random", "color": "Random"}]
+	level_cars_config["D"] = [{"type": "Random", "color": "Random"}]
+
+	if current_level_node == null:
+		return
+
+	# Look for LevelSettings/LevelCars label
+	var level_settings = current_level_node.get_node_or_null("LevelSettings")
+	if level_settings == null:
+		return
+
+	var level_cars_label = level_settings.get_node_or_null("LevelCars")
+	if level_cars_label == null or not level_cars_label is Label:
+		return
+
+	# Parse the label text
+	var config_text = level_cars_label.text.strip_edges()
+	var lines = config_text.split("\n")
+
+	for line in lines:
+		line = line.strip_edges()
+		if line.is_empty():
+			continue
+
+		# Parse "Group X - Type, Color, Type, Color, ..."
+		var parts = line.split(" - ")
+		if parts.size() < 2:
+			continue
+
+		# Extract group letter (e.g., "Group A" -> "A")
+		var group_part = parts[0].strip_edges()
+		var group_name = ""
+		if group_part.begins_with("Group "):
+			group_name = group_part.substr(6).strip_edges().to_upper()
+		else:
+			continue
+
+		if not group_name in ["A", "B", "C", "D"]:
+			continue
+
+		# Parse type/color pairs
+		var items_part = parts[1].strip_edges()
+		var items = items_part.split(",")
+		var car_options: Array = []
+
+		var i = 0
+		while i < items.size():
+			var car_type = items[i].strip_edges() if i < items.size() else "Random"
+			var car_color = items[i + 1].strip_edges() if i + 1 < items.size() else "Random"
+			car_options.append({"type": car_type, "color": car_color})
+			i += 2
+
+		if car_options.size() > 0:
+			level_cars_config[group_name] = car_options
+
+	print("Loaded LevelCars config: %s" % str(level_cars_config))
+
+
+## Get a random car configuration for a spawn group
+## Returns {type: String, color: String}
+func _get_car_config_for_group(group_name: String) -> Dictionary:
+	var options = level_cars_config.get(group_name, [{"type": "Random", "color": "Random"}])
+	if options.size() == 0:
+		return {"type": "Random", "color": "Random"}
+	return options[randi() % options.size()]
+
+
+## Convert type string to scene path
+func _get_scene_path_for_type(type_name: String) -> String:
+	match type_name.to_lower():
+		"sedan": return "res://scenes/entities/car_sedan.tscn"
+		"estate": return "res://scenes/entities/car_estate.tscn"
+		"sport": return "res://scenes/entities/car_sport.tscn"
+		"micro": return "res://scenes/entities/car_micro.tscn"
+		"pickup": return "res://scenes/entities/car_pickup.tscn"
+		"jeepney": return "res://scenes/entities/car_jeepney.tscn"
+		"jeepney2", "jeepney_2": return "res://scenes/entities/car_jeepney_2.tscn"
+		"bus": return "res://scenes/entities/car_bus.tscn"
+		_: return ""  # Random or unknown
+
+
+## Convert color string to VehicleColor enum index
+## Returns -1 for Random (use set_random_color instead)
+func _get_color_index_for_name(color_name: String) -> int:
+	match color_name.to_lower():
+		"white": return 0
+		"gray": return 1
+		"black": return 2
+		"red": return 3
+		"beige": return 4
+		"green": return 5
+		"blue": return 6
+		"cyan": return 7
+		"orange": return 8
+		"brown": return 9
+		"lime": return 10
+		"magenta": return 11
+		"pink": return 12
+		"purple": return 13
+		"yellow": return 14
+		_: return -1  # Random or unknown
 
 
 # ============================================
