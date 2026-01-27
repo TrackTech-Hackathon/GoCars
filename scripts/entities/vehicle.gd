@@ -1185,11 +1185,10 @@ func _exec_turn(turn_direction: String) -> void:
 		_decision_made_for_tile = true
 
 		if turn_direction == "right":
-			# Right turn: Turn immediately at current position
-			_execute_turn(turn_direction)
-			# Turn completion is handled in _process_turn()
+			# Right turn: Move to correct lane position for new direction, then turn
+			_prepare_right_turn()
 		else:
-			# Left turn: Need to move to opposite lane position first
+			# Left turn: Move to opposite lane position first, then turn
 			_prepare_left_turn()
 	else:
 		_command_completed()
@@ -1252,32 +1251,37 @@ func _exec_move(tiles: int) -> void:
 
 
 ## Get the lane offset vector based on travel direction
-## Right-hand traffic: offset to the RIGHT of travel direction (90° clockwise)
-## - Going East (right): right side is South (+Y) → offset (0, +LANE_OFFSET)
-## - Going West (left): right side is North (-Y) → offset (0, -LANE_OFFSET)
-## - Going South (down): right side is West (-X) → offset (-LANE_OFFSET, 0)
-## - Going North (up): right side is East (+X) → offset (+LANE_OFFSET, 0)
+## Lane positions (relative to tile center):
+## - Going East: bottom-left = (-LANE_OFFSET, +LANE_OFFSET)
+## - Going West: top-right = (+LANE_OFFSET, -LANE_OFFSET)
+## - Going South: top-left = (-LANE_OFFSET, -LANE_OFFSET)
+## - Going North: bottom-right = (+LANE_OFFSET, +LANE_OFFSET)
 func _get_lane_offset_for_direction(dir: Vector2) -> Vector2:
 	var normalized_dir = dir.normalized()
 	# Use threshold to determine cardinal direction
 	if abs(normalized_dir.x) > abs(normalized_dir.y):
 		if normalized_dir.x > 0:
-			# Going East (right) → offset down (+Y)
-			return Vector2(0, LANE_OFFSET)
+			# Going East → bottom-left
+			return Vector2(-LANE_OFFSET, LANE_OFFSET)
 		else:
-			# Going West (left) → offset up (-Y)
-			return Vector2(0, -LANE_OFFSET)
+			# Going West → top-right
+			return Vector2(LANE_OFFSET, -LANE_OFFSET)
 	else:
 		if normalized_dir.y > 0:
-			# Going South (down) → offset left (-X)
-			return Vector2(-LANE_OFFSET, 0)
+			# Going South → top-left
+			return Vector2(-LANE_OFFSET, -LANE_OFFSET)
 		else:
-			# Going North (up) → offset right (+X)
-			return Vector2(LANE_OFFSET, 0)
+			# Going North → bottom-right
+			return Vector2(LANE_OFFSET, LANE_OFFSET)
 
 
 ## Get the tile center position for the current tile
+## Uses _current_tile if available (more reliable), falls back to position-based calculation
 func _get_current_tile_center() -> Vector2:
+	# Use tracked _current_tile if it's valid (more stable during turns)
+	if _current_tile != Vector2i(-1, -1):
+		return Vector2(_current_tile.x * TILE_SIZE + TILE_SIZE / 2, _current_tile.y * TILE_SIZE + TILE_SIZE / 2)
+	# Fallback to position-based calculation
 	var grid_pos = _get_raw_grid_pos()
 	return Vector2(grid_pos.x * TILE_SIZE + TILE_SIZE / 2, grid_pos.y * TILE_SIZE + TILE_SIZE / 2)
 
@@ -1852,9 +1856,10 @@ func _check_intersection_for_turn() -> void:
 			return
 
 
-## Execute a turn (starts smooth rotation animation with lane position transition)
-## Right turns: Turn in place at current position (no movement, just rotate)
-## Left turns: Already moved to correct position via _prepare_left_turn(), now just rotate
+## Execute a turn (starts smooth rotation animation)
+## Both left and right turns: rotate in place at current position
+## - Right turns: car is already in correct lane from guideline path, just rotate
+## - Left turns: car was moved to correct position by _prepare_left_turn(), just rotate
 func _execute_turn(turn_direction: String) -> void:
 	if turn_direction == "":
 		return
@@ -1871,10 +1876,9 @@ func _execute_turn(turn_direction: String) -> void:
 	elif turn_direction == "right":
 		_turn_target_rotation = rotation + PI / 2
 
-	# For BOTH left and right turns: turn in place at current position
-	# - Right turns: car is already in correct lane position, just rotate
-	# - Left turns: car was moved to correct position by _prepare_left_turn(), just rotate
-	# NO SNAPPING - car stays exactly where it is and rotates
+	# Both left and right turns: rotate in place at current position
+	# NO position change - car stays exactly where it is
+	# The guideline path system will handle lane positioning when entering next tile
 	_turn_target_position = global_position
 
 	# Clear the queued turn
@@ -1902,12 +1906,11 @@ func _get_turn_start_position_for_left_turn() -> Vector2:
 
 
 ## Get the opposite lane offset (for left turns that cross the road)
-## Going East: normal offset is (0, +LANE_OFFSET) bottom, opposite is (0, +LANE_OFFSET) but on RIGHT side = (+LANE_OFFSET, +LANE_OFFSET)
-## Actually, for smooth left turns:
-## - Going East and turning left: need to be at bottom-RIGHT before turning to face North
-## - Going West and turning left: need to be at top-LEFT before turning to face South
-## - Going South and turning left: need to be at BOTTOM-left before turning to face East
-## - Going North and turning left: need to be at TOP-right before turning to face West
+## For left turns, the car needs to move to the "opposite" lane before turning:
+## - Going East (bottom-left): for left turn, move to bottom-RIGHT = (+LANE_OFFSET, +LANE_OFFSET)
+## - Going West (top-right): for left turn, move to top-LEFT = (-LANE_OFFSET, -LANE_OFFSET)
+## - Going South (top-left): for left turn, move to BOTTOM-left = (-LANE_OFFSET, +LANE_OFFSET)
+## - Going North (bottom-right): for left turn, move to TOP-right = (+LANE_OFFSET, -LANE_OFFSET)
 func _get_opposite_lane_offset_for_direction(dir: Vector2) -> Vector2:
 	var normalized_dir = dir.normalized()
 	if abs(normalized_dir.x) > abs(normalized_dir.y):
