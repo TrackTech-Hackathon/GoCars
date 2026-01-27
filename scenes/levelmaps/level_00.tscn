@@ -1137,6 +1137,7 @@ anchors_preset = 0
 metadata/_edit_use_custom_anchors = true
 
 [node name="Camera Border" type="CollisionShape2D" parent="."]
+visible = false
 position = Vector2(945.5, 320.5)
 shape = SubResource("RectangleShape2D_1su6t")
 
