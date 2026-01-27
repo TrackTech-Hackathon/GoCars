@@ -1081,7 +1081,7 @@ func _input(event: InputEvent) -> void:
 	# Handle stoplight pin toggle on mouse click early so UI doesn't consume it
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if _toggle_stoplight_popup_on_click():
-			event.accept()
+			get_viewport().set_input_as_handled()
 			return
 
 	if event is InputEventKey and event.pressed:

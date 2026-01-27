@@ -246,74 +246,88 @@ func wait(seconds: float) -> void:
 # ============================================
 
 ## Set specific directions to green (or all directions if none specified)
-func green(north: String = "", south: String = "", east: String = "", west: String = "") -> void:
-	print("[STOPLIGHT] green() called - north:", north, " south:", south, " east:", east, " west:", west)
-	
-	# If no directions specified, set all to green
-	if north.is_empty() and south.is_empty() and east.is_empty() and west.is_empty():
+func green(... directions) -> void:
+	# directions can be passed in any order: green("north", "west")
+	if directions.size() == 0:
 		_set_state(LightState.GREEN)
 		_directional_states["north"] = LightState.GREEN
 		_directional_states["south"] = LightState.GREEN
 		_directional_states["east"] = LightState.GREEN
 		_directional_states["west"] = LightState.GREEN
 		_update_visuals()
-	else:
-		# Set specific directions
-		if not north.is_empty() and north.to_lower() == "north":
-			_directional_states["north"] = LightState.GREEN
-		if not south.is_empty() and south.to_lower() == "south":
-			_directional_states["south"] = LightState.GREEN
-		if not east.is_empty() and east.to_lower() == "east":
-			_directional_states["east"] = LightState.GREEN
-		if not west.is_empty() and west.to_lower() == "west":
-			_directional_states["west"] = LightState.GREEN
-		_update_visuals()
+		return
+
+	for dir in directions:
+		var d = str(dir).to_lower()
+		match d:
+			"north":
+				_directional_states["north"] = LightState.GREEN
+			"south":
+				_directional_states["south"] = LightState.GREEN
+			"east":
+				_directional_states["east"] = LightState.GREEN
+			"west":
+				_directional_states["west"] = LightState.GREEN
+			_:  # ignore invalid tokens
+				pass
+
+	_update_visuals()
 
 
 ## Set specific directions to red (or all directions if none specified)
-func red(north: String = "", south: String = "", east: String = "", west: String = "") -> void:
-	# If no directions specified, set all to red
-	if north.is_empty() and south.is_empty() and east.is_empty() and west.is_empty():
+func red(... directions) -> void:
+	if directions.size() == 0:
 		_set_state(LightState.RED)
 		_directional_states["north"] = LightState.RED
 		_directional_states["south"] = LightState.RED
 		_directional_states["east"] = LightState.RED
 		_directional_states["west"] = LightState.RED
 		_update_visuals()
-	else:
-		# Set specific directions
-		if not north.is_empty() and north.to_lower() == "north":
-			_directional_states["north"] = LightState.RED
-		if not south.is_empty() and south.to_lower() == "south":
-			_directional_states["south"] = LightState.RED
-		if not east.is_empty() and east.to_lower() == "east":
-			_directional_states["east"] = LightState.RED
-		if not west.is_empty() and west.to_lower() == "west":
-			_directional_states["west"] = LightState.RED
-		_update_visuals()
+		return
+
+	for dir in directions:
+		var d = str(dir).to_lower()
+		match d:
+			"north":
+				_directional_states["north"] = LightState.RED
+			"south":
+				_directional_states["south"] = LightState.RED
+			"east":
+				_directional_states["east"] = LightState.RED
+			"west":
+				_directional_states["west"] = LightState.RED
+			_:
+				pass
+
+	_update_visuals()
 
 
 ## Set specific directions to yellow (or all directions if none specified)
-func yellow(north: String = "", south: String = "", east: String = "", west: String = "") -> void:
-	# If no directions specified, set all to yellow
-	if north.is_empty() and south.is_empty() and east.is_empty() and west.is_empty():
+func yellow(... directions) -> void:
+	if directions.size() == 0:
 		_set_state(LightState.YELLOW)
 		_directional_states["north"] = LightState.YELLOW
 		_directional_states["south"] = LightState.YELLOW
 		_directional_states["east"] = LightState.YELLOW
 		_directional_states["west"] = LightState.YELLOW
 		_update_visuals()
-	else:
-		# Set specific directions
-		if not north.is_empty() and north.to_lower() == "north":
-			_directional_states["north"] = LightState.YELLOW
-		if not south.is_empty() and south.to_lower() == "south":
-			_directional_states["south"] = LightState.YELLOW
-		if not east.is_empty() and east.to_lower() == "east":
-			_directional_states["east"] = LightState.YELLOW
-		if not west.is_empty() and west.to_lower() == "west":
-			_directional_states["west"] = LightState.YELLOW
-		_update_visuals()
+		return
+
+	for dir in directions:
+		var d = str(dir).to_lower()
+		match d:
+			"north":
+				_directional_states["north"] = LightState.YELLOW
+			"south":
+				_directional_states["south"] = LightState.YELLOW
+			"east":
+				_directional_states["east"] = LightState.YELLOW
+			"west":
+				_directional_states["west"] = LightState.YELLOW
+			_:
+				pass
+
+	_update_visuals()
 
 
 ## Set the traffic light to red (short name) - sets all directions
@@ -476,13 +490,15 @@ func _update_directional_lights() -> void:
 			if green:
 				_set_light_color(green, COLOR_OFF)
 
-			# Turn on the appropriate light
-			match current_state:
+			# Use per-direction state from _directional_states
+			var state_key = dir_name.to_lower()
+			var dir_state = _directional_states.get(state_key, current_state)
+
+			match dir_state:
 				LightState.RED:
 					if red:
 						_set_light_color(red, COLOR_RED)
 				LightState.YELLOW:
-					# Yellow shows red light blinking (simplified)
 					if red:
 						_set_light_color(red, COLOR_YELLOW)
 				LightState.GREEN:

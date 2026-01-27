@@ -80,10 +80,11 @@ func _process(delta: float) -> void:
 	# Clear all previous highlights first
 	for i in range(code_edit.get_line_count()):
 		code_edit.set_line_background_color(i, Color(0, 0, 0, 0))
-	
-	# Highlight current line if code is running
+
+	# Highlight current line if code is running (convert 1-based to 0-based)
 	if _stoplight._is_running_code and _stoplight._current_line >= 0:
-		code_edit.set_line_background_color(_stoplight._current_line, Color.YELLOW.darkened(0.7))
+		var line_idx = clamp(_stoplight._current_line - 1, 0, code_edit.get_line_count() - 1)
+		code_edit.set_line_background_color(line_idx, Color.YELLOW.darkened(0.7))
 
 
 ## Update the direction indicator showing which directions are green/red
