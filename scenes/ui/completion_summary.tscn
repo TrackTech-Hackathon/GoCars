@@ -1,6 +1,38 @@
-[gd_scene load_steps=2 format=3 uid="uid://c8j9l3m6n4pqr"]
+[gd_scene load_steps=10 format=3 uid="uid://c8kal3m6n4pqr"]
 
-[ext_resource type="Script" path="res://scripts/ui/completion_summary.gd" id="1_completion"]
+[ext_resource type="Script" uid="uid://tiqh6s8c1j8b" path="res://scripts/ui/completion_summary.gd" id="1_completion"]
+[ext_resource type="FontFile" uid="uid://dcwhex08vx2qh" path="res://assets/fonts/pixelFont-7-8x14-sproutLands.ttf" id="2_7ldm5"]
+[ext_resource type="FontFile" uid="uid://by2afd2myjmcg" path="res://assets/fonts/Game Paused DEMO.otf" id="3_l4t4h"]
+[ext_resource type="FontFile" uid="uid://dn4vh2ut6nrju" path="res://assets/fonts/ByteBounce.ttf" id="4_3fvmf"]
+[ext_resource type="Texture2D" uid="uid://ddcjky5c7ebh8" path="res://assets/UI/Sprite sheets/UI Big Play Button.png" id="5_smh13"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jqtpn"]
+bg_color = Color(0.8627451, 0.7254902, 0.5411765, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.9098039, 0.8117647, 0.6509804, 1)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+corner_radius_bottom_right = 25
+corner_radius_bottom_left = 25
+expand_margin_left = 9.0
+expand_margin_top = 9.0
+expand_margin_right = 9.0
+expand_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_7ldm5"]
+color = Color(0.6509804, 0.47843137, 0.3882353, 1)
+thickness = 2
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_x6mpm"]
+texture = ExtResource("5_smh13")
+region_rect = Rect2(2.5183182, 1.626667, 90.98835, 27.373615)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_2o818"]
+texture = ExtResource("5_smh13")
+region_rect = Rect2(2.504715, 1.5421906, 90.98834, 27.373613)
 
 [node name="CompletionSummary" type="Control"]
 layout_mode = 3
@@ -28,78 +60,78 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -200.0
-offset_top = -250.0
+offset_top = -192.0
 offset_right = 200.0
-offset_bottom = 250.0
+offset_bottom = 174.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_jqtpn")
 
 [node name="VBox" type="VBoxContainer" parent="Panel"]
 layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
 
 [node name="Title" type="Label" parent="Panel/VBox"]
 layout_mode = 2
+theme_override_fonts/font = ExtResource("2_7ldm5")
+theme_override_font_sizes/font_size = 46
 text = "Level Complete!"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="Panel/VBox"]
 layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxLine_7ldm5")
 
 [node name="Stars" type="HBoxContainer" parent="Panel/VBox"]
 layout_mode = 2
 alignment = 1
 
-[node name="HSeparator2" type="HSeparator" parent="Panel/VBox"]
+[node name="Score" type="Label" parent="Panel/VBox"]
 layout_mode = 2
-
-[node name="Stats" type="VBoxContainer" parent="Panel/VBox"]
-layout_mode = 2
-
-[node name="TimeLabel" type="Label" parent="Panel/VBox/Stats"]
-layout_mode = 2
-text = "Time: 00:12.5 (Best: 00:05.6)"
+theme_override_fonts/font = ExtResource("3_l4t4h")
+theme_override_font_sizes/font_size = 26
+text = "Score: 0 / 100"
 horizontal_alignment = 1
 
-[node name="CarsLabel" type="Label" parent="Panel/VBox/Stats"]
+[node name="HSeparator6" type="HSeparator" parent="Panel/VBox"]
 layout_mode = 2
-text = "Cars: 3/4"
-horizontal_alignment = 1
-
-[node name="HeartsLabel" type="Label" parent="Panel/VBox/Stats"]
-layout_mode = 2
-text = "Hearts: ❤❤❤○○"
-horizontal_alignment = 1
-
-[node name="HSeparator3" type="HSeparator" parent="Panel/VBox"]
-layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxLine_7ldm5")
 
 [node name="Feedback" type="RichTextLabel" parent="Panel/VBox"]
 custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("4_3fvmf")
+theme_override_font_sizes/normal_font_size = 26
 bbcode_enabled = true
 text = "[center]Great job![/center]"
 fit_content = true
 
-[node name="HSeparator4" type="HSeparator" parent="Panel/VBox"]
+[node name="HSeparator7" type="HSeparator" parent="Panel/VBox"]
 layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxLine_7ldm5")
 
 [node name="Tips" type="Label" parent="Panel/VBox"]
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
+theme_override_fonts/font = ExtResource("3_l4t4h")
 text = "Tips will appear here"
+horizontal_alignment = 1
 autowrap_mode = 3
-
-[node name="HSeparator5" type="HSeparator" parent="Panel/VBox"]
-layout_mode = 2
 
 [node name="Buttons" type="HBoxContainer" parent="Panel/VBox"]
 layout_mode = 2
 alignment = 1
 
 [node name="RetryButton" type="Button" parent="Panel/VBox/Buttons"]
+custom_minimum_size = Vector2(115.02, 30)
 layout_mode = 2
-text = "🔄 Retry"
+theme_override_colors/font_color = Color(0.6509804, 0.47843137, 0.3882353, 1)
+theme_override_fonts/font = ExtResource("3_l4t4h")
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxTexture_x6mpm")
+text = " Retry"
 
 [node name="Spacer1" type="Control" parent="Panel/VBox/Buttons"]
 custom_minimum_size = Vector2(20, 0)
@@ -114,5 +146,14 @@ custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 
 [node name="NextButton" type="Button" parent="Panel/VBox/Buttons"]
+custom_minimum_size = Vector2(115.02, 0)
 layout_mode = 2
-text = "➡ Next Level"
+theme_override_colors/font_color = Color(0.6509804, 0.47843137, 0.3882353, 1)
+theme_override_fonts/font = ExtResource("3_l4t4h")
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxTexture_2o818")
+text = " Next Level"
+
+[node name="HSeparator7" type="HSeparator" parent="Panel/VBox/Buttons"]
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxLine_7ldm5")

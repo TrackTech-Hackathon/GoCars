@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cf1leexpl0rer"]
+[gd_scene load_steps=9 format=3 uid="uid://cf1leexpl0rer"]
 
 [ext_resource type="Script" uid="uid://x08ctc6t4mym" path="res://scripts/ui/file_explorer.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://dydqdvwfmv8h5" path="res://scenes/ui/code_editor/Untitled23_20260121003753.png" id="2_1y3vx"]
@@ -7,11 +7,8 @@
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_636jc"]
 texture = ExtResource("2_1y3vx")
-expand_margin_left = 7.0
-expand_margin_top = 5.0
-expand_margin_right = 6.0
-expand_margin_bottom = 5.0
-region_rect = Rect2(0, -48.367584, 1280, 1328.3676)
+expand_margin_bottom = 4.0
+region_rect = Rect2(340.54004, 203.47687, 674.23566, 813.1497)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_thcv1"]
 texture = ExtResource("3_s2d27")
@@ -19,42 +16,70 @@ expand_margin_left = 3.0
 expand_margin_top = 5.0
 expand_margin_right = 3.0
 expand_margin_bottom = 5.0
-region_rect = Rect2(0, -5.4039154, 1280, 1285.4039)
+region_rect = Rect2(196.58502, 186.99002, 891.4255, 854.6655)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_urpap"]
 texture = ExtResource("4_s2d27")
-region_rect = Rect2(203.09338, 99.17157, 945.1864, 1026.0581)
+region_rect = Rect2(203.09338, 99.17157, 945.1864, 986.54083)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s2d27"]
+bg_color = Color(0.21, 0.06688501, 0.027299998, 0.78431374)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
 
 [node name="FileExplorer" type="VBoxContainer"]
 custom_minimum_size = Vector2(200, 0)
 script = ExtResource("1_script")
 
 [node name="ButtonContainer" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(0, 26.615)
 layout_mode = 2
+theme_override_constants/separation = 7
 
 [node name="NewFileButton" type="Button" parent="ButtonContainer"]
 custom_minimum_size = Vector2(25.02, 0)
 layout_mode = 2
 tooltip_text = "Create new file (Ctrl+N)"
+theme_override_constants/h_separation = -1496
 theme_override_styles/normal = SubResource("StyleBoxTexture_636jc")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_636jc")
+theme_override_styles/hover = SubResource("StyleBoxTexture_636jc")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_636jc")
+theme_override_styles/focus = SubResource("StyleBoxTexture_636jc")
 
 [node name="NewFolderButton" type="Button" parent="ButtonContainer"]
 custom_minimum_size = Vector2(25.02, 0)
 layout_mode = 2
 tooltip_text = "Create new folder"
 theme_override_styles/normal = SubResource("StyleBoxTexture_thcv1")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_thcv1")
+theme_override_styles/hover = SubResource("StyleBoxTexture_thcv1")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_thcv1")
+theme_override_styles/focus = SubResource("StyleBoxTexture_thcv1")
 
 [node name="RenameButton" type="Button" parent="ButtonContainer"]
-custom_minimum_size = Vector2(19.305, 0)
+custom_minimum_size = Vector2(30.045, 0)
 layout_mode = 2
 size_flags_stretch_ratio = 0.0
 tooltip_text = "Rename selected file/folder (F2)"
 theme_override_styles/normal = SubResource("StyleBoxTexture_urpap")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_urpap")
+theme_override_styles/hover = SubResource("StyleBoxTexture_urpap")
+theme_override_styles/focus = SubResource("StyleBoxTexture_urpap")
 text = " "
 
 [node name="FileTree" type="Tree" parent="."]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_font_sizes/font_size = 18
+theme_override_styles/panel = SubResource("StyleBoxFlat_s2d27")
 allow_rmb_select = true
 hide_root = true
 
