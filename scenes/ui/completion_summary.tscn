@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://c8kal3m6n4pqr"]
+[gd_scene load_steps=14 format=3 uid="uid://c8kal3m6n4pqr"]
 
 [ext_resource type="Script" uid="uid://tiqh6s8c1j8b" path="res://scripts/ui/completion_summary.gd" id="1_completion"]
 [ext_resource type="FontFile" uid="uid://dcwhex08vx2qh" path="res://assets/fonts/pixelFont-7-8x14-sproutLands.ttf" id="2_7ldm5"]
@@ -30,9 +30,25 @@ thickness = 2
 texture = ExtResource("5_smh13")
 region_rect = Rect2(2.5183182, 1.626667, 90.98835, 27.373615)
 
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_7ldm5"]
+texture = ExtResource("5_smh13")
+region_rect = Rect2(98.84424, 3.8236895, 90.322876, 25.27987)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_l4t4h"]
+texture = ExtResource("5_smh13")
+region_rect = Rect2(1.8291245, 1.1843643, 91.85557, 28.223782)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_3fvmf"]
+texture = ExtResource("5_smh13")
+region_rect = Rect2(98.3095, 3.2631607, 91.342415, 26.171143)
+
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_2o818"]
 texture = ExtResource("5_smh13")
 region_rect = Rect2(2.504715, 1.5421906, 90.98834, 27.373613)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_smh13"]
+texture = ExtResource("5_smh13")
+region_rect = Rect2(98.89294, 3.8098412, 90.32287, 25.27987)
 
 [node name="CompletionSummary" type="Control"]
 layout_mode = 3
@@ -131,6 +147,9 @@ theme_override_colors/font_color = Color(0.6509804, 0.47843137, 0.3882353, 1)
 theme_override_fonts/font = ExtResource("3_l4t4h")
 theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxTexture_x6mpm")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_7ldm5")
+theme_override_styles/hover = SubResource("StyleBoxTexture_7ldm5")
+theme_override_styles/focus = SubResource("StyleBoxTexture_7ldm5")
 text = " Retry"
 
 [node name="Spacer1" type="Control" parent="Panel/VBox/Buttons"]
@@ -138,8 +157,16 @@ custom_minimum_size = Vector2(20, 0)
 layout_mode = 2
 
 [node name="MenuButton" type="Button" parent="Panel/VBox/Buttons"]
+custom_minimum_size = Vector2(115.02, 0)
 layout_mode = 2
-text = "🏠 Menu"
+theme_override_colors/font_color = Color(0.6509804, 0.47843137, 0.3882353, 1)
+theme_override_fonts/font = ExtResource("3_l4t4h")
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxTexture_l4t4h")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_3fvmf")
+theme_override_styles/hover = SubResource("StyleBoxTexture_3fvmf")
+theme_override_styles/focus = SubResource("StyleBoxTexture_3fvmf")
+text = "Menu"
 
 [node name="Spacer2" type="Control" parent="Panel/VBox/Buttons"]
 custom_minimum_size = Vector2(20, 0)
@@ -152,8 +179,7 @@ theme_override_colors/font_color = Color(0.6509804, 0.47843137, 0.3882353, 1)
 theme_override_fonts/font = ExtResource("3_l4t4h")
 theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxTexture_2o818")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_smh13")
+theme_override_styles/hover = SubResource("StyleBoxTexture_smh13")
+theme_override_styles/focus = SubResource("StyleBoxTexture_smh13")
 text = " Next Level"
-
-[node name="HSeparator7" type="HSeparator" parent="Panel/VBox/Buttons"]
-layout_mode = 2
-theme_override_styles/separator = SubResource("StyleBoxLine_7ldm5")

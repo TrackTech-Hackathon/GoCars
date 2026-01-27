@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://djcajfpfg5wvl05ik8"]
+[gd_scene load_steps=2 format=3 uid="uid://dtxyi3vidoydp"]
 
 [ext_resource type="Script" path="res://scripts/ui/stoplight_code_popup.gd" id="1"]
 
