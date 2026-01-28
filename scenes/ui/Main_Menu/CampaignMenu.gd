@@ -210,33 +210,49 @@ func _cache_all_levels() -> void:
 
 
 ## Scan a folder for level files
+## Uses DirAccess in editor, falls back to LevelManifest in exported builds
 func _scan_folder_for_levels(folder_path: String) -> Array:
 	var levels: Array = []
 
+	# Try DirAccess first (works in editor)
 	var dir = DirAccess.open(folder_path)
-	if dir == null:
+	if dir != null:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+
+		while file_name != "":
+			if not dir.current_is_dir() and file_name.ends_with(".tscn"):
+				var level_path = folder_path + file_name
+				var level_id = file_name.get_basename()
+				var display_name = _get_level_display_name(level_path, level_id)
+
+				levels.append({
+					"id": level_id,
+					"path": level_path,
+					"display_name": display_name
+				})
+			file_name = dir.get_next()
+
+		dir.list_dir_end()
+
+		# Sort by filename (alphabetically/numerically)
+		levels.sort_custom(func(a, b): return a["id"] < b["id"])
 		return levels
 
-	dir.list_dir_begin()
-	var file_name = dir.get_next()
+	# Fallback to LevelManifest for exported builds
+	# Extract folder name from path (e.g., "res://scenes/levelmaps/01Tutorial/" -> "01Tutorial")
+	var folder_name = folder_path.trim_suffix("/").get_file()
+	var manifest_levels = LevelManifest.get_levels_for_map(folder_name)
 
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".tscn"):
-			var level_path = folder_path + file_name
-			var level_id = file_name.get_basename()
-			var display_name = _get_level_display_name(level_path, level_id)
+	for level_path in manifest_levels:
+		var level_id = level_path.get_file().get_basename()
+		var display_name = _get_level_display_name(level_path, level_id)
+		levels.append({
+			"id": level_id,
+			"path": level_path,
+			"display_name": display_name
+		})
 
-			levels.append({
-				"id": level_id,
-				"path": level_path,
-				"display_name": display_name
-			})
-		file_name = dir.get_next()
-
-	dir.list_dir_end()
-
-	# Sort by filename (alphabetically/numerically)
-	levels.sort_custom(func(a, b): return a["id"] < b["id"])
 	return levels
 
 

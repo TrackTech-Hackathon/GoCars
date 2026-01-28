@@ -4,8 +4,8 @@
 [ext_resource type="TileSet" uid="uid://bqq1sck3ns3dj" path="res://assets/tiles/road_tileset.tres" id="2_d88ie"]
 [ext_resource type="Script" uid="uid://cj6mm55w6w81k" path="res://scripts/map_editor/road_tilemap_layer.gd" id="3_pke4n"]
 [ext_resource type="Texture2D" uid="uid://cufjl83qsyjj7" path="res://assets/tiles/buildingtiles.png" id="4_dqnmf"]
-[ext_resource type="Script" uid="uid://chiis4gsgupk4" path="res://scripts/core/level_settings.gd" id="5_d88ie"]
-[ext_resource type="PackedScene" uid="uid://boi6cme0m6s7g" path="res://scenes/ui/hearts_ui.tscn" id="5_qbp4q"]
+[ext_resource type="Script" path="res://scripts/core/level_settings.gd" id="5_d88ie"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hearts_ui.tscn" id="5_qbp4q"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tufxn"]
 texture = ExtResource("1_sddf4")
@@ -2223,7 +2223,7 @@ tile_size = Vector2i(144, 144)
 sources/0 = SubResource("TileSetAtlasSource_vx3ke")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_i4n5k"]
-size = Vector2(9153.5, 7867.5)
+size = Vector2(11909.5, 9185.5)
 
 [node name="Level05" type="Node2D"]
 
@@ -2312,5 +2312,5 @@ metadata/_edit_use_custom_anchors = true
 position = Vector2(4486, 2318)
 
 [node name="Camera Border" type="CollisionShape2D" parent="."]
-position = Vector2(7904.75, 5566.75)
+position = Vector2(6526.75, 4907.75)
 shape = SubResource("RectangleShape2D_i4n5k")

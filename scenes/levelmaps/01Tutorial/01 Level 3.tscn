@@ -2223,7 +2223,7 @@ tile_size = Vector2i(144, 144)
 sources/0 = SubResource("TileSetAtlasSource_pv7rs")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_m1bwp"]
-size = Vector2(9271.5, 7717.5)
+size = Vector2(11932.5, 9230.5)
 
 [node name="Level03" type="Node2D"]
 
@@ -2303,13 +2303,15 @@ text = "Tutorial 3
 
 [node name="HeartsUI" parent="." instance=ExtResource("3_hearts_ui")]
 visible = false
-layout_mode = 3
-anchors_preset = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 400.0
+offset_bottom = 40.0
 metadata/_edit_use_custom_anchors = true
 
 [node name="Camera" type="Camera2D" parent="."]
 position = Vector2(4365, 2498)
 
 [node name="Camera Border" type="CollisionShape2D" parent="."]
-position = Vector2(7845.75, 5641.75)
+position = Vector2(6515.25, 4885.25)
 shape = SubResource("RectangleShape2D_m1bwp")

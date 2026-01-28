@@ -1489,21 +1489,35 @@ func _calculate_camera_bounds() -> void:
 	)
 
 
-## Set initial camera position from level's "Camera Start" node or keep current position
+## Set initial camera position and zoom from level's Camera2D node
+## Looks for "Camera" or "Camera Start" node in the level
 func _set_initial_camera_position() -> void:
 	if camera == null:
 		return
 
-	# Look for a "Camera Start" node in the level to override the camera position
 	if current_level_node:
-		var camera_start = current_level_node.get_node_or_null("Camera Start")
-		if camera_start:
-			# Use the Camera Start node's position
-			camera.position = camera_start.global_position
+		# First, try to find a "Camera" node (Camera2D) in the level
+		var level_camera = current_level_node.get_node_or_null("Camera")
+		if level_camera and level_camera is Camera2D:
+			# Use the level's Camera2D position and zoom
+			camera.position = level_camera.global_position
+			camera.zoom = level_camera.zoom
+			print("Camera initialized from level Camera2D: pos=%s, zoom=%s" % [camera.position, camera.zoom])
 			return
 
-	# No Camera Start node - keep the camera's current position from the scene
+		# Fallback: try "Camera Start" node (older levels)
+		var camera_start = current_level_node.get_node_or_null("Camera Start")
+		if camera_start:
+			camera.position = camera_start.global_position
+			# Check if Camera Start has zoom property (if it's a Camera2D)
+			if camera_start is Camera2D:
+				camera.zoom = camera_start.zoom
+			print("Camera initialized from Camera Start: pos=%s" % camera.position)
+			return
+
+	# No camera node found - keep the camera's current position from the scene
 	# This allows devs to set the default camera position in main_tilemap.tscn
+	print("No level camera found, using default camera settings")
 
 
 ## Clamp camera position to stay within bounds

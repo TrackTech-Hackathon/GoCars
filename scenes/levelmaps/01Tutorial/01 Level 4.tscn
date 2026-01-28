@@ -2223,7 +2223,7 @@ tile_size = Vector2i(144, 144)
 sources/0 = SubResource("TileSetAtlasSource_1su6t")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_obwya"]
-size = Vector2(3734.5, 6937.5)
+size = Vector2(11829.5, 9189.5)
 
 [node name="Level04" type="Node2D"]
 
@@ -2302,16 +2302,15 @@ Group D - Random, Random"
 
 [node name="HeartsUI" parent="." instance=ExtResource("3_wkl1d")]
 visible = false
-layout_mode = 3
-anchors_preset = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 400.0
+offset_bottom = 40.0
 metadata/_edit_use_custom_anchors = true
-
-[node name="HeartCount" parent="HeartsUI"]
-text = "2"
 
 [node name="Camera" type="Camera2D" parent="."]
 position = Vector2(9893, 3229)
 
 [node name="Camera Border" type="CollisionShape2D" parent="."]
-position = Vector2(10614.25, 6031.75)
+position = Vector2(6566.75, 4905.75)
 shape = SubResource("RectangleShape2D_obwya")
