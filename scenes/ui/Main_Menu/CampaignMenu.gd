@@ -85,6 +85,7 @@ var current_selected_map: int = -1
 
 var map_levels_cache: Dictionary = {}  # map_folder -> Array of level data
 var current_selected_level: Dictionary = {}
+var current_hovered_level: Dictionary = {}
 var level_buttons: Array[Button] = []
 
 var _level_list_font: Font = null
@@ -112,11 +113,13 @@ func _ready() -> void:
 
 	# Connect hover panel play button
 	if hover_play_button:
-		hover_play_button.pressed.connect(_on_hover_play_pressed)
+		if not hover_play_button.pressed.is_connected(_on_hover_play_pressed):
+			hover_play_button.pressed.connect(_on_hover_play_pressed)
 
 	# Connect level hover play button
 	if level_hover_play:
-		level_hover_play.pressed.connect(_on_level_hover_play_pressed)
+		if not level_hover_play.pressed.is_connected(_on_level_hover_play_pressed):
+			level_hover_play.pressed.connect(_on_level_hover_play_pressed)
 
 
 func _init_level_list_style() -> void:
@@ -403,8 +406,10 @@ func _count_completed_levels(folder: String) -> int:
 
 ## Hover panel play button pressed
 func _on_hover_play_pressed() -> void:
-	if current_selected_map >= 0:
-		_open_level_selector(current_selected_map)
+	# If the player presses Play without selecting a pin first, default to Tutorial.
+	if current_selected_map < 0:
+		current_selected_map = 0
+	_open_level_selector(current_selected_map)
 
 
 # ============================================
@@ -536,6 +541,10 @@ func _show_level_hover(level_data: Dictionary, is_unlocked: bool) -> void:
 	if not level_hover_panel:
 		return
 
+	# Track what the hover panel is currently showing so the Play button works
+	# even if the user didn't "select" a level via clicking the list item.
+	current_hovered_level = level_data
+
 	if level_hover_name:
 		level_hover_name.text = level_data.get("display_name", "Unknown")
 
@@ -568,8 +577,17 @@ func _show_level_hover(level_data: Dictionary, is_unlocked: bool) -> void:
 
 ## Level hover play button pressed
 func _on_level_hover_play_pressed() -> void:
+	# Prefer a clicked selection, but fall back to whatever is currently hovered/shown.
 	if not current_selected_level.is_empty():
 		_play_level(current_selected_level)
+		return
+	if not current_hovered_level.is_empty():
+		_play_level(current_hovered_level)
+		return
+
+	# Last resort: still go to the game scene (may not have a level selected).
+	push_warning("No level selected/hovered; loading game scene anyway.")
+	get_tree().change_scene_to_file(game_scene_path)
 
 
 ## Play a level
@@ -604,6 +622,7 @@ func _on_level_selector_back() -> void:
 		level_hover_panel.visible = false
 
 	current_selected_level = {}
+	current_hovered_level = {}
 
 	# Show map hover again
 	if current_selected_map >= 0:
