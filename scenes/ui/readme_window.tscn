@@ -74,136 +74,345 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 bbcode_enabled = true
-text = "[b][color=cyan]GoCars - Python Programming Guide[/color][/b]
+text = "[b][color=cyan]GoCars - Complete Python Programming Guide[/color][/b]
 
-[b]How to Play:[/b]
+[b]Welcome![/b]
 Write Python code to control vehicles and complete levels. Your code runs on all spawned cars automatically!
 
-[b][color=yellow]═══ Car Commands ═══[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+[b][color=yellow]CAR CONTROL METHODS[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
 
-[b]Movement:[/b]
-  [color=lightgreen]car.go()[/color]           - Start moving forward
-  [color=lightgreen]car.stop()[/color]         - Stop immediately
-  [color=lightgreen]car.turn(\"left\")[/color]   - Turn 90° left
-  [color=lightgreen]car.turn(\"right\")[/color]  - Turn 90° right
+[b][color=orange]Movement Commands:[/color][/b]
+  [color=lightgreen]car.go()[/color]
+    → Start moving forward
+    → Car continues until stopped or obstacle
+    
+  [color=lightgreen]car.stop()[/color]
+    → Stop immediately
+    → Halts all movement
+    
+  [color=lightgreen]car.turn(\"left\")[/color]
+    → Turn 90° counterclockwise
+    → Only valid directions: \"left\", \"right\"
+    
+  [color=lightgreen]car.turn(\"right\")[/color]
+    → Turn 90° clockwise
 
-[b]Road Detection:[/b]
-  [color=lightgreen]car.front_road()[/color]   - Road ahead? → True/False
-  [color=lightgreen]car.left_road()[/color]    - Road to left? → True/False
-  [color=lightgreen]car.right_road()[/color]   - Road to right? → True/False
+[b][color=orange]Road Detection (Boolean):[/color][/b]
+  [color=lightgreen]car.front_road()[/color]
+    → Returns: True if road ahead, False otherwise
+    
+  [color=lightgreen]car.left_road()[/color]
+    → Returns: True if road to left, False otherwise
+    
+  [color=lightgreen]car.right_road()[/color]
+    → Returns: True if road to right, False otherwise
 
-[b]Obstacle Detection:[/b]
-  [color=lightgreen]car.front_car()[/color]    - Any car ahead? → True/False
-  [color=lightgreen]car.front_crash()[/color]  - Crashed car ahead? → True/False
+[b][color=orange]Obstacle Detection (Boolean):[/color][/b]
+  [color=lightgreen]car.front_car()[/color]
+    → Returns: True if any car ahead, False otherwise
+    → Detects both moving and crashed cars
+    
+  [color=lightgreen]car.front_crash()[/color]
+    → Returns: True if crashed car ahead, False otherwise
+    → Use to navigate around accidents
 
-[b]State Queries:[/b]
-  [color=lightgreen]car.at_end()[/color]       - At destination? → True/False
-  [color=lightgreen]car.at_cross()[/color]     - At intersection? → True/False
-  [color=lightgreen]car.at_red()[/color]       - Near red light? → True/False
+[b][color=orange]State Queries (Boolean):[/color][/b]
+  [color=lightgreen]car.at_end()[/color]
+    → Returns: True if at destination, False otherwise
+    → Use in loops: while not car.at_end()
+    
+  [color=lightgreen]car.at_cross()[/color]
+    → Returns: True if at intersection, False otherwise
+    → Useful for decision-making at junctions
+    
+  [color=lightgreen]car.at_red()[/color]
+    → Returns: True if near red stoplight, False otherwise
+    → Range: 100 units proximity
+
+[b][color=orange]Additional Car Methods:[/color][/b]
+  [color=lightgreen]car.dead_end()[/color]
+    → Returns: True if at dead end (no roads), False otherwise
+    
+  [color=lightgreen]car.moving()[/color]
+    → Returns: True if currently in motion, False otherwise
 
 
-[b][color=yellow]═══ Stoplight Commands ═══[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+[b][color=yellow]STOPLIGHT CONTROL METHODS[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
 
-[b]Control:[/b]
-  [color=lightgreen]stoplight.red()[/color]    - Set to red
-  [color=lightgreen]stoplight.green()[/color]  - Set to green
+[b][color=orange]Control Commands:[/color][/b]
+  [color=lightgreen]stoplight.red()[/color]
+    → Change light to red
+    → Blocks traffic (if cars check)
+    
+  [color=lightgreen]stoplight.green()[/color]
+    → Change light to green
+    → Allows traffic flow
 
-[b]State:[/b]
-  [color=lightgreen]stoplight.is_red()[/color]    - Is red? → True/False
-  [color=lightgreen]stoplight.is_green()[/color]  - Is green? → True/False
+[b][color=orange]State Queries (Boolean):[/color][/b]
+  [color=lightgreen]stoplight.is_red()[/color]
+    → Returns: True if red, False otherwise
+    → Only affects cars within 100 units
+    
+  [color=lightgreen]stoplight.is_green()[/color]
+    → Returns: True if green, False otherwise
+    
+  [color=lightgreen]stoplight.is_yellow()[/color]
+    → Returns: True if yellow, False otherwise
+
+[b][color=red]⚠ Important:[/color][/b] Stoplights don't auto-stop cars!
+You must check stoplight.is_red() and call car.stop()
 
 
-[b][color=yellow]═══ Python Syntax ═══[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+[b][color=yellow]PYTHON SYNTAX & FEATURES[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
 
-[b]If Statements:[/b]
+[b][color=orange]Variables:[/color][/b]
+  [color=gray]speed = 10
+  name = \\\"MyCar\\\"
+  is_moving = True
+  count = 0[/color]
+
+[b][color=orange]If/Elif/Else Statements:[/color][/b]
   [color=gray]if car.front_road():
       car.go()
   elif car.left_road():
-	  car.turn(\"left\")
+      car.turn(\\\"left\\\")
+      car.go()
   else:
       car.stop()[/color]
 
-[b]While Loops:[/b]
+[b][color=orange]While Loops:[/color][/b]
   [color=gray]while not car.at_end():
-      if car.front_road():
-          car.go()[/color]
-
-[b]Functions:[/b]
-  [color=gray]def smart_turn(direction):
-      car.turn(direction)
-      car.go()
-
-  smart_turn(\"left\")[/color]
-
-
-[b][color=yellow]═══ Import System ═══[/color][/b]
-
-Create helper modules to organize your code:
-
-[b]1. Create a module file (helpers.py):[/b]
-  [color=gray]def avoid_crash():
-      if car.front_crash():
-          if car.left_road():
-			  car.turn(\"left\")
-          elif car.right_road():
-			  car.turn(\"right\")
-
-  def navigate():
       if car.front_road():
           car.go()
       else:
-          car.stop()[/color]
+          car.turn(\\\"right\\\")[/color]
 
-[b]2. Import functions in main.py:[/b]
-  [color=gray]from helpers import avoid_crash, navigate
+[b][color=orange]For Loops:[/color][/b]
+  [color=gray]for i in range(5):
+      car.go()
+      car.turn(\\\"right\\\")[/color]
+
+[b][color=orange]Break Statement:[/color][/b]
+  [color=gray]while True:
+      if car.at_end():
+          break
+      car.go()[/color]
+
+[b][color=orange]Boolean Operators:[/color][/b]
+  [color=gray]and  → Both conditions true
+  or   → Either condition true
+  not  → Inverts boolean[/color]
+  
+  Example:
+  [color=gray]if car.front_road() and not car.front_car():
+      car.go()[/color]
+
+[b][color=orange]Comparison Operators:[/color][/b]
+  [color=gray]==  → Equal to
+  !=  → Not equal to
+  <   → Less than
+  >   → Greater than
+  <=  → Less than or equal
+  >=  → Greater than or equal[/color]
+
+[b][color=orange]Arithmetic Operators:[/color][/b]
+  [color=gray]+   → Addition
+  -   → Subtraction
+  *   → Multiplication
+  /   → Division[/color]
+
+
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+[b][color=yellow]FUNCTIONS & CODE ORGANIZATION[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+
+[b][color=orange]Defining Functions:[/color][/b]
+  [color=gray]def navigate_safely():
+      if car.front_crash():
+          car.turn(\\\"left\\\")
+      elif car.front_road():
+          car.go()
+      else:
+          car.stop()
+
+  # Call the function
+  navigate_safely()[/color]
+
+[b][color=orange]Functions with Parameters:[/color][/b]
+  [color=gray]def turn_and_go(direction):
+      car.turn(direction)
+      car.go()
+
+  turn_and_go(\\\"left\\\")[/color]
+
+[b][color=orange]Functions with Return Values:[/color][/b]
+  [color=gray]def check_safe():
+      if car.front_crash():
+          return False
+      if car.front_car():
+          return False
+      return True
+
+  if check_safe():
+      car.go()[/color]
+
+[b][color=orange]Multiple Parameters:[/color][/b]
+  [color=gray]def move_steps(direction, count):
+      for i in range(count):
+          car.turn(direction)
+          car.go()
+
+  move_steps(\\\"right\\\", 3)[/color]
+
+
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+[b][color=yellow]MODULE SYSTEM (Import)[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+
+[b][color=orange]Creating a Module:[/color][/b]
+Create a file named [color=cyan]helpers.py[/color]:
+  [color=gray]def avoid_crash():
+      if car.front_crash():
+          if car.left_road():
+              car.turn(\\\"left\\\")
+          elif car.right_road():
+              car.turn(\\\"right\\\")
+          else:
+              car.stop()
+
+  def smart_navigate():
+      if car.front_road():
+          car.go()
+      elif car.left_road():
+          car.turn(\\\"left\\\")
+      else:
+          car.turn(\\\"right\\\")[/color]
+
+[b][color=orange]Importing Functions:[/color][/b]
+In your [color=cyan]main.py[/color]:
+  [color=gray]from helpers import avoid_crash, smart_navigate
 
   while not car.at_end():
       avoid_crash()
-      navigate()[/color]
+      smart_navigate()[/color]
 
-[b]3. Nested modules:[/b]
-  [color=gray]from modules.navigation import find_path[/color]
-
-
-[b][color=yellow]═══ Tips & Tricks ═══[/color][/b]
-
-• [b]Red lights don't auto-stop![/b] You must check stoplight state
-• [b]Crashed cars stay on map[/b] as obstacles - navigate around them
-• [b]Your code runs on ALL cars[/b] - make it handle multiple scenarios
-• [b]Use functions[/b] to break complex logic into reusable pieces
-• [b]Organize with modules[/b] for cleaner, more maintainable code
-• [b]Test edge cases:[/b] dead ends, multiple obstacles, timing
+[b][color=orange]Nested Modules:[/color][/b]
+  [color=gray]from navigation.pathfinding import find_path
+  from utils.helpers import debug_print[/color]
 
 
-[b][color=yellow]═══ Example: Complete Solution ═══[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+[b][color=yellow]BUILT-IN FUNCTIONS[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
 
+[b][color=orange]Print Function:[/color][/b]
+  [color=gray]print(\\\"Hello, World!\\\")
+  print(\\\"Speed:\\\", speed)
+  print(car.at_end())[/color]
+  → Outputs to terminal/console
+
+[b][color=orange]Range Function:[/color][/b]
+  [color=gray]range(5)        → 0, 1, 2, 3, 4
+  range(2, 7)     → 2, 3, 4, 5, 6
+  range(0, 10, 2) → 0, 2, 4, 6, 8[/color]
+
+
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+[b][color=yellow]COMPLETE EXAMPLES[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+
+[b][color=orange]Example 1: Basic Navigation[/color][/b]
+[color=gray]while not car.at_end():
+    if car.front_road():
+        car.go()
+    elif car.left_road():
+        car.turn(\\\"left\\\")
+        car.go()
+    elif car.right_road():
+        car.turn(\\\"right\\\")
+        car.go()
+    else:
+        car.stop()[/color]
+
+[b][color=orange]Example 2: Stoplight Handling[/color][/b]
 [color=gray]def check_stoplight():
     if stoplight.is_red():
         car.stop()
         return False
     return True
 
-def navigate_safely():
-    if car.front_crash():
+while not car.at_end():
+    if check_stoplight():
+        if car.front_road():
+            car.go()[/color]
+
+[b][color=orange]Example 3: Crash Avoidance[/color][/b]
+[color=gray]def avoid_obstacles():
+    if car.front_crash() or car.front_car():
         if car.left_road():
-			car.turn(\"left\")
+            car.turn(\\\"left\\\")
+            car.go()
         elif car.right_road():
-			car.turn(\"right\")
+            car.turn(\\\"right\\\")
+            car.go()
         else:
             car.stop()
-    elif car.front_road() and check_stoplight():
-        car.go()
-    elif car.left_road():
-		car.turn(\"left\")
-    elif car.right_road():
-		car.turn(\"right\")
-    else:
-        car.stop()
+        return True
+    return False
 
 while not car.at_end():
-    navigate_safely()[/color]
+    if not avoid_obstacles():
+        if car.front_road():
+            car.go()
+        else:
+            car.stop()[/color]
+
+[b][color=orange]Example 4: Dead End Detection[/color][/b]
+[color=gray]while not car.at_end():
+    if car.dead_end():
+        print(\\\"Reached dead end!\\\")
+        break
+    if car.front_road():
+        car.go()
+    else:
+        car.turn(\\\"right\\\")[/color]
 
 
-[b][color=cyan]Press Ctrl+2 to toggle this window[/color][/b]
-"
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+[b][color=yellow]TIPS & BEST PRACTICES[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+
+[b][color=cyan]✓[/color][/b] Check [color=lightgreen]car.at_end()[/color] in loops to avoid infinite execution
+[b][color=cyan]✓[/color][/b] Use [color=lightgreen]car.dead_end()[/color] to detect navigation limits
+[b][color=cyan]✓[/color][/b] Always check stoplight states - they don't auto-stop cars!
+[b][color=cyan]✓[/color][/b] Crashed cars remain as obstacles - navigate around them
+[b][color=cyan]✓[/color][/b] Your code runs on ALL spawned cars simultaneously
+[b][color=cyan]✓[/color][/b] Use functions to organize complex logic
+[b][color=cyan]✓[/color][/b] Create modules for reusable code across levels
+[b][color=cyan]✓[/color][/b] Test edge cases: dead ends, multiple obstacles, timing
+[b][color=cyan]✓[/color][/b] Use [color=lightgreen]print()[/color] to debug your code
+
+[b][color=red]✗[/color][/b] Don't forget to call [color=lightgreen]car.go()[/color] after turning
+[b][color=red]✗[/color][/b] Don't assume stoplights stop cars automatically
+[b][color=red]✗[/color][/b] Don't create infinite loops without exit conditions
+
+
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+[b][color=yellow]KEYBOARD SHORTCUTS[/color][/b]
+[b][color=yellow]═══════════════════════════════════════[/color][/b]
+
+[b]Ctrl+1[/b] - Toggle Code Editor
+[b]Ctrl+2[/b] - Toggle This Documentation
+[b]Ctrl+3[/b] - Toggle Skill Tree
+[b]F11[/b] - Maximize/Restore Window
+[b]R[/b] - Reset Level
+
+
+[center][b][color=cyan]Happy Coding! 🚗💨[/color][/b][/center]"
 fit_content = true
