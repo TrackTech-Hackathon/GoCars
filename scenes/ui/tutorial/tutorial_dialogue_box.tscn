@@ -1,20 +1,57 @@
-[gd_scene load_steps=5 format=3 uid="uid://c7lgfwy3a3yly"]
+[gd_scene load_steps=12 format=3 uid="uid://c7lgfwy3a3yly"]
 
 [ext_resource type="Script" uid="uid://ctywxj6p4q3rq" path="res://scripts/ui/tutorial_dialogue_box.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://7c8l1bvff785" path="res://assets/sprites/Maki_Normal.png" id="2_maki"]
 [ext_resource type="FontFile" uid="uid://bg6pof5832ljm" path="res://assets/fonts/pixel.ttf" id="3_font"]
+[ext_resource type="FontFile" uid="uid://by2afd2myjmcg" path="res://assets/fonts/Game Paused DEMO.otf" id="5_uyhkw"]
+[ext_resource type="Texture2D" uid="uid://c4kg0kv8sjtxo" path="res://assets/UI/Sprite sheets/Dialouge UI/dialog box character finished talking click to continue indicator - spritesheet .png" id="7_n673p"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.1, 0.1, 0.12, 0.95)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.3, 0.3, 0.35, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bejsu"]
+bg_color = Color(0.8627451, 0.7254902, 0.5411765, 1)
+border_width_left = 8
+border_width_top = 8
+border_width_right = 8
+border_width_bottom = 8
+border_color = Color(0.9098039, 0.8117647, 0.6509804, 1)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+corner_radius_bottom_right = 25
+corner_radius_bottom_left = 25
+shadow_color = Color(0.6745098, 0.4862745, 0.35686275, 1)
+shadow_size = 10
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_y25l0"]
+texture = ExtResource("7_n673p")
+region_rect = Rect2(0, 0, 15.265472, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_o61vv"]
+atlas = ExtResource("7_n673p")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_aff83"]
+atlas = ExtResource("7_n673p")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_voapf"]
+atlas = ExtResource("7_n673p")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_03w84"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_o61vv")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_aff83")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_voapf")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
 
 [node name="TutorialDialogueBox" type="CanvasLayer"]
 layer = 100
@@ -32,15 +69,15 @@ offset_bottom = -40.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 1
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+theme_override_styles/panel = SubResource("StyleBoxFlat_bejsu")
 
 [node name="CharacterPortrait" type="TextureRect" parent="DialoguePanel"]
 custom_minimum_size = Vector2(350, 350)
 layout_mode = 0
 offset_left = -142.0
-offset_top = -372.0
+offset_top = -373.0
 offset_right = 208.0
-offset_bottom = -22.0
+offset_bottom = -23.0
 scale = Vector2(2.1792514, 2.1691122)
 texture = ExtResource("2_maki")
 expand_mode = 1
@@ -51,10 +88,10 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 481.0
-offset_top = 18.0
-offset_right = 75.0
-offset_bottom = -14.0
+offset_left = 410.0
+offset_top = 29.000046
+offset_right = 60.539307
+offset_bottom = -53.451355
 grow_horizontal = 2
 grow_vertical = 2
 scale = Vector2(0.92516845, 0.98917985)
@@ -68,17 +105,18 @@ theme_override_constants/separation = 8
 
 [node name="SpeakerName" type="Label" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.54901963, 0.38039216, 0.36078432, 1)
+theme_override_fonts/font = ExtResource("5_uyhkw")
+theme_override_font_sizes/font_size = 68
 text = "MAKI"
 
 [node name="DialogueText" type="RichTextLabel" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 65)
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_colors/default_color = Color(0.95, 0.95, 1, 1)
-theme_override_fonts/normal_font = ExtResource("3_font")
-theme_override_font_sizes/normal_font_size = 22
+theme_override_colors/default_color = Color(0.66, 0.52448, 0.36960003, 1)
+theme_override_fonts/normal_font = ExtResource("5_uyhkw")
+theme_override_font_sizes/normal_font_size = 45
 bbcode_enabled = true
 text = "Welcome to GoCars! I'm Maki, and I'll teach you how to code cars!"
 
@@ -90,12 +128,20 @@ theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 18
 
 [node name="ContinueIndicator" type="Label" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
+custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 size_flags_horizontal = 8
 theme_override_colors/font_color = Color(0.6, 0.6, 0.65, 1)
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 18
-text = "Click to continue..."
+theme_override_styles/normal = SubResource("StyleBoxTexture_y25l0")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
+position = Vector2(1475.4069, 236.78772)
+scale = Vector2(7.0494075, 6.21501)
+sprite_frames = SubResource("SpriteFrames_03w84")
+autoplay = "default"
+frame_progress = 0.66668713
 
 [node name="SkipButton" type="Button" parent="DialoguePanel"]
 layout_mode = 1
@@ -103,13 +149,13 @@ anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -219.0
-offset_top = -32.19998
+offset_top = -38.19998
 offset_right = -3.0
-offset_bottom = -4.1999817
+offset_bottom = 1.8000183
 grow_horizontal = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 16
+theme_override_fonts/font = ExtResource("5_uyhkw")
+theme_override_font_sizes/font_size = 31
 text = "Skip Tutorial"
 flat = true
