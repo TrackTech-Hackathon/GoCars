@@ -467,17 +467,46 @@ func _spawn_initial_cars() -> void:
 	# Reset spawned groups tracking
 	spawned_groups.clear()
 
-	# Spawn one car at each spawn point when level loads
-	# This lets players see what cars they're dealing with before running code
+	if spawn_data.is_empty() or destination_data.is_empty():
+		return
+
+	# Count destinations per group
+	var dest_count_per_group: Dictionary = {}  # group_int -> count
+	var total_dest_count: int = 0
+	for dest in destination_data:
+		var group_int = int(dest.get("group", 4))  # 4 = NONE
+		if not dest_count_per_group.has(group_int):
+			dest_count_per_group[group_int] = 0
+		dest_count_per_group[group_int] += 1
+		total_dest_count += 1
+
+	# Group spawn points by group
+	var spawns_per_group: Dictionary = {}  # group_int -> array of spawn data
 	for spawn in spawn_data:
-		var group = spawn.get("group", "")
-		# Convert group to string if it's not already
-		if typeof(group) != TYPE_STRING:
-			group = str(group)
-		# Only spawn if this group hasn't spawned yet (one car per parking spot)
-		if group == "" or group not in spawned_groups:
+		var group_int = int(spawn.get("group", 4))  # 4 = NONE
+		if not spawns_per_group.has(group_int):
+			spawns_per_group[group_int] = []
+		spawns_per_group[group_int].append(spawn)
+
+	# For each group, spawn cars equal to number of destinations for that group
+	# Randomly pick which spawn points to use
+	for group_int in dest_count_per_group.keys():
+		var num_to_spawn = dest_count_per_group[group_int]
+		var available_spawns = spawns_per_group.get(group_int, []).duplicate()
+
+		# Shuffle spawn points for randomness
+		available_spawns.shuffle()
+
+		# Spawn cars up to the number of destinations
+		for i in range(min(num_to_spawn, available_spawns.size())):
+			var spawn = available_spawns[i]
 			_spawn_car_at(spawn)
-			if group != "":
+
+			# Track spawned groups for reference
+			var group = spawn.get("group", "")
+			if typeof(group) != TYPE_STRING:
+				group = str(group)
+			if group != "" and group not in spawned_groups:
 				spawned_groups.append(group)
 
 
@@ -1557,7 +1586,7 @@ func _handle_tile_remove() -> void:
 
 ## Check if a tile type is a parking tile (spawn or destination)
 func _is_parking_tile(tile_type) -> bool:
-	return tile_type in RoadTileMapLayer.SPAWN_PARKING_TILES or tile_type in RoadTileMapLayer.DEST_PARKING_TILES
+	return tile_type in RoadTileMapLayer.SPAWN_TILES or tile_type in RoadTileMapLayer.DEST_TILES
 
 
 ## Select a tile for editing
@@ -1664,15 +1693,15 @@ func _add_connection_to_tile(grid_pos: Vector2i, new_connection: String) -> void
 		return
 
 	# Skip parking and stoplight tiles - they shouldn't be modified
-	if current_type in RoadTileMapLayer.SPAWN_PARKING_TILES:
+	if current_type in RoadTileMapLayer.SPAWN_TILES:
 		return
-	if current_type in RoadTileMapLayer.DEST_PARKING_TILES:
+	if current_type in RoadTileMapLayer.DEST_TILES:
 		return
 	if current_type in RoadTileMapLayer.STOPLIGHT_TILES:
 		return
 
 	# Get current connections
-	var current_connections = RoadTileMapLayer.TILE_CONNECTIONS.get(current_type, []).duplicate()
+	var current_connections = RoadTileMapLayer.TILE_ROAD_CONNECTIONS.get(current_type, []).duplicate()
 	if new_connection in current_connections:
 		return  # Already has this connection
 
@@ -1697,14 +1726,14 @@ func _find_tile_with_connections(connections: Array) -> Vector2i:
 		var tile_type = RoadTileMapLayer.TILE_COORDS_TO_TYPE[atlas_coords]
 
 		# Skip parking tiles and stoplight tiles
-		if tile_type in RoadTileMapLayer.SPAWN_PARKING_TILES:
+		if tile_type in RoadTileMapLayer.SPAWN_TILES:
 			continue
-		if tile_type in RoadTileMapLayer.DEST_PARKING_TILES:
+		if tile_type in RoadTileMapLayer.DEST_TILES:
 			continue
 		if tile_type in RoadTileMapLayer.STOPLIGHT_TILES:
 			continue
 
-		var tile_connections = RoadTileMapLayer.TILE_CONNECTIONS.get(tile_type, []).duplicate()
+		var tile_connections = RoadTileMapLayer.TILE_ROAD_CONNECTIONS.get(tile_type, []).duplicate()
 		tile_connections.sort()
 
 		if tile_connections == sorted_connections:
@@ -1796,7 +1825,7 @@ func _show_connection_preview(grid_pos: Vector2i, new_connection: String) -> voi
 
 	# Get current connections and add new one
 	var current_type = road_layer.get_tile_type_at(grid_pos)
-	var current_connections = RoadTileMapLayer.TILE_CONNECTIONS.get(current_type, []).duplicate()
+	var current_connections = RoadTileMapLayer.TILE_ROAD_CONNECTIONS.get(current_type, []).duplicate()
 	if new_connection not in current_connections:
 		current_connections.append(new_connection)
 
@@ -1829,15 +1858,15 @@ func _remove_connection_from_tile(grid_pos: Vector2i, connection_to_remove: Stri
 		return
 
 	# Skip parking and stoplight tiles
-	if current_type in RoadTileMapLayer.SPAWN_PARKING_TILES:
+	if current_type in RoadTileMapLayer.SPAWN_TILES:
 		return
-	if current_type in RoadTileMapLayer.DEST_PARKING_TILES:
+	if current_type in RoadTileMapLayer.DEST_TILES:
 		return
 	if current_type in RoadTileMapLayer.STOPLIGHT_TILES:
 		return
 
 	# Get current connections
-	var current_connections = RoadTileMapLayer.TILE_CONNECTIONS.get(current_type, []).duplicate()
+	var current_connections = RoadTileMapLayer.TILE_ROAD_CONNECTIONS.get(current_type, []).duplicate()
 	if connection_to_remove not in current_connections:
 		return  # Doesn't have this connection
 

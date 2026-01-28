@@ -663,50 +663,69 @@ Each level scene has:
 - **HeartsUI** (instance of hearts_ui.tscn): Hearts/lives display
   - **HeartCount** (Label): Set text to configure starting hearts (e.g., "3")
 
-### Tileset Layout (8×7 grid, 144×144 per tile)
+### Tileset Layout (18×12 grid, 144×144 per tile)
 
-The tileset `assets/tiles/gocarstilesSheet.png` has 56 tiles organized as follows:
+The tileset `assets/tiles/gocarstilesSheet.png` has 216 tiles organized as follows:
 
-| Row | Col 0 | Col 1 | Col 2 | Col 3 | Col 4 | Col 5 | Col 6 | Col 7 |
-|-----|-------|-------|-------|-------|-------|-------|-------|-------|
-| **0** | Road (none) | Road E | Road EW | Road W | Spawn S (A) | Spawn S (B) | Spawn S (C) | Spawn S (D) |
-| **1** | Road S | Road SE | Road SEW | Road SW | Spawn N (A) | Spawn N (B) | Spawn N (C) | Spawn N (D) |
-| **2** | Road SN | Road SNE | Road SNEW | Road SNW | Dest S (A) | Dest S (B) | Dest S (C) | Dest S (D) |
-| **3** | Road N | Road NE | Road NEW | Road NW | Dest N (A) | Dest N (B) | Dest N (C) | Dest N (D) |
-| **4** | Spawn E (A) | Spawn W (A) | Spawn E (B) | Spawn W (B) | Spawn E (C) | Spawn W (C) | Spawn E (D) | Spawn W (D) |
-| **5** | Dest E (A) | Dest W (A) | Dest E (B) | Dest W (B) | Dest E (C) | Dest W (C) | Dest E (D) | Dest W (D) |
-| **6** | Stoplight SNEW | Stoplight SNE | Stoplight NEW | Stoplight SEW | Stoplight SNW | (None) | (None) | (None) |
+**Tile Types:**
+- **road**: Basic roads with road connections
+- **parking road**: Single parking spots with road connections
+- **multi parking road**: Parking with road + parking road connections (for multi-lane parking lots)
+- **stoplight road**: Roads with stoplight spawning
+
+**Connection Types:**
+- **road connection**: Connects to roads and parking roads
+- **parking road connection**: Connects to multi parking roads only
+
+**Rows 0-3: Basic Roads and Roads with Parking Connections**
+
+| Row | c0-c3 | c4-c7 | c8-c11 | c12-c16 |
+|-----|-------|-------|--------|---------|
+| **0** | Basic roads (none/E/EW/W) | Spawn road W (A-D) | Road+parking | Roads/Stoplights |
+| **1** | Roads S/SE/SEW/SW | Spawn road E (A-D) | Road+parking | Roads/Stoplights |
+| **2** | Roads SN/SNE/SNEW/SNW | Road+parking N | Road+parking | Parking S (plain) |
+| **3** | Roads N/NE/NEW/NW | Road+parking S | Road+parking | Parking N (plain) |
+
+**Rows 4-7: Spawn and Destination Parking (N/S facing)**
+
+| Row | c0-c1 | c2-c17 |
+|-----|-------|--------|
+| **4** | Spawn road SN (A) | Spawn parking N (groups A-D, single/multi variants) |
+| **5** | Spawn road SN (B) | Spawn parking S (groups A-D, single/multi variants) |
+| **6** | Spawn road SN (C) | Dest parking N (groups A-D, single/multi variants) |
+| **7** | Spawn road SN (D) | Dest parking S (groups A-D, single/multi variants) |
+
+**Rows 8-11: Parking E/W facing (single and multi-parking)**
+
+| Row | c0-c1 | c2-c9 | c10-c17 |
+|-----|-------|-------|---------|
+| **8** | Parking E/W (plain) | Spawn parking E/W (A-D) | Dest parking E/W (A-D) |
+| **9** | Multi parking E/W +PS | Spawn multi E/W +PS (A-D) | Dest multi E/W +PS (A-D) |
+| **10** | Multi parking E/W +PSN | Spawn multi E/W +PSN (A-D) | Dest multi E/W +PSN (A-D) |
+| **11** | Multi parking E/W +PN | Spawn multi E/W +PN (A-D) | Dest multi E/W +PN (A-D) |
 
 **Connection Key:**
-- **E** = East (right)
-- **W** = West (left)
-- **N** = North (top)
-- **S** = South (bottom)
+- **E** = East (right), **W** = West (left), **N** = North (top), **S** = South (bottom)
+- **P** prefix = Parking road connection (e.g., PE = parking connection east)
 
 **Spawn Groups (A, B, C, D):**
-Each spawn and destination parking tile belongs to a group (A, B, C, or D). Cars must park at a destination matching their spawn group, or they lose a heart.
+Each spawn and destination tile belongs to a group (A, B, C, or D). Cars must park at a destination matching their spawn group, or they lose a heart.
 
-### Spawn Parking Tiles (with Groups)
-Cars spawn from these tiles and drive out through the connection:
-- **Spawn S (A-D)** (r0/c4-7): Car exits through bottom
-- **Spawn N (A-D)** (r1/c4-7): Car exits through top
-- **Spawn E (A-D)** (r4/c0,2,4,6): Car exits through right
-- **Spawn W (A-D)** (r4/c1,3,5,7): Car exits through left
+### Multi-Parking Road System
+Multi-parking roads allow building parking lots with multiple spots:
+- **Left multi parking**: Has parking connection east only
+- **Center multi parking**: Has parking connections east and west
+- **Right multi parking**: Has parking connection west only
+- **Top multi parking**: Has parking connection south only
+- **Bottom multi parking**: Has parking connection north only
 
-### Destination Parking Tiles (with Groups)
-Cars enter these tiles and stop:
-- **Dest S (A-D)** (r2/c4-7): Car enters from bottom
-- **Dest N (A-D)** (r3/c4-7): Car enters from top
-- **Dest E (A-D)** (r5/c0,2,4,6): Car enters from right
-- **Dest W (A-D)** (r5/c1,3,5,7): Car enters from left
-
-### Stoplight Tiles
+### Stoplight Tiles (Row 0-1, columns 14-16)
 Stoplights spawn automatically from these tiles:
-- **Stoplight SNEW** (r6/c0): 4-way intersection
-- **Stoplight SNE** (r6/c1): T-junction (no west)
-- **Stoplight NEW** (r6/c2): T-junction (no south)
-- **Stoplight SEW** (r6/c3): T-junction (no north)
-- **Stoplight SNW** (r6/c4): T-junction (no east)
+- **Stoplight SNEW** (r0/c15): 4-way intersection
+- **Stoplight SEW** (r0/c16): T-junction (no north)
+- **Stoplight SNE** (r1/c14): T-junction (no west)
+- **Stoplight NEW** (r1/c15): T-junction (no south)
+- **Stoplight SNW** (r1/c16): T-junction (no east)
 
 ### Level Files Location
 - **Levels folder**: `scenes/levelmaps/`

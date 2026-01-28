@@ -243,7 +243,7 @@ func _check_indentation(line: String, line_num: int, all_lines: Array) -> void:
 		))
 
 func _check_undefined_names(line: String, line_num: int) -> void:
-	# Extract identifiers from line
+	# Extract identifiers from line (already skips strings and comments)
 	var identifiers = _extract_identifiers(line)
 
 	for id_info in identifiers:
@@ -261,6 +261,9 @@ func _check_undefined_names(line: String, line_num: int) -> void:
 			continue
 		# Skip common object names
 		if name in ["car", "stoplight", "boat"]:
+			continue
+		# Skip known string constants (extra safeguard)
+		if name in LinterRules.known_string_constants:
 			continue
 
 		# Check for similar names (typo detection)
@@ -302,16 +305,92 @@ func _check_unused() -> void:
 
 func _extract_identifiers(line: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var regex = RegEx.new()
-	regex.compile(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\b")
 
-	for match in regex.search_all(line):
-		result.append({
-			"name": match.get_string(1),
-			"column": match.get_start(1)
-		})
+	# First, mark string and comment regions so we can skip identifiers inside them
+	var skip_regions: Array[Vector2i] = _get_string_and_comment_regions(line)
+
+	var regex = RegEx.new()
+	regex.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\b")
+
+	for match_result in regex.search_all(line):
+		var col = match_result.get_start(1)
+
+		# Skip if this identifier is inside a string or comment
+		var should_skip = false
+		for region in skip_regions:
+			if col >= region.x and col < region.y:
+				should_skip = true
+				break
+
+		if not should_skip:
+			result.append({
+				"name": match_result.get_string(1),
+				"column": col
+			})
 
 	return result
+
+
+## Get regions of the line that are inside strings or comments (returns array of Vector2i with start/end)
+func _get_string_and_comment_regions(line: String) -> Array[Vector2i]:
+	var regions: Array[Vector2i] = []
+	var in_string = false
+	var string_char = ""
+	var string_start = 0
+
+	var i = 0
+	while i < line.length():
+		var c = line[i]
+
+		# Check for comment - everything after # is skipped (unless in a string)
+		if c == "#" and not in_string:
+			# Mark from comment start to end of line
+			regions.append(Vector2i(i, line.length()))
+			break
+
+		# Check for triple quotes first
+		if i + 2 < line.length() and not in_string:
+			var triple = line.substr(i, 3)
+			if triple == '"""' or triple == "'''":
+				in_string = true
+				string_char = triple
+				string_start = i
+				i += 3
+				continue
+
+		# Check for closing triple quotes
+		if in_string and string_char.length() == 3 and i + 2 < line.length():
+			var triple = line.substr(i, 3)
+			if triple == string_char:
+				regions.append(Vector2i(string_start, i + 3))
+				in_string = false
+				string_char = ""
+				i += 3
+				continue
+
+		# Single/double quotes (skip escaped quotes)
+		if c in ["'", '"']:
+			# Check for escape
+			if i > 0 and line[i-1] == "\\":
+				i += 1
+				continue
+
+			if not in_string:
+				in_string = true
+				string_char = c
+				string_start = i
+			elif c == string_char and string_char.length() == 1:
+				regions.append(Vector2i(string_start, i + 1))
+				in_string = false
+				string_char = ""
+
+		i += 1
+
+	# If still in string at end of line, mark to end
+	if in_string:
+		regions.append(Vector2i(string_start, line.length()))
+
+	return regions
 
 func _extract_function_name(line: String) -> String:
 	var regex = RegEx.new()

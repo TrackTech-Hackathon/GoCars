@@ -60,7 +60,10 @@ var current_speed: float = 1.0
 
 ## Debugger constants
 const BREAKPOINT_GUTTER: int = 1
-const EXECUTION_LINE_COLOR: Color = Color(1.0, 1.0, 0.0, 0.35)  # Brighter yellow highlight
+# Bright yellow highlight for clear visibility
+const EXECUTION_LINE_COLOR: Color = Color(1.0, 0.9, 0.3, 0.35)
+# Fast smooth transition
+const HIGHLIGHT_TRANSITION_TIME: float = 0.08  # 80ms transition - fast but smooth
 
 func _init() -> void:
 	window_title = "Code Editor"
@@ -718,50 +721,55 @@ func _on_execution_resumed() -> void:
 
 func _on_execution_line_changed(file_or_line, line: int = -1) -> void:
 	# Handle both (file, line) and (line) signatures
+	var target_line: int
 	if line == -1:
 		# Called with just line number
-		_highlight_execution_line(file_or_line as int)
+		target_line = file_or_line as int
 	elif file_or_line == current_file:
 		# Called with file and line
-		_highlight_execution_line(line)
+		target_line = line
+	else:
+		return
 
-## Highlight the current execution line with smooth transition
+	# Immediately highlight the line (fast and smooth)
+	_highlight_execution_line(target_line)
+
+
+## Highlight execution line - fast, smooth, immediate
 func _highlight_execution_line(line: int) -> void:
 	if not code_edit:
 		return
 
-	# Cancel any existing highlight tween
+	# Skip if same line (no change needed)
+	if line == _current_highlighted_line:
+		return
+
+	# Cancel any existing tween
 	if _highlight_tween and _highlight_tween.is_valid():
 		_highlight_tween.kill()
 
-	# Clear previous line highlight (fade out quickly)
+	# Clear previous line immediately
 	if _current_highlighted_line >= 0 and _current_highlighted_line < code_edit.get_line_count():
 		code_edit.set_line_background_color(_current_highlighted_line, Color(0, 0, 0, 0))
 
-	# Store new line
+	# Update current line
 	_current_highlighted_line = line
 
-	# Create smooth fade-in animation
+	# Set up smooth fade-in for new line
 	_highlight_tween = create_tween()
 	_highlight_tween.set_ease(Tween.EASE_OUT)
-	_highlight_tween.set_trans(Tween.TRANS_CUBIC)
+	_highlight_tween.set_trans(Tween.TRANS_QUAD)
 
-	# Animate from transparent to highlight color over 150ms
-	var start_color = Color(EXECUTION_LINE_COLOR.r, EXECUTION_LINE_COLOR.g, EXECUTION_LINE_COLOR.b, 0.0)
-	var end_color = EXECUTION_LINE_COLOR
+	# Start with low alpha, animate to full
+	code_edit.set_line_background_color(line, Color(EXECUTION_LINE_COLOR.r, EXECUTION_LINE_COLOR.g, EXECUTION_LINE_COLOR.b, 0.1))
 
-	# Set initial transparent color
-	code_edit.set_line_background_color(line, start_color)
-
-	# Animate the alpha
 	_highlight_tween.tween_method(
 		func(alpha: float):
-			if code_edit and line < code_edit.get_line_count():
-				var color = Color(EXECUTION_LINE_COLOR.r, EXECUTION_LINE_COLOR.g, EXECUTION_LINE_COLOR.b, alpha)
-				code_edit.set_line_background_color(line, color),
-		0.0,
+			if code_edit and line < code_edit.get_line_count() and line == _current_highlighted_line:
+				code_edit.set_line_background_color(line, Color(EXECUTION_LINE_COLOR.r, EXECUTION_LINE_COLOR.g, EXECUTION_LINE_COLOR.b, alpha)),
+		0.1,
 		EXECUTION_LINE_COLOR.a,
-		0.15  # 150ms transition
+		HIGHLIGHT_TRANSITION_TIME
 	)
 
 ## Clear execution line highlighting with smooth fade out
@@ -781,17 +789,16 @@ func _clear_execution_line() -> void:
 		if current_color.a > 0:
 			_highlight_tween = create_tween()
 			_highlight_tween.set_ease(Tween.EASE_OUT)
-			_highlight_tween.set_trans(Tween.TRANS_CUBIC)
+			_highlight_tween.set_trans(Tween.TRANS_QUAD)
 
-			# Fade out over 100ms
+			# Fade out smoothly
 			_highlight_tween.tween_method(
 				func(alpha: float):
 					if code_edit and line < code_edit.get_line_count():
-						var color = Color(current_color.r, current_color.g, current_color.b, alpha)
-						code_edit.set_line_background_color(line, color),
+						code_edit.set_line_background_color(line, Color(EXECUTION_LINE_COLOR.r, EXECUTION_LINE_COLOR.g, EXECUTION_LINE_COLOR.b, alpha)),
 				current_color.a,
 				0.0,
-				0.1  # 100ms fade out
+				HIGHLIGHT_TRANSITION_TIME
 			)
 			_highlight_tween.tween_callback(func():
 				# Clear all line colors after fade completes

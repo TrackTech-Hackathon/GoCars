@@ -138,3 +138,11 @@ static var python_keywords: Array[String] = [
 	"pass", "break", "continue", "and", "or", "not", "in", "is",
 	"True", "False", "None", "lambda", "yield", "global", "nonlocal"
 ]
+
+# Common string constants used in the game (for turn directions, states, etc.)
+# These are often passed as string arguments and should not trigger undefined name errors
+static var known_string_constants: Array[String] = [
+	"left", "right",  # Turn directions
+	"red", "yellow", "green",  # Stoplight colors
+	"north", "south", "east", "west"  # Cardinal directions
+]
