@@ -1,9 +1,24 @@
+extends Node
+
+## Helper to always get the current node with show_failure_popup
+func _get_failure_popup_scene() -> Node:
+	return get_tree().get_root().find_child("show_failure_popup", true, true) # fully recursive
+
+func _debug_list_failure_popup_nodes():
+	var nodes = []
+	var stack = [get_tree().get_root()]
+	while stack.size() > 0:
+		var node = stack.pop_back()
+		if node.has_method("show_failure_popup"):
+			var script_path = node.get_script() if node.get_script() else "(no script)"
+			nodes.append("%s (type: %s, script: %s)" % [node.name, node.get_class(), script_path])
+		for child in node.get_children():
+			stack.append(child)
+	print("[Tutorial] Nodes with show_failure_popup:", nodes)
 ## Tutorial Manager for GoCars
 ## AutoLoad singleton that manages tutorial progression and UI
 ## Author: Claude Code
 ## Date: January 2026
-
-extends Node
 
 ## Preload TutorialData class
 const TutorialDataClass = preload("res://scripts/core/tutorial_data.gd")
@@ -92,7 +107,11 @@ func start_tutorial(level_name: String, parent_node: Node) -> bool:
 			dialogue_box.retry_pressed.connect(_on_dialogue_retry_pressed)
 
 	# Store reference to main scene to call retry function
-	if parent_node and parent_node.get_parent():
+	# Robustly find the node with show_failure_popup
+	var candidate = get_tree().get_root().find_child("show_failure_popup", true, false)
+	if candidate:
+		_main_scene = candidate
+	elif parent_node and parent_node.get_parent():
 		_main_scene = parent_node.get_parent()
 
 	# Create highlight overlay if not exists
@@ -485,6 +504,7 @@ func _restart_current_step() -> void:
 
 ## Called by main_tilemap when level fails during a tutorial
 func handle_scripted_failure(reason: String) -> void:
+	_debug_list_failure_popup_nodes()
 	if not is_tutorial_active:
 		return
 
@@ -493,13 +513,15 @@ func handle_scripted_failure(reason: String) -> void:
 		# This is a forced failure, so execute the full sequence with commentary
 		await _run_forced_failure_sequence(reason)
 	else:
-		# This is a genuine player failure, just show the reset prompt immediately.
-		if _main_scene and _main_scene.has_method("_show_failure_popup"):
-			_main_scene._show_failure_popup(reason)
+		# This is a genuine player failure, just show the reset prompt if the failure panel is shown.
+		var failure_scene = _get_failure_popup_scene()
+		if failure_scene and failure_scene.has_method("show_failure_popup"):
+			failure_scene.show_failure_popup(reason)
 		_prompt_for_reset()
 
 ## The full sequence for a scripted, forced failure
 func _run_forced_failure_sequence(reason: String) -> void:
+	_debug_list_failure_popup_nodes()
 	print("[Tutorial] Starting _run_forced_failure_sequence with reason: %s" % reason)
 
 	# Prevent automatic failure panel display - we'll show it after dialogue plays out
@@ -513,16 +535,18 @@ func _run_forced_failure_sequence(reason: String) -> void:
 	print("[Tutorial] 3 second wait complete, showing failure panel now")
 
 	# Now show the failure panel (after both explanations have played)
-	print("[Tutorial] _main_scene exists: %s, has method: %s" % (_main_scene != null, _main_scene and _main_scene.has_method("_show_failure_popup")))
-	if _main_scene and _main_scene.has_method("_show_failure_popup"):
-		print("[Tutorial] Calling _main_scene._show_failure_popup()")
-		_main_scene._show_failure_popup(reason)
+	print("[Tutorial] _main_scene exists: %s, has method: %s" % [str(_main_scene != null), str(_main_scene and _main_scene.has_method("show_failure_popup"))])
+	var failure_scene = _get_failure_popup_scene()
+	if failure_scene:
+		print("[Tutorial] failure_scene Script path: %s, Instance ID: %s" % [failure_scene.get_script(), failure_scene.get_instance_id()])
+		print("[Tutorial] failure_scene method list: %s" % failure_scene.get_method_list())
+		if failure_scene.has_method("show_failure_popup"):
+			print("[Tutorial] Calling failure_scene.show_failure_popup()")
+			failure_scene.show_failure_popup(reason)
+		print("[Tutorial] Calling _prompt_for_reset()")
+		_prompt_for_reset()
 	else:
-		print("[Tutorial] ERROR: Cannot call _show_failure_popup - _main_scene invalid or method missing")
-
-	# Show the "Click Reset" prompt and highlight
-	print("[Tutorial] Calling _prompt_for_reset()")
-	_prompt_for_reset()
+		print("[Tutorial] ERROR: Cannot call show_failure_popup - failure_scene invalid or method missing")
 
 ## Shows the final prompt to reset the level
 func _prompt_for_reset() -> void:

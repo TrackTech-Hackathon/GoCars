@@ -139,6 +139,10 @@ func _ready() -> void:
 	if MusicManager:
 		MusicManager.set_game_volume()
 
+	# Print debug info to confirm script and method
+	print("[MainTilemap] main_tilemap.gd _ready() called. has_method('show_failure_popup'): %s" % has_method("show_failure_popup"))
+	print("[MainTilemap] Script path: %s, Instance ID: %s" % [get_script(), get_instance_id()])
+
 	# Initialize level loader
 	level_loader = LevelLoaderScript.new()
 
@@ -874,7 +878,7 @@ func _on_level_failed(reason: String) -> void:
 
 	_update_status("Level Failed: %s" % reason)
 	_stop_all_cars()
-	_show_failure_popup(reason)
+	show_failure_popup(reason)
 
 
 ## Stop all cars when level fails
@@ -968,7 +972,7 @@ func _show_victory_popup(stars: int) -> void:
 		)
 
 
-func _show_failure_popup(reason: String) -> void:
+func show_failure_popup(reason: String) -> void:
 	print("[Main] _show_failure_popup called with reason: %s" % reason)
 	print("[Main] completion_summary exists: %s" % (completion_summary != null))
 
