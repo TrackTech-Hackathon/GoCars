@@ -201,8 +201,11 @@ func _ready() -> void:
 	_setup_audio()
 
 	# Load level from GameState or default to first level
-	if GameState.selected_level_id != "":
-		# Try to find level by name
+	if GameState.selected_level_path != "":
+		# Load by full path (preferred - from new campaign menu)
+		_load_level_by_path(GameState.selected_level_path)
+	elif GameState.selected_level_id != "":
+		# Try to find level by name (legacy support)
 		_load_level_by_name(GameState.selected_level_id)
 	else:
 		# Load first available level
@@ -418,6 +421,99 @@ func _load_level_by_name(level_name: String) -> void:
 
 	# Fallback to first level
 	_load_level(0)
+
+
+func _load_level_by_path(level_path: String) -> void:
+	# Find the index in level_loader for proper indexing
+	var paths = level_loader.get_level_paths()
+	var found_index = -1
+	for i in range(paths.size()):
+		if paths[i] == level_path:
+			found_index = i
+			break
+
+	# If we found the index, use _load_level for consistent behavior
+	if found_index >= 0:
+		_load_level(found_index)
+		return
+
+	# Fallback: try to load directly if path not in cache
+	var scene = load(level_path)
+	if scene == null:
+		push_error("Failed to load level scene: %s" % level_path)
+		_load_level(0)
+		return
+
+	# Clear all existing cars first
+	_clear_all_cars()
+	next_car_id = 1
+	is_spawning_cars = false
+
+	# Clear previous level
+	if current_level_node:
+		current_level_node.queue_free()
+		current_level_node = null
+		road_layer = null
+		hearts_ui = null
+
+	current_level_index = 0  # Default index for direct loads
+	current_level_node = scene.instantiate()
+	if current_level_node == null:
+		push_error("Failed to instantiate level: %s" % level_path)
+		_load_level(0)
+		return
+
+	# Add to GameWorld
+	$GameWorld.add_child(current_level_node)
+
+	# Find road layer
+	road_layer = current_level_node.get_node_or_null("RoadLayer") as RoadTileMapLayer
+	if road_layer == null:
+		_update_status("Level has no RoadLayer!")
+		return
+
+	# Get spawn and destination data
+	spawn_data = road_layer.get_spawn_data()
+	destination_data = road_layer.get_destination_data()
+
+	# Spawn stoplights from stoplight tiles
+	_spawn_stoplights_from_tiles()
+
+	# Set level IDs
+	current_level_id = level_path.get_file().get_basename()
+	current_level_display_name = level_loader.get_level_name_from_instance(current_level_node)
+	_update_status("Loaded level: %s" % current_level_display_name)
+
+	# Load hearts from level's HeartsUI node if present
+	_load_level_hearts()
+
+	# Load road building configuration
+	_load_level_build_roads()
+
+	# Reset timer for new level
+	level_timer = 0.0
+	timer_running = true
+	level_won = false
+	level_failed = false
+	code_is_running = false
+	last_heart_loss_cause = "crash"
+	_update_timer_label()
+
+	# Calculate camera bounds and set initial position
+	_calculate_camera_bounds()
+	_set_initial_camera_position()
+	_clamp_camera_to_bounds()
+
+	# Load car spawning configuration
+	_load_level_cars_config()
+
+	# Spawn initial cars
+	_spawn_initial_cars()
+
+	# Start tutorial if this level has one
+	_start_tutorial_if_available()
+
+	print("Loaded level from path: %s" % level_path)
 
 
 func _load_next_level() -> void:

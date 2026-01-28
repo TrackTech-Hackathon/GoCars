@@ -1,284 +1,530 @@
 extends Control
 
-## Campaign Menu - Main Level Selector
-## Uses the island map visual with clickable level markers
-## Dynamically loads levels from levelmaps folder and assigns to markers
+## Campaign Menu - Map-based Level Selector
+## Features:
+## - 5 Map pins (Tutorial, Iloilo, Antique, Aklan, Capiz)
+## - Clicking a pin shows map hover panel
+## - Clicking pin again or Play opens level selector for that map
+## - Levels load dynamically from levelmaps subfolder
+## - Level unlock system (previous level must be beaten)
 
 # ============================================
 # Configuration
 # ============================================
 
 @export_group("Paths")
-@export var levels_path: String = "res://scenes/levelmaps/"
+@export var levels_base_path: String = "res://scenes/levelmaps/"
 @export var game_scene_path: String = "res://scenes/main_tilemap.tscn"
 
-@export_group("Level Markers")
-@export var level_markers: Array[NodePath] = []
+# Map folder names (must match folder names in levelmaps/)
+const MAP_FOLDERS: Array[String] = [
+	"01Tutorial",
+	"02Iloilo",
+	"03Antique",
+	"04Aklan",
+	"05Capiz"
+]
 
-# Node references
-var level_marker_buttons: Array[TextureButton] = []
-var level_data: Array[Dictionary] = []
+# Map display names
+const MAP_DISPLAY_NAMES: Dictionary = {
+	"01Tutorial": "TUTORIAL",
+	"02Iloilo": "ILOILO",
+	"03Antique": "ANTIQUE",
+	"04Aklan": "AKLAN",
+	"05Capiz": "CAPIZ"
+}
 
-# Hover info panel references
-@onready var hover_panel: TextureRect = $HoverIloilo
-@onready var hover_title: Label = $HoverIloilo/Logo
-@onready var hover_objective: Label = $HoverIloilo/Objective
-@onready var hover_difficulty: Label = $HoverIloilo/Difficulty
-@onready var hover_description: Label = $HoverIloilo/Description
-@onready var hover_play_button: TextureButton = $HoverIloilo/TextureButton
+# Map descriptions
+const MAP_DESCRIPTIONS: Dictionary = {
+	"01Tutorial": "Learn the basics of controlling cars with Python code. Master movement, turning, and navigation.",
+	"02Iloilo": "Navigate the busy streets of Iloilo City. Handle traffic lights and complex intersections.",
+	"03Antique": "Coming Soon! Explore the scenic roads of Antique province.",
+	"04Aklan": "Coming Soon! Drive through the beautiful landscapes of Aklan.",
+	"05Capiz": "Coming Soon! Discover the unique roads of Capiz province."
+}
 
-var current_hover_level_id: String = ""
+# ============================================
+# Node References
+# ============================================
+
+# Map Pins (set in _ready based on scene structure)
+var map_pins: Array[TextureButton] = []
+var current_selected_map: int = -1
+
+# Panels
+@onready var hover_panel: TextureRect = $HoverPanel
+@onready var hover_title: Label = $HoverPanel/Logo
+@onready var hover_difficulty: Label = $HoverPanel/Difficulty
+@onready var hover_description: Label = $HoverPanel/Description
+@onready var hover_status: Label = $HoverPanel/Status
+@onready var hover_play_button: TextureButton = $HoverPanel/PlayButton
+
+# Level Selector Panel
+@onready var level_selector_panel: Control = $LevelSelectorPanel
+@onready var level_selector_title: Label = $LevelSelectorPanel/PanelBG/Title
+@onready var level_list_container: VBoxContainer = $LevelSelectorPanel/PanelBG/ScrollContainer/LevelList
+@onready var level_selector_back: TextureButton = $LevelSelectorPanel/PanelBG/BackButton
+
+# Level Hover Panel (when hovering a level in level selector)
+@onready var level_hover_panel: Control = $LevelHoverPanel
+@onready var level_hover_name: Label = $LevelHoverPanel/PanelBG/LevelName
+@onready var level_hover_time: Label = $LevelHoverPanel/PanelBG/BestTime
+@onready var level_hover_status: Label = $LevelHoverPanel/PanelBG/Status
+@onready var level_hover_play: TextureButton = $LevelHoverPanel/PanelBG/PlayButton
+
+# ============================================
+# State
+# ============================================
+
+var map_levels_cache: Dictionary = {}  # map_folder -> Array of level data
+var current_selected_level: Dictionary = {}
+var level_buttons: Array[Button] = []
 
 func _ready() -> void:
 	# Lower music volume for campaign menu
 	if MusicManager:
 		MusicManager.lower_volume()
-	
-	# Debug print all label properties at runtime
-	print("=== RUNTIME LABEL DEBUG ===")
-	if hover_title:
-		print("Title visible: ", hover_title.visible, " modulate: ", hover_title.modulate, " is_visible_in_tree: ", hover_title.is_visible_in_tree())
-		print("Title position: ", hover_title.position, " size: ", hover_title.size, " z_index: ", hover_title.z_index)
-		print("Title text: '", hover_title.text, "'")
-	if hover_difficulty:
-		print("Difficulty visible: ", hover_difficulty.visible, " modulate: ", hover_difficulty.modulate)
-	if hover_objective:
-		print("Objective visible: ", hover_objective.visible, " modulate: ", hover_objective.modulate)
-	if hover_description:
-		print("Description visible: ", hover_description.visible, " modulate: ", hover_description.modulate)
-	if hover_panel:
-		print("Panel modulate: ", hover_panel.modulate, " visible: ", hover_panel.visible)
-	print("=========================")
-	
-	# Connect play button in hover panel
+
+	_collect_map_pins()
+	_setup_map_pins()
+	_cache_all_levels()
+	_hide_all_panels()
+
+	# Connect level selector back button
+	if level_selector_back:
+		level_selector_back.pressed.connect(_on_level_selector_back)
+
+	# Connect hover panel play button
 	if hover_play_button:
 		hover_play_button.pressed.connect(_on_hover_play_pressed)
-	
-	_collect_level_markers()
-	_load_level_data()
-	_setup_level_markers()
+
+	# Connect level hover play button
+	if level_hover_play:
+		level_hover_play.pressed.connect(_on_level_hover_play_pressed)
 
 
-## Collect all level marker buttons from the scene
-func _collect_level_markers() -> void:
-	# Find all Level_X buttons in MapIsland
+## Collect map pin nodes (MapPin_1 to MapPin_5)
+func _collect_map_pins() -> void:
 	var map_island = $CM_CampaignMenu/MapAspect/MapIsland
-	if map_island:
-		for child in map_island.get_children():
-			if child is TextureButton and child.name.begins_with("Level_"):
-				level_marker_buttons.append(child)
-	
-	# Sort by name to ensure Level_1, Level_2, etc.
-	level_marker_buttons.sort_custom(func(a, b): return a.name < b.name)
+	if not map_island:
+		push_warning("MapIsland node not found!")
+		return
+
+	for i in range(1, 6):
+		var pin_name = "MapPin_%d" % i
+		var pin = map_island.get_node_or_null(pin_name)
+		if pin and pin is TextureButton:
+			map_pins.append(pin)
+		else:
+			# Fallback: try Level_X naming
+			pin_name = "Level_%d" % i
+			pin = map_island.get_node_or_null(pin_name)
+			if pin and pin is TextureButton:
+				map_pins.append(pin)
 
 
-## Load level data from levelmaps folder
-func _load_level_data() -> void:
-	var level_paths = _scan_levels_folder()
-	
-	for level_path in level_paths:
-		var level_id = level_path.get_file().get_basename()
-		var level_display_name = _format_level_name(level_id)
-		
-		level_data.append({
-			"id": level_id,
-			"path": level_path,
-			"display_name": level_display_name
-		})
+## Setup map pin connections
+func _setup_map_pins() -> void:
+	for i in range(map_pins.size()):
+		var pin = map_pins[i]
 
-
-## Setup level markers with level data
-func _setup_level_markers() -> void:
-	print("Setting up %d level markers with %d level data entries" % [level_marker_buttons.size(), level_data.size()])
-	
-	for i in range(min(level_marker_buttons.size(), level_data.size())):
-		var marker = level_marker_buttons[i]
-		var data = level_data[i]
-		
-		print("  Marker %d (%s): level_id='%s', path='%s'" % [i, marker.name, data["id"], data["path"]])
-		
-		# Update the label text with level number
-		var label = marker.get_node_or_null("Label")
+		# Update label with map number
+		var label = pin.get_node_or_null("Label")
 		if label:
 			label.text = str(i + 1)
-		
-		# Connect to level selection
-		if not marker.pressed.is_connected(_on_level_marker_pressed):
-			marker.pressed.connect(_on_level_marker_pressed.bind(data["id"]))
-			print("    Connected marker to level_id: %s" % data["id"])
-		
-		# Connect hover events
-		if not marker.mouse_entered.is_connected(_on_marker_hover_start):
-			marker.mouse_entered.connect(_on_marker_hover_start.bind(i))
-		if not marker.mouse_exited.is_connected(_on_marker_hover_end):
-			marker.mouse_exited.connect(_on_marker_hover_end)
-	
-	# Hide markers that don't have levels
-	for i in range(level_data.size(), level_marker_buttons.size()):
-		level_marker_buttons[i].visible = false
-		print("  Hiding marker %d (no level data)" % i)
+
+		# Connect pressed signal
+		if not pin.pressed.is_connected(_on_map_pin_pressed):
+			pin.pressed.connect(_on_map_pin_pressed.bind(i))
 
 
-## Show hover panel with level info
-func _on_marker_hover_start(marker_index: int) -> void:
-	print("HOVER START - Marker index: %d" % marker_index)
-	
-	if marker_index < 0 or marker_index >= level_data.size():
-		print("  ERROR: Invalid marker_index")
-		return
-	
-	var data = level_data[marker_index]
-	current_hover_level_id = data["id"]
-	print("  Level ID: %s, Display Name: %s" % [data["id"], data["display_name"]])
-	
-	# Update panel content
-	if hover_title:
-		hover_title.text = "• LEVEL %d" % (marker_index + 1)
-		hover_title.queue_redraw()
-		print("  Set title to: %s" % hover_title.text)
-	else:
-		print("  ERROR: hover_title is null!")
-
-	if hover_difficulty:
-		# Show difficulty with stars and best time if available
-		var num_stars = min(marker_index + 1, 5)
-		var num_empty = 5 - num_stars
-		var stars = ""
-		var empty = ""
-		for i in range(num_stars):
-			stars += "★"
-		for i in range(num_empty):
-			empty += "☆"
-		hover_difficulty.text = "Difficulty: " + stars + empty
-		print("  Set difficulty to: %s" % hover_difficulty.text)
-	else:
-		print("  ERROR: hover_difficulty is null!")
-
-	if hover_objective:
-		# Show level name and best time
-		var obj_text = data["display_name"]
-		if GameData and GameData.has_best_time(data["id"]):
-			var best_time = GameData.get_best_time(data["id"])
-			obj_text += "\nBest Time: " + _format_time(best_time)
-		else:
-			obj_text += "\nBest Time: --:--"
-		hover_objective.text = obj_text
-		print("  Set objective to: %s" % hover_objective.text)
-	else:
-		print("  ERROR: hover_objective is null!")
-
-	if hover_description:
-		hover_description.text = "Navigate your car through the roads and reach the goal. Use Python code to control your vehicle."
-		print("  Set description to: %s" % hover_description.text)
-	else:
-		print("  ERROR: hover_description is null!")
-	
-	# Show panel with fade-in - MUST tween each label individually
-	if hover_panel:
-		hover_panel.visible = true
-
-		# Create tween for panel and all labels
-		var tween = create_tween()
-		tween.set_parallel(true)  # Animate all at once
-
-		# Tween panel background
-		tween.tween_property(hover_panel, "modulate:a", 1.0, 0.2)
-
-		# Tween each label individually (this is what Level_1 does!)
-		if hover_title:
-			tween.tween_property(hover_title, "modulate:a", 1.0, 0.2)
-		if hover_difficulty:
-			tween.tween_property(hover_difficulty, "modulate:a", 1.0, 0.2)
-		if hover_objective:
-			tween.tween_property(hover_objective, "modulate:a", 1.0, 0.2)
-		if hover_description:
-			tween.tween_property(hover_description, "modulate:a", 1.0, 0.2)
-
-		print("  Panel shown")
-	else:
-		print("  ERROR: hover_panel is null!")
+## Cache levels from all map folders
+func _cache_all_levels() -> void:
+	for folder in MAP_FOLDERS:
+		var folder_path = levels_base_path + folder + "/"
+		var levels = _scan_folder_for_levels(folder_path)
+		map_levels_cache[folder] = levels
 
 
-## Hide hover panel
-func _on_marker_hover_end() -> void:
-	if hover_panel:
-		var tween = create_tween()
-		tween.set_parallel(true)
+## Scan a folder for level files
+func _scan_folder_for_levels(folder_path: String) -> Array:
+	var levels: Array = []
 
-		# Fade out panel
-		tween.tween_property(hover_panel, "modulate:a", 0.0, 0.15)
-
-		# Fade out labels
-		if hover_title:
-			tween.tween_property(hover_title, "modulate:a", 0.0, 0.15)
-		if hover_difficulty:
-			tween.tween_property(hover_difficulty, "modulate:a", 0.0, 0.15)
-		if hover_objective:
-			tween.tween_property(hover_objective, "modulate:a", 0.0, 0.15)
-		if hover_description:
-			tween.tween_property(hover_description, "modulate:a", 0.0, 0.15)
-
-		tween.tween_callback(func(): hover_panel.visible = false)
-
-
-## Play button in hover panel clicked
-func _on_hover_play_pressed() -> void:
-	if current_hover_level_id != "":
-		_on_level_marker_pressed(current_hover_level_id)
-
-
-# ============================================
-# Level Loading
-# ============================================
-# ============================================
-
-## Scan the levelmaps folder for .tscn files
-func _scan_levels_folder() -> Array[String]:
-	var level_paths: Array[String] = []
-	
-	var dir = DirAccess.open(levels_path)
+	var dir = DirAccess.open(folder_path)
 	if dir == null:
-		push_warning("Could not open levels folder: %s" % levels_path)
-		return level_paths
-	
+		return levels
+
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
-	
+
 	while file_name != "":
 		if not dir.current_is_dir() and file_name.ends_with(".tscn"):
-			level_paths.append(levels_path + file_name)
+			var level_path = folder_path + file_name
+			var level_id = file_name.get_basename()
+			var display_name = _get_level_display_name(level_path, level_id)
+
+			levels.append({
+				"id": level_id,
+				"path": level_path,
+				"display_name": display_name
+			})
 		file_name = dir.get_next()
-	
+
 	dir.list_dir_end()
-	
-	# Sort alphabetically/numerically
-	level_paths.sort()
-	return level_paths
+
+	# Sort by filename (alphabetically/numerically)
+	levels.sort_custom(func(a, b): return a["id"] < b["id"])
+	return levels
+
+
+## Get level display name from scene or format from id
+func _get_level_display_name(level_path: String, level_id: String) -> String:
+	# Try to load scene and read LevelSettings
+	var scene = load(level_path)
+	if scene:
+		var instance = scene.instantiate()
+		var display_name = ""
+
+		# Try new LevelSettings system
+		var settings_node = instance.get_node_or_null("LevelSettings")
+		if settings_node:
+			# Check for LevelName label (backward compat)
+			var name_label = settings_node.get_node_or_null("LevelName")
+			if name_label and name_label is Label:
+				display_name = name_label.text.strip_edges()
+
+		instance.queue_free()
+
+		if not display_name.is_empty():
+			return display_name
+
+	# Fallback: format level_id nicely
+	return _format_level_name(level_id)
 
 
 ## Format level name from filename
 func _format_level_name(level_id: String) -> String:
-	# Convert filename to nice display name
-	# e.g., "level_01" -> "Level 1", "tutorial_intro" -> "Tutorial Intro"
 	var display_name = level_id.replace("_", " ")
 	display_name = display_name.capitalize()
 	return display_name
 
 
+## Hide all popup panels
+func _hide_all_panels() -> void:
+	if hover_panel:
+		hover_panel.modulate.a = 0.0
+		hover_panel.visible = false
+	if level_selector_panel:
+		level_selector_panel.visible = false
+	if level_hover_panel:
+		level_hover_panel.visible = false
+
+
 # ============================================
-# Event Handlers
+# Map Pin Events
 # ============================================
 
-func _on_level_marker_pressed(level_id: String) -> void:
-	print("Level marker pressed! Level ID: %s" % level_id)
-	
-	# Store selected level in GameState autoload
+## Called when a map pin is clicked
+func _on_map_pin_pressed(map_index: int) -> void:
+	if map_index < 0 or map_index >= MAP_FOLDERS.size():
+		return
+
+	# If same pin clicked twice, open level selector
+	if current_selected_map == map_index and hover_panel and hover_panel.visible:
+		_open_level_selector(map_index)
+		return
+
+	current_selected_map = map_index
+	_show_map_hover(map_index)
+
+
+## Show map hover panel
+func _show_map_hover(map_index: int) -> void:
+	var folder = MAP_FOLDERS[map_index]
+	var display_name = MAP_DISPLAY_NAMES.get(folder, folder)
+	var description = MAP_DESCRIPTIONS.get(folder, "")
+	var levels = map_levels_cache.get(folder, [])
+
+	# Check if map is locked
+	var is_locked = _is_map_locked(map_index)
+	var is_coming_soon = levels.size() == 0
+
+	# Update hover panel content
+	if hover_title:
+		hover_title.text = "* " + display_name
+
+	if hover_difficulty:
+		var num_levels = levels.size()
+		var completed = _count_completed_levels(folder)
+		if is_coming_soon:
+			hover_difficulty.text = "Coming Soon"
+		else:
+			hover_difficulty.text = "Progress: %d / %d levels" % [completed, num_levels]
+
+	if hover_description:
+		hover_description.text = description
+
+	if hover_status:
+		if is_coming_soon:
+			hover_status.text = "This region is not yet available."
+			hover_status.visible = true
+		elif is_locked:
+			hover_status.text = "Complete all Tutorial levels to unlock!"
+			hover_status.visible = true
+		else:
+			hover_status.visible = false
+
+	if hover_play_button:
+		# Disable play button if locked or coming soon
+		hover_play_button.disabled = is_locked or is_coming_soon
+		var play_label = hover_play_button.get_node_or_null("Button/Logo")
+		if play_label:
+			if is_coming_soon:
+				play_label.text = "SOON"
+			elif is_locked:
+				play_label.text = "LOCKED"
+			else:
+				play_label.text = "PLAY"
+
+	# Animate panel in
+	if hover_panel:
+		hover_panel.visible = true
+		var tween = create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(hover_panel, "modulate:a", 1.0, 0.2)
+
+
+## Check if a map is locked
+func _is_map_locked(map_index: int) -> bool:
+	# Tutorial (index 0) is always unlocked
+	if map_index == 0:
+		return false
+
+	# Other maps require completing all levels of Tutorial
+	var tutorial_levels = map_levels_cache.get("01Tutorial", [])
+	for level_data in tutorial_levels:
+		if not GameData.is_level_completed(level_data["id"]):
+			return true
+
+	return false
+
+
+## Count completed levels in a map
+func _count_completed_levels(folder: String) -> int:
+	var levels = map_levels_cache.get(folder, [])
+	var count = 0
+	for level_data in levels:
+		if GameData.is_level_completed(level_data["id"]):
+			count += 1
+	return count
+
+
+## Hover panel play button pressed
+func _on_hover_play_pressed() -> void:
+	if current_selected_map >= 0:
+		_open_level_selector(current_selected_map)
+
+
+# ============================================
+# Level Selector
+# ============================================
+
+## Open the level selector for a map
+func _open_level_selector(map_index: int) -> void:
+	if map_index < 0 or map_index >= MAP_FOLDERS.size():
+		return
+
+	var folder = MAP_FOLDERS[map_index]
+	var display_name = MAP_DISPLAY_NAMES.get(folder, folder)
+	var levels = map_levels_cache.get(folder, [])
+
+	# Hide hover panel
+	if hover_panel:
+		var tween = create_tween()
+		tween.tween_property(hover_panel, "modulate:a", 0.0, 0.15)
+		tween.tween_callback(func(): hover_panel.visible = false)
+
+	# Update level selector title
+	if level_selector_title:
+		level_selector_title.text = display_name + " LEVELS"
+
+	# Clear existing level buttons
+	_clear_level_buttons()
+
+	# Create level buttons
+	for i in range(levels.size()):
+		var level_data = levels[i]
+		_create_level_button(level_data, i, folder)
+
+	# Show level selector panel with animation
+	if level_selector_panel:
+		level_selector_panel.visible = true
+		level_selector_panel.modulate.a = 0.0
+		var tween = create_tween()
+		tween.tween_property(level_selector_panel, "modulate:a", 1.0, 0.2)
+
+	# Hide level hover panel
+	if level_hover_panel:
+		level_hover_panel.visible = false
+
+
+## Clear level buttons
+func _clear_level_buttons() -> void:
+	for btn in level_buttons:
+		if is_instance_valid(btn):
+			btn.queue_free()
+	level_buttons.clear()
+
+
+## Create a level button
+func _create_level_button(level_data: Dictionary, index: int, map_folder: String) -> void:
+	if not level_list_container:
+		return
+
+	var btn = Button.new()
+	btn.name = "LevelBtn_" + level_data["id"]
+	btn.custom_minimum_size = Vector2(400, 50)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	# Check if level is unlocked
+	var is_unlocked = _is_level_unlocked(map_folder, index)
+	var is_completed = GameData.is_level_completed(level_data["id"])
+
+	# Set button text
+	var text = "%d. %s" % [index + 1, level_data["display_name"]]
+	if is_completed:
+		text += " [Completed]"
+	elif not is_unlocked:
+		text += " [Locked]"
+	btn.text = text
+
+	# Style the button
+	btn.disabled = not is_unlocked
+
+	# Connect signals
+	btn.pressed.connect(_on_level_button_pressed.bind(level_data))
+	btn.mouse_entered.connect(_on_level_button_hover.bind(level_data, is_unlocked))
+	btn.mouse_exited.connect(_on_level_button_hover_end)
+
+	level_list_container.add_child(btn)
+	level_buttons.append(btn)
+
+
+## Check if a level is unlocked
+func _is_level_unlocked(map_folder: String, level_index: int) -> bool:
+	# First level is always unlocked
+	if level_index == 0:
+		return true
+
+	# Check if previous level is completed
+	var levels = map_levels_cache.get(map_folder, [])
+	if level_index > 0 and level_index <= levels.size():
+		var prev_level = levels[level_index - 1]
+		return GameData.is_level_completed(prev_level["id"])
+
+	return false
+
+
+## Level button pressed - show level hover or play if already selected
+func _on_level_button_pressed(level_data: Dictionary) -> void:
+	if current_selected_level.get("id", "") == level_data.get("id", ""):
+		# Same level clicked twice, play it
+		_play_level(level_data)
+	else:
+		current_selected_level = level_data
+		_show_level_hover(level_data, true)
+
+
+## Show level hover panel
+func _on_level_button_hover(level_data: Dictionary, is_unlocked: bool) -> void:
+	_show_level_hover(level_data, is_unlocked)
+
+
+## Hide level hover panel
+func _on_level_button_hover_end() -> void:
+	# Don't hide if we have a selected level
+	if current_selected_level.is_empty():
+		if level_hover_panel:
+			level_hover_panel.visible = false
+
+
+## Show level hover info
+func _show_level_hover(level_data: Dictionary, is_unlocked: bool) -> void:
+	if not level_hover_panel:
+		return
+
+	if level_hover_name:
+		level_hover_name.text = level_data.get("display_name", "Unknown")
+
+	if level_hover_time:
+		var level_id = level_data.get("id", "")
+		if GameData.has_best_time(level_id):
+			var best = GameData.get_best_time(level_id)
+			level_hover_time.text = "Best Time: " + _format_time(best)
+		else:
+			level_hover_time.text = "Best Time: --:--.--"
+
+	if level_hover_status:
+		if not is_unlocked:
+			level_hover_status.text = "Complete the previous level to unlock!"
+			level_hover_status.visible = true
+		elif GameData.is_level_completed(level_data.get("id", "")):
+			level_hover_status.text = "Completed!"
+			level_hover_status.visible = true
+		else:
+			level_hover_status.visible = false
+
+	if level_hover_play:
+		level_hover_play.disabled = not is_unlocked
+		var play_label = level_hover_play.get_node_or_null("Label")
+		if play_label:
+			play_label.text = "LOCKED" if not is_unlocked else "PLAY"
+
+	level_hover_panel.visible = true
+
+
+## Level hover play button pressed
+func _on_level_hover_play_pressed() -> void:
+	if not current_selected_level.is_empty():
+		_play_level(current_selected_level)
+
+
+## Play a level
+func _play_level(level_data: Dictionary) -> void:
+	var level_id = level_data.get("id", "")
+	var level_path = level_data.get("path", "")
+
+	if level_id.is_empty() or level_path.is_empty():
+		push_warning("Invalid level data!")
+		return
+
+	print("Playing level: %s (%s)" % [level_id, level_path])
+
+	# Store in GameState
 	GameState.selected_level_id = level_id
-	print("Set GameState.selected_level_id to: %s" % GameState.selected_level_id)
-	
-	# All levels in levelmaps folder use the TileMap system
-	print("Changing scene to: %s" % game_scene_path)
+	GameState.selected_level_path = level_path
+
+	# Change to game scene
 	get_tree().change_scene_to_file(game_scene_path)
+
+
+## Back button from level selector
+func _on_level_selector_back() -> void:
+	# Hide level selector
+	if level_selector_panel:
+		var tween = create_tween()
+		tween.tween_property(level_selector_panel, "modulate:a", 0.0, 0.15)
+		tween.tween_callback(func(): level_selector_panel.visible = false)
+
+	# Hide level hover
+	if level_hover_panel:
+		level_hover_panel.visible = false
+
+	current_selected_level = {}
+
+	# Show map hover again
+	if current_selected_map >= 0:
+		_show_map_hover(current_selected_map)
 
 
 # ============================================
@@ -293,21 +539,3 @@ func _format_time(time: float) -> String:
 	var seconds = int(time) % 60
 	var milliseconds = int((time - int(time)) * 100)
 	return "%02d:%02d.%02d" % [minutes, seconds, milliseconds]
-
-
-# ============================================
-# Public API
-# ============================================
-
-## Get level data for a specific marker index
-func get_level_data_for_marker(marker_index: int) -> Dictionary:
-	if marker_index >= 0 and marker_index < level_data.size():
-		return level_data[marker_index]
-	return {}
-
-
-## Refresh the level markers (call after adding new levels)
-func refresh_levels() -> void:
-	level_data.clear()
-	_load_level_data()
-	_setup_level_markers()

@@ -3,7 +3,8 @@ class_name LevelLoader
 
 ## Automatically loads level scenes from the levelmaps folder
 ## Levels are detected by scanning for .tscn files in scenes/levelmaps/
-## Level order is determined by filename (alphabetical/numerical)
+## Now supports subfolders (01Tutorial, 02Iloilo, etc.)
+## Level order is determined by full path (alphabetical/numerical)
 
 const LEVELS_PATH: String = "res://scenes/levelmaps/"
 
@@ -112,7 +113,7 @@ func load_level(index: int) -> Node:
 	return scene.instantiate()
 
 
-## Load and instantiate a level scene by name
+## Load and instantiate a level scene by name (searches all subfolders)
 func load_level_by_name(level_name: String) -> Node:
 	if not _levels_loaded:
 		_scan_levels_folder()
@@ -125,33 +126,43 @@ func load_level_by_name(level_name: String) -> Node:
 	return null
 
 
-## Scan the levelmaps folder for .tscn files
+## Scan the levelmaps folder for .tscn files (including subfolders)
 func _scan_levels_folder() -> void:
 	_level_paths.clear()
+	_scan_folder_recursive(LEVELS_PATH)
 
-	var dir = DirAccess.open(LEVELS_PATH)
-	if dir == null:
-		push_warning("Could not open levels folder: %s" % LEVELS_PATH)
-		_levels_loaded = true
-		return
-
-	dir.list_dir_begin()
-	var file_name = dir.get_next()
-
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".tscn"):
-			_level_paths.append(LEVELS_PATH + file_name)
-		file_name = dir.get_next()
-
-	dir.list_dir_end()
-
-	# Sort alphabetically/numerically
+	# Sort alphabetically/numerically by full path
 	_level_paths.sort()
 	_levels_loaded = true
 
 	print("LevelLoader: Found %d levels" % _level_paths.size())
 	for path in _level_paths:
 		print("  - %s" % path)
+
+
+## Recursively scan a folder for .tscn files
+func _scan_folder_recursive(folder_path: String) -> void:
+	var dir = DirAccess.open(folder_path)
+	if dir == null:
+		push_warning("Could not open folder: %s" % folder_path)
+		return
+
+	dir.list_dir_begin()
+	var file_name = dir.get_next()
+
+	while file_name != "":
+		var full_path = folder_path + file_name
+
+		if dir.current_is_dir():
+			# Skip hidden folders
+			if not file_name.begins_with("."):
+				_scan_folder_recursive(full_path + "/")
+		elif file_name.ends_with(".tscn"):
+			_level_paths.append(full_path)
+
+		file_name = dir.get_next()
+
+	dir.list_dir_end()
 
 
 ## Force rescan of levels folder
@@ -169,3 +180,25 @@ func level_exists(level_name: String) -> bool:
 		if path.get_file().get_basename() == level_name:
 			return true
 	return false
+
+
+## Get level path by name (searches all subfolders)
+func get_level_path_by_name(level_name: String) -> String:
+	if not _levels_loaded:
+		_scan_levels_folder()
+
+	for path in _level_paths:
+		if path.get_file().get_basename() == level_name:
+			return path
+	return ""
+
+
+## Get the index of a level by name
+func get_level_index_by_name(level_name: String) -> int:
+	if not _levels_loaded:
+		_scan_levels_folder()
+
+	for i in range(_level_paths.size()):
+		if _level_paths[i].get_file().get_basename() == level_name:
+			return i
+	return -1
