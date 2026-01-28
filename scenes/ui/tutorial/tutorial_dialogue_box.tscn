@@ -161,9 +161,9 @@ text = "Welcome to GoCars! I'm Maki, and I'll teach you how to code cars!"
 [node name="ActionHelper" type="Label" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
 visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 0.8, 1, 1)
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.65882355, 0.5254902, 0.36862746, 1)
+theme_override_fonts/font = ExtResource("5_uyhkw")
+theme_override_font_sizes/font_size = 40
 
 [node name="ContinueIndicator" type="AnimatedSprite2D" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
 texture_filter = 1
