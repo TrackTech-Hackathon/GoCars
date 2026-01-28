@@ -161,17 +161,15 @@ STEP 8B: EXPLAIN CRASH
 [Arrow points to hearts/lives display]
 "That crash cost you 1 LIFE! When you run out of lives, the level ends."
 "You started with as many lives as there are cars on the map."
-[WAIT: Player reads the explanation]
 
 STEP 9: Crashed Cars Stay
 [Point at crashed car]
 "Notice the crashed car is still there - darker and stopped."
 "Crashed cars become OBSTACLES! Other cars must avoid them."
-[WAIT: Player clicks to continue]
 
 STEP 9.5: Press Reset
 [Arrow points to Reset button]
-"Now press R on your keyboard, or click the RESET button to clear the crash and try again!"
+"Press R or click RESET to try again!"
 [WAIT: Player presses reset]
 
 STEP 10: Run Your Code
