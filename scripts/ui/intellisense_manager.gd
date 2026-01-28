@@ -127,6 +127,12 @@ func on_text_changed() -> void:
 
 	var line_text = code_edit.get_line(caret_line)
 
+	# IMPORTANT: Don't show suggestions if cursor is inside a string or comment
+	if _is_inside_string_or_comment(line_text, caret_col):
+		if autocomplete_popup:
+			autocomplete_popup.visible = false
+		return
+
 	# Check for dot trigger (car. stoplight. boat.)
 	if caret_col > 0 and line_text.substr(caret_col - 1, 1) == ".":
 		# Get the object before the dot
@@ -240,6 +246,37 @@ func _find_word_start(line: String, col: int) -> int:
 			break
 		start -= 1
 	return start
+
+
+## Check if cursor is inside a string literal or comment
+## This prevents intellisense from showing suggestions when typing string arguments
+func _is_inside_string_or_comment(line_text: String, col: int) -> bool:
+	var single_quotes = 0
+	var double_quotes = 0
+	var in_comment = false
+	var i = 0
+
+	while i < min(col, line_text.length()):
+		var c = line_text[i]
+
+		# Check for comment (but only if not inside a string)
+		if c == "#" and single_quotes % 2 == 0 and double_quotes % 2 == 0:
+			in_comment = true
+			break
+
+		# Track quotes (skip escaped quotes)
+		if c == "\\" and i + 1 < line_text.length():
+			i += 2  # Skip escaped character
+			continue
+		elif c == "'" and double_quotes % 2 == 0:
+			single_quotes += 1
+		elif c == '"' and single_quotes % 2 == 0:
+			double_quotes += 1
+
+		i += 1
+
+	# If odd number of quotes, we're inside a string
+	return in_comment or (single_quotes % 2 == 1) or (double_quotes % 2 == 1)
 
 func _on_suggestion_selected(text: String) -> void:
 	# Replace the current word with the selected suggestion

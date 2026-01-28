@@ -940,6 +940,8 @@ func _check_destination() -> void:
 			var distance = global_position.distance_to(dest)
 			if distance < DESTINATION_THRESHOLD:
 				stop()
+				# Stop the interpreter for this vehicle (prevents move() from continuing)
+				_stop_vehicle_interpreter()
 				reached_destination.emit(vehicle_id)
 				return
 	# Fallback to single destination for backwards compatibility
@@ -947,7 +949,19 @@ func _check_destination() -> void:
 		var distance = global_position.distance_to(destination)
 		if distance < DESTINATION_THRESHOLD:
 			stop()
+			# Stop the interpreter for this vehicle (prevents move() from continuing)
+			_stop_vehicle_interpreter()
 			reached_destination.emit(vehicle_id)
+
+
+## Stop this vehicle's interpreter when reaching destination or crashing
+func _stop_vehicle_interpreter() -> void:
+	if has_meta("interpreter"):
+		var interp = get_meta("interpreter")
+		if interp != null and interp.has_method("stop_execution"):
+			interp.stop_execution()
+		# Clear the interpreter reference
+		remove_meta("interpreter")
 
 
 func _on_crash() -> void:
@@ -955,6 +969,8 @@ func _on_crash() -> void:
 	vehicle_state = 0  # Mark as crashed
 	_switch_to_crashed_sprite()
 	_update_stats_state()  # Update state label
+	# Stop the interpreter for this vehicle
+	_stop_vehicle_interpreter()
 	crashed.emit(vehicle_id)
 
 
@@ -963,6 +979,8 @@ func _on_off_road_crash() -> void:
 	vehicle_state = 0  # Mark as crashed
 	_switch_to_crashed_sprite()
 	_update_stats_state()  # Update state label
+	# Stop the interpreter for this vehicle
+	_stop_vehicle_interpreter()
 	off_road_crash.emit(vehicle_id)
 
 
@@ -1213,6 +1231,11 @@ func _command_completed() -> void:
 # ============================================
 
 func _exec_go() -> void:
+	# Safety check: don't start moving if already at destination or crashed
+	if at_end() or vehicle_state == 0:
+		_command_completed()
+		return
+
 	if _is_moving:
 		# Already moving, complete immediately
 		_command_completed()
@@ -1285,6 +1308,11 @@ func _exec_wait(seconds: float) -> void:
 
 
 func _exec_move(tiles: int) -> void:
+	# Safety check: don't move if already at destination or crashed
+	if at_end() or vehicle_state == 0:
+		_command_completed()
+		return
+
 	_tiles_to_move = tiles
 	_move_start_position = global_position
 	_is_moving = true
