@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cpbh6qdo618ux"]
+[gd_scene load_steps=9 format=3 uid="uid://cpbh6qdo618ux"]
 
 [ext_resource type="Script" uid="uid://df74itlomy7yj" path="res://scripts/core/simulation_engine.gd" id="1_sim"]
 [ext_resource type="Script" uid="uid://c1n1vn6nbuf04" path="res://scenes/main_tilemap.gd" id="2_main_tilemap"]
@@ -13,6 +13,8 @@ region_rect = Rect2(644.8423, 67.81682, 22.356445, 24.1371)
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_ttp8s"]
 texture = ExtResource("3_24qlu")
 region_rect = Rect2(676.9333, 67.87599, 22.198242, 24.374512)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ttp8s"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("2_main_tilemap")
@@ -41,7 +43,7 @@ grow_horizontal = 0
 theme_override_styles/normal = SubResource("StyleBoxTexture_6np48")
 theme_override_styles/pressed = SubResource("StyleBoxTexture_ttp8s")
 theme_override_styles/hover = SubResource("StyleBoxTexture_ttp8s")
-theme_override_styles/focus = SubResource("StyleBoxTexture_6np48")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_ttp8s")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="UI"]
 offset_left = 173.0
