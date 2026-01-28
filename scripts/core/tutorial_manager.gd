@@ -19,6 +19,7 @@ signal highlight_requested(target: String)
 signal highlight_cleared()
 signal wait_for_action(action_type: String)
 signal force_event(event_type: String)
+signal forced_crash_completed()
 
 ## Tutorial data (RefCounted - TutorialData instance)
 var tutorial_data = null
@@ -29,6 +30,8 @@ var current_step_index: int = -1
 var current_dialogue_index: int = 0
 var is_tutorial_active: bool = false
 var is_waiting_for_action: bool = false
+var is_awaiting_forced_crash: bool = false # NEW FLAG
+var _is_forced_failure: bool = false # Track if the current failure is a forced tutorial event
 var pending_wait_action: String = ""
 
 ## Code validation tracking
@@ -37,6 +40,7 @@ var _expected_code: String = ""
 
 ## UI references (set by main_tilemap.gd when tutorial starts)
 var dialogue_box: Node = null
+var _main_scene: Node = null # Reference to main_tilemap.gd
 
 ## Preloaded dialogue box scene
 var dialogue_box_scene: PackedScene = null
@@ -83,7 +87,13 @@ func start_tutorial(level_name: String, parent_node: Node) -> bool:
 			dialogue_box.continue_pressed.connect(_on_continue_pressed)
 		if dialogue_box.has_signal("skip_pressed"):
 			dialogue_box.skip_pressed.connect(_on_skip_pressed)
-	
+		if dialogue_box.has_signal("retry_pressed"):
+			dialogue_box.retry_pressed.connect(_on_dialogue_retry_pressed)
+
+	# Store reference to main scene to call retry function
+	if parent_node and parent_node.get_parent():
+		_main_scene = parent_node.get_parent()
+
 	# Create highlight overlay if not exists
 	if not highlight_overlay and highlight_scene:
 		highlight_overlay = highlight_scene.instantiate()
@@ -228,7 +238,11 @@ func _process_step(step) -> void:
 			print("Tutorial waiting for action: %s" % step.wait_type)
 			wait_for_action.emit(step.wait_type)
 		"force":
-			force_event.emit(step.target)
+			if step.target == "spawn_crashing_car":
+				_execute_crash_sequence()
+				return # The async function will handle advancing the step
+			else:
+				force_event.emit(step.target)
 		"level_complete":
 			# Show final dialogue then complete
 			pass
@@ -247,6 +261,24 @@ func _process_step(step) -> void:
 		# No dialogue and not waiting, auto-advance
 		call_deferred("advance_step")
 
+## Executes the async crash sequence for Tutorial 2
+func _execute_crash_sequence() -> void:
+	# 1. Hide Maki's dialogue box
+	if dialogue_box and dialogue_box.has_method("hide_dialogue"):
+		dialogue_box.hide_dialogue()
+
+	# 2. Set the flag and emit the signal to trigger the crash in the main scene
+	is_awaiting_forced_crash = true
+	_is_forced_failure = true # Mark this as a forced failure scenario
+	force_event.emit("spawn_crashing_car")
+
+	# 3. Wait here until the main scene confirms the crash has happened
+	await forced_crash_completed
+	is_awaiting_forced_crash = false
+
+	# 4. Now that the crash is done, advance to the next step (the explanation)
+	advance_step()
+
 ## Show dialogue for current step
 func _show_dialogue(step) -> void:
 	if current_dialogue_index >= step.dialogue.size():
@@ -262,7 +294,7 @@ func _show_dialogue(step) -> void:
 	var text = step.dialogue[current_dialogue_index]
 	var speaker = step.speaker
 	var emotion = step.emotion
-	
+
 	# Generate action hint based on wait type
 	var action_hint = ""
 	if (step.action == "wait" or step.action == "point_and_wait") and not step.wait_type.is_empty():
@@ -274,6 +306,10 @@ func _show_dialogue(step) -> void:
 	# Update dialogue box with action hint
 	if dialogue_box and dialogue_box.has_method("show_dialogue"):
 		dialogue_box.call("show_dialogue", text, speaker, emotion, action_hint)
+
+	# Ensure skip button is visible
+	if dialogue_box and dialogue_box.has_method("show_skip_button"):
+		dialogue_box.show_skip_button()
 
 ## Continue to next dialogue line or step
 func continue_dialogue() -> void:
@@ -289,15 +325,10 @@ func continue_dialogue() -> void:
 	current_dialogue_index += 1
 
 	if current_dialogue_index >= step.dialogue.size():
-		# All dialogue shown
-		if step.action == "wait":
-			# Stay on this step
-			return
-		elif step.action == "level_complete":
-			complete_tutorial()
-		else:
-			advance_step()
+		# All dialogue shown - advance to next step
+		advance_step()
 	else:
+		# More dialogue to show
 		_show_dialogue(step)
 
 ## Called when player performs waited action
@@ -421,6 +452,79 @@ func _on_continue_pressed() -> void:
 
 func _on_skip_pressed() -> void:
 	skip_tutorial()
+
+func _on_dialogue_retry_pressed() -> void:
+	if _main_scene and _main_scene.has_method("_do_fast_retry"):
+		# Hide the dialogue box before resetting
+		if dialogue_box and dialogue_box.has_method("hide_dialogue"):
+			dialogue_box.hide_dialogue()
+		# Call the main retry function
+		_main_scene._do_fast_retry()
+
+## Called when the level is retried
+func notify_retry() -> void:
+	if not is_tutorial_active:
+		return
+
+	if _is_forced_failure:
+		_is_forced_failure = false # Reset flag
+		advance_step() # After a forced failure, move to the next step
+	else:
+		_restart_current_step() # After a genuine failure, repeat the step
+
+## Private method to restart the current step
+func _restart_current_step() -> void:
+	if not is_tutorial_active or current_step_index < 0:
+		return
+
+	# Reset dialogue index to show all dialogue again
+	current_dialogue_index = 0
+	var step = current_tutorial.steps[current_step_index]
+	_process_step(step)
+
+## Called by main_tilemap when level fails during a tutorial
+func handle_scripted_failure(reason: String) -> void:
+	if not is_tutorial_active:
+		return
+
+	# Determine if the failure was forced, which dictates the flow
+	var step = get_current_step()
+	if step and step.title.to_lower().contains("forced"):
+		_is_forced_failure = true
+		# This is a forced failure, so execute the full sequence with commentary
+		_run_forced_failure_sequence(reason)
+	else:
+		_is_forced_failure = false
+		# This is a genuine player failure, just show the reset prompt immediately.
+		if _main_scene and _main_scene.has_method("_show_failure_popup"):
+			_main_scene._show_failure_popup(reason)
+		_prompt_for_reset()
+
+## The full sequence for a scripted, forced failure
+func _run_forced_failure_sequence(reason: String) -> void:
+	# 1. Advance to the next step to show Maki's commentary on the crash
+	advance_step()
+
+	# 2. Wait for the user to click "Continue" on that commentary
+	if dialogue_box and dialogue_box.has_signal("continue_pressed"):
+		await dialogue_box.continue_pressed
+
+	# 3. Now, show the actual failure panel
+	if _main_scene and _main_scene.has_method("_show_failure_popup"):
+		_main_scene._show_failure_popup(reason)
+
+	# 4. Finally, show the "Click Reset" prompt and highlight
+	_prompt_for_reset()
+
+## Shows the final prompt to reset the level
+func _prompt_for_reset() -> void:
+	# Show a message in the dialogue box prompting for reset
+	if not dialogue_box:
+		return
+
+	# Directly change the text instead of showing new dialogue
+	# This preserves the dialogue box state for when retry is clicked
+	dialogue_box.dialogue_text.text = "Click the RESET button to try again!"
 
 ## Get user-friendly action hint from wait type
 func _get_action_hint(wait_type: String) -> String:

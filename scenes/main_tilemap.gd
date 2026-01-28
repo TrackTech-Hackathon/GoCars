@@ -561,13 +561,32 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	next_car_id += 1
 
 	# Set position and direction from spawn data
-	new_car.global_position = spawn["position"]
-	new_car.direction = spawn["direction"]
-	new_car.rotation = spawn["rotation"]
+	if spawn.has("position"):
+		new_car.global_position = spawn["position"]
+	if spawn.has("direction"):
+		new_car.direction = spawn["direction"]
+	if spawn.has("rotation"):
+		new_car.rotation = spawn["rotation"]
+	if spawn.has("facing"):
+		# Convert facing string to direction if needed (for forced tutorial events)
+		new_car.direction = spawn["facing"]
 
 	# Set spawn group if present
 	if spawn.has("group"):
-		new_car.set_spawn_group(spawn["group"])
+		var group_val = spawn["group"]
+		var group_enum: int
+
+		if typeof(group_val) == TYPE_STRING:
+			# If it's a string (from my forced scenario), convert it.
+			group_enum = _get_spawngroup_enum_from_string(group_val)
+		elif typeof(group_val) == TYPE_INT:
+			# If it's an int (from the tilemap data), use it directly.
+			group_enum = group_val
+		else:
+			# Fallback for any other type
+			group_enum = Vehicle.SpawnGroup.NONE
+			
+		new_car.set_spawn_group(group_enum)
 
 	# Initialize navigation state for proper guideline following
 	# The entry_dir tells us what direction the car will enter the NEXT tile from
@@ -619,6 +638,21 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	var color_str = new_car.get_color_name() if new_car.has_method("get_color_name") else "?"
 	_update_status("Spawned %s (%s): %s (Group %s)" % [new_car.get_vehicle_type_name(), color_str, new_car.vehicle_id, group_str])
 	return new_car
+
+
+## Convert spawn group string to enum value
+func _get_spawngroup_enum_from_string(group_string: String) -> int:
+	match group_string.to_upper():
+		"A":
+			return Vehicle.SpawnGroup.A
+		"B":
+			return Vehicle.SpawnGroup.B
+		"C":
+			return Vehicle.SpawnGroup.C
+		"D":
+			return Vehicle.SpawnGroup.D
+		_:
+			return Vehicle.SpawnGroup.NONE
 
 
 ## Get opposite direction string
@@ -702,7 +736,8 @@ func _on_run_button_pressed() -> void:
 		return
 
 	# Notify tutorial system that player pressed Run
-	_notify_tutorial_action("run_code")
+	if TutorialManager and TutorialManager.is_active():
+		TutorialManager.notify_action("run_code")
 
 	# Mark paths dirty
 	if road_layer:
@@ -826,6 +861,12 @@ func _on_level_completed(stars: int) -> void:
 
 
 func _on_level_failed(reason: String) -> void:
+	# If a tutorial is active, let it handle the failure sequence
+	if TutorialManager and TutorialManager.is_active():
+		# The TutorialManager will be responsible for showing the failure popup after its own dialogue.
+		TutorialManager.handle_scripted_failure(reason)
+		return
+
 	_update_status("Level Failed: %s" % reason)
 	_stop_all_cars()
 	_show_failure_popup(reason)
@@ -880,6 +921,10 @@ func _on_toggle_help_pressed() -> void:
 # ============================================
 
 func _show_victory_popup(stars: int) -> void:
+	# Hide stats UI panel to prevent overlap
+	if stats_ui_panel:
+		stats_ui_panel.hide_panel()
+
 	# Stop timer on win
 	timer_running = false
 	level_won = true
@@ -919,6 +964,10 @@ func _show_victory_popup(stars: int) -> void:
 
 
 func _show_failure_popup(reason: String) -> void:
+	# Hide stats UI panel to prevent overlap
+	if stats_ui_panel:
+		stats_ui_panel.hide_panel()
+
 	# Stop timer on failure (don't save time)
 	timer_running = false
 
@@ -934,7 +983,7 @@ func _show_failure_popup(reason: String) -> void:
 			"off_road":
 				hint = "💡 Your cars kept driving off the road! Stay on the pavement."
 			"red_light":
-				hint = "💡 Too many red light violations! Use if statements to check stoplight.is_red()"
+				hint = "💡 Too many red light violations! Use if statements to check car.at_red()"
 			_:
 				hint = "💡 Too many mistakes! Watch your code carefully."
 	elif reason.to_lower().find("time") >= 0:
@@ -976,6 +1025,9 @@ func _on_next_pressed() -> void:
 
 
 func _on_completion_summary_retry() -> void:
+	# Show stats UI panel again
+	if stats_ui_panel:
+		stats_ui_panel.show_panel()
 	if completion_summary:
 		completion_summary.hide()
 	# Reset timer when pressing Retry from game over screen
@@ -986,6 +1038,9 @@ func _on_completion_summary_retry() -> void:
 
 
 func _on_completion_summary_menu() -> void:
+	# Show stats UI panel again
+	if stats_ui_panel:
+		stats_ui_panel.show_panel()
 	if completion_summary:
 		completion_summary.hide()
 	# Return to main menu
@@ -993,6 +1048,9 @@ func _on_completion_summary_menu() -> void:
 
 
 func _on_completion_summary_next() -> void:
+	# Show stats UI panel again
+	if stats_ui_panel:
+		stats_ui_panel.show_panel()
 	if completion_summary:
 		completion_summary.hide()
 	_load_next_level()
@@ -1056,6 +1114,10 @@ func _do_fast_retry() -> void:
 
 	_update_status("Reset - Ready")
 	run_button.disabled = false
+
+	# If a tutorial is active, notify it of the retry
+	if TutorialManager and TutorialManager.is_active():
+		TutorialManager.notify_retry()
 
 	# Spawn initial cars again
 	_spawn_initial_cars()
@@ -1877,7 +1939,8 @@ func _on_window_manager_code_run(code: String) -> void:
 		return
 	
 	# Notify tutorial system
-	_notify_tutorial_action("run_code")
+	if TutorialManager and TutorialManager.is_active():
+		TutorialManager.notify_action("run_code")
 
 	if road_layer:
 		road_layer.mark_paths_dirty()
@@ -1991,13 +2054,13 @@ func _on_menu_pressed() -> void:
 # Menu Panel
 # ============================================
 
-## Create the menu panel with options
 func _create_menu_panel() -> void:
 	# Load and instantiate the menu panel scene
 	var menu_panel_scene = load("res://scenes/ui/menu_panel.tscn")
 	if menu_panel_scene:
 		menu_panel = menu_panel_scene.instantiate()
 		$UI.add_child(menu_panel)
+		menu_panel.layer = 50 # Set a high layer to ensure it's on top
 		
 		# Connect signals
 		menu_panel.back_to_levels_pressed.connect(_on_menu_back_to_levels)
@@ -2069,11 +2132,15 @@ func _load_level_hearts() -> void:
 		# Get level settings for heart count (with backward compatibility)
 		var settings = LevelSettings.from_node(current_level_node)
 
-		# Configure hearts from level settings
+		# Configure hearts based on the number of vehicles
 		if hearts_ui.has_method("set_max_hearts"):
-			hearts_ui.set_max_hearts(settings.starting_hearts)
-			initial_hearts = settings.starting_hearts
-			hearts = initial_hearts
+			var num_vehicles = simulation_engine._total_vehicles
+			# Ensure at least 1 heart if no cars, or if some default is needed
+			var calculated_hearts = max(1, num_vehicles) 
+			hearts_ui.set_max_hearts(calculated_hearts)
+			initial_hearts = calculated_hearts
+			hearts = calculated_hearts
+
 		else:
 			initial_hearts = settings.starting_hearts
 			hearts = initial_hearts
@@ -2100,7 +2167,7 @@ func _load_level_hearts() -> void:
 
 ## Called when hearts UI reports all hearts lost
 func _on_hearts_depleted() -> void:
-	_show_failure_popup("Out of hearts!")
+	_on_level_failed("Out of hearts!")
 
 
 ## Override lose_heart to use HeartsUI if available
@@ -2343,85 +2410,80 @@ func _start_tutorial_if_available() -> void:
 	if TutorialManager.has_tutorial(level_name):
 		print("Starting tutorial for level: %s" % level_name)
 
-		# Connect to TutorialManager signals if not already connected
-		_connect_tutorial_signals()
-
 		# Start the tutorial - pass self as parent for dialogue box
 		TutorialManager.start_tutorial(level_name, self)
+
+		# Connect to tutorial force events
+		if TutorialManager.has_signal("force_event"):
+			if not TutorialManager.force_event.is_connected(_on_tutorial_force_event):
+				TutorialManager.force_event.connect(_on_tutorial_force_event)
 	else:
 		print("No tutorial for level: %s" % level_name)
 
-## Connect to TutorialManager signals
-func _connect_tutorial_signals() -> void:
-	if not TutorialManager:
+## Handle forced tutorial events
+func _on_tutorial_force_event(event_type: String) -> void:
+	print("[Tutorial] Force event received: %s" % event_type)
+
+	match event_type:
+		"spawn_crashing_car":
+			_force_spawn_crashing_car()
+		"auto_run_player_car":
+			_force_auto_run_player_car()
+		_:
+			print("[Tutorial] Unknown force event: %s" % event_type)
+
+## Force an already-spawned car to crash off-road (Tutorial 2)
+func _force_spawn_crashing_car() -> void:
+	# Get the player's car (assume the first one registered)
+	if simulation_engine._vehicles.is_empty():
+		push_warning("MainTilemap: No player car found for forced crash. Skipping.")
 		return
 
-	# Disconnect first to avoid duplicate connections
-	if TutorialManager.wait_for_action.is_connected(_on_tutorial_wait_for_action):
-		TutorialManager.wait_for_action.disconnect(_on_tutorial_wait_for_action)
-	if TutorialManager.force_event.is_connected(_on_tutorial_force_event):
-		TutorialManager.force_event.disconnect(_on_tutorial_force_event)
-	if TutorialManager.highlight_requested.is_connected(_on_tutorial_highlight_requested):
-		TutorialManager.highlight_requested.disconnect(_on_tutorial_highlight_requested)
-	if TutorialManager.highlight_cleared.is_connected(_on_tutorial_highlight_cleared):
-		TutorialManager.highlight_cleared.disconnect(_on_tutorial_highlight_cleared)
-	if TutorialManager.tutorial_completed.is_connected(_on_tutorial_completed):
-		TutorialManager.tutorial_completed.disconnect(_on_tutorial_completed)
+	var player_car_id = simulation_engine._vehicles.keys()[0]
+	var player_car = simulation_engine._vehicles[player_car_id]
 
-	# Connect signals
-	TutorialManager.wait_for_action.connect(_on_tutorial_wait_for_action)
-	TutorialManager.force_event.connect(_on_tutorial_force_event)
-	TutorialManager.highlight_requested.connect(_on_tutorial_highlight_requested)
-	TutorialManager.highlight_cleared.connect(_on_tutorial_highlight_cleared)
-	TutorialManager.tutorial_completed.connect(_on_tutorial_completed)
+	if not is_instance_valid(player_car):
+		push_warning("MainTilemap: Player car instance invalid for forced crash. Skipping.")
+		return
 
-## Called when tutorial is waiting for a player action
-func _on_tutorial_wait_for_action(action_type: String) -> void:
-	print("Tutorial waiting for action: %s" % action_type)
-	# The tutorial will wait until we call TutorialManager.notify_action()
+	# Define crash position and direction
+	var crash_spawn_pos = Vector2(0 * TILE_SIZE + TILE_SIZE/2, 1 * TILE_SIZE + TILE_SIZE/2)
+	var crash_spawn_dir = Vector2.LEFT # Make it face left to drive off road
 
-## Called when tutorial wants to force an event (like a crash demo)
-func _on_tutorial_force_event(event_type: String) -> void:
-	print("Tutorial forcing event: %s" % event_type)
-	# Handle forced events like crash demos
-	match event_type.to_lower():
-		"crash", "car crashes":
-			# Force a crash on the current car for demo purposes
-			var vehicles = get_tree().get_nodes_in_group("vehicles")
-			if vehicles.size() > 0:
-				var vehicle = vehicles[0]
-				if vehicle.has_method("crash"):
-					vehicle.crash()
-		"red light violation":
-			# Force a red light violation demo
-			pass
+	# Reposition and re-orient the player car for the crash
+	player_car.global_position = crash_spawn_pos
+	player_car.direction = crash_spawn_dir
+	player_car.rotation = crash_spawn_dir.angle() + PI/2 # Adjust for car sprite facing UP
 
-## Called when tutorial wants to highlight a UI element
-func _on_tutorial_highlight_requested(target: String) -> void:
-	print("Tutorial highlight requested: %s" % target)
-	# TODO: Implement highlighting system
-	# For now, just log the request
+	# Directly command the car to go, which will cause it to crash
+	player_car.go()
 
-## Called when tutorial highlight should be cleared
-func _on_tutorial_highlight_cleared() -> void:
-	print("Tutorial highlight cleared")
-	# TODO: Clear any active highlights
+	# Wait for the crash to happen
+	await get_tree().create_timer(2.0).timeout
+	if TutorialManager:
+		TutorialManager.emit_signal("forced_crash_completed")
 
-## Called when tutorial is completed
-func _on_tutorial_completed(level_id: String) -> void:
-	print("Tutorial completed: %s" % level_id)
-
-## Notify TutorialManager of player actions
-func _notify_tutorial_action(action: String) -> void:
-	print("Main: _notify_tutorial_action called with: %s" % action)
-	if TutorialManager and TutorialManager.is_active():
-		print("Main: TutorialManager is active, calling notify_action")
-		TutorialManager.notify_action(action)
+## Force player car to run without checking stoplight (Tutorial 4)
+func _force_auto_run_player_car() -> void:
+	# Ensure stoplight is red
+	if not _spawned_stoplights.is_empty():
+		var stoplight = _spawned_stoplights[0]
+		if is_instance_valid(stoplight) and stoplight.has_method("set_red"):
+			stoplight.set_red()
+		else:
+			push_warning("MainTilemap: Could not set stoplight to red for forced violation.")
 	else:
-		if not TutorialManager:
-			print("Main: TutorialManager not found")
-		elif not TutorialManager.is_active():
-			print("Main: TutorialManager not active")
+		push_warning("MainTilemap: No stoplights found for forced violation.")
+
+	# Get the player's car (assume the first one)
+	if not simulation_engine._vehicles.is_empty():
+		var player_car_id = simulation_engine._vehicles.keys()[0]
+		var player_car = simulation_engine._vehicles[player_car_id]
+		if is_instance_valid(player_car):
+			# Directly command the car to go, which will cause the violation.
+			player_car.go()
+	else:
+		push_warning("MainTilemap: No player cars found for forced auto-run.")
 
 # ============================================
 # Stoplight Popup UI Functions

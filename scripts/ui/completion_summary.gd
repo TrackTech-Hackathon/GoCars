@@ -47,6 +47,9 @@ signal menu_pressed
 @onready var overlay: ColorRect = $Overlay
 
 func _ready() -> void:
+	# Set a high z-index to ensure this UI appears on top of other controls
+	z_index = 20
+
 	# Connect button signals
 	if retry_button:
 		retry_button.pressed.connect(func(): retry_pressed.emit())

@@ -58,29 +58,29 @@ var _wait_duration: float = 0.0  # Total wait duration (for progress display)
 # Preset codes for quick setup
 const PRESET_STANDARD_4WAY = """
 while True:
-    stoplight.green("north", "south")
-    stoplight.red("east", "west")
+	stoplight.green("north", "south")
+	stoplight.red("east", "west")
     wait(5)
-    stoplight.yellow("north", "south")
+	stoplight.yellow("north", "south")
     wait(2)
-    stoplight.red("north", "south")
-    stoplight.green("east", "west")
+	stoplight.red("north", "south")
+	stoplight.green("east", "west")
     wait(5)
-    stoplight.yellow("east", "west")
+	stoplight.yellow("east", "west")
     wait(2)
 """
 
 const PRESET_FAST_CYCLE = """
 while True:
-    stoplight.green("north", "south")
-    stoplight.red("east", "west")
+	stoplight.green("north", "south")
+	stoplight.red("east", "west")
     wait(3)
-    stoplight.yellow("north", "south")
+	stoplight.yellow("north", "south")
     wait(1)
-    stoplight.red("north", "south")
-    stoplight.green("east", "west")
+	stoplight.red("north", "south")
+	stoplight.green("east", "west")
     wait(3)
-    stoplight.yellow("east", "west")
+	stoplight.yellow("east", "west")
     wait(1)
 """
 
@@ -118,9 +118,6 @@ func _ready() -> void:
 	# Update visual representation
 	_update_visuals()
 
-	# Also update any direction-based lights (for 4-way stoplights)
-	_update_directional_lights()
-
 	# Setup code interpreter - use default code if none provided
 	if stoplight_code.is_empty():
 		stoplight_code = PRESET_STANDARD_4WAY
@@ -136,12 +133,9 @@ func _process(delta: float) -> void:
 			_wait_timer -= delta
 			if _wait_timer <= 0:
 				_wait_timer = 0
-				# Wait finished, continue execution
-				_continue_code_execution()
-		else:
-			# No wait active, keep executing steps
+		# Always continue code execution if not waiting
+		if _wait_timer <= 0:
 			_continue_code_execution()
-	
 	# Redraw direction indicators
 	queue_redraw()
 
@@ -224,15 +218,17 @@ func _start_code_execution() -> void:
 func _continue_code_execution() -> void:
 	if not _is_running_code or not _interpreter:
 		return
-	
-	# Execute one step
-	var has_more = _interpreter.step()
-	_current_line = _interpreter.get_current_line() if _interpreter.has_method("get_current_line") else 0
-	
-	if not has_more:
-		# Code completed, restart (infinite loop)
-		print("Stoplight code loop completed, restarting...")
-		_start_code_execution()
+
+	# Execute ONE step per frame instead of a while loop
+	# This prevents the stoplight from monopolizing execution time
+	if _wait_timer <= 0:
+		var has_more = _interpreter.step()
+		_current_line = _interpreter.get_current_line() if _interpreter.has_method("get_current_line") else 0
+
+		if not has_more:
+			# Code completed, restart (infinite loop)
+			print("Stoplight code loop completed, restarting...")
+			_start_code_execution()
 
 
 ## Called by interpreter: wait(seconds)
@@ -257,19 +253,28 @@ func green(... directions) -> void:
 		_update_visuals()
 		return
 
+	var changed = false
 	for dir in directions:
 		var d = str(dir).to_lower()
-		match d:
-			"north":
-				_directional_states["north"] = LightState.GREEN
-			"south":
-				_directional_states["south"] = LightState.GREEN
-			"east":
-				_directional_states["east"] = LightState.GREEN
-			"west":
-				_directional_states["west"] = LightState.GREEN
-			_:  # ignore invalid tokens
-				pass
+		if _directional_states.get(d, LightState.RED) != LightState.GREEN:
+			match d:
+				"north":
+					_directional_states["north"] = LightState.GREEN
+					changed = true
+				"south":
+					_directional_states["south"] = LightState.GREEN
+					changed = true
+				"east":
+					_directional_states["east"] = LightState.GREEN
+					changed = true
+				"west":
+					_directional_states["west"] = LightState.GREEN
+					changed = true
+				_:  # ignore invalid tokens
+					pass
+	
+	if changed and _click_audio and not _click_audio.playing:
+		_click_audio.play()
 
 	_update_visuals()
 
@@ -285,19 +290,28 @@ func red(... directions) -> void:
 		_update_visuals()
 		return
 
+	var changed = false
 	for dir in directions:
 		var d = str(dir).to_lower()
-		match d:
-			"north":
-				_directional_states["north"] = LightState.RED
-			"south":
-				_directional_states["south"] = LightState.RED
-			"east":
-				_directional_states["east"] = LightState.RED
-			"west":
-				_directional_states["west"] = LightState.RED
-			_:
-				pass
+		if _directional_states.get(d, LightState.GREEN) != LightState.RED:
+			match d:
+				"north":
+					_directional_states["north"] = LightState.RED
+					changed = true
+				"south":
+					_directional_states["south"] = LightState.RED
+					changed = true
+				"east":
+					_directional_states["east"] = LightState.RED
+					changed = true
+				"west":
+					_directional_states["west"] = LightState.RED
+					changed = true
+				_:
+					pass
+
+	if changed and _click_audio and not _click_audio.playing:
+		_click_audio.play()
 
 	_update_visuals()
 
@@ -313,19 +327,28 @@ func yellow(... directions) -> void:
 		_update_visuals()
 		return
 
+	var changed = false
 	for dir in directions:
 		var d = str(dir).to_lower()
-		match d:
-			"north":
-				_directional_states["north"] = LightState.YELLOW
-			"south":
-				_directional_states["south"] = LightState.YELLOW
-			"east":
-				_directional_states["east"] = LightState.YELLOW
-			"west":
-				_directional_states["west"] = LightState.YELLOW
-			_:
-				pass
+		if _directional_states.get(d, LightState.RED) != LightState.YELLOW:
+			match d:
+				"north":
+					_directional_states["north"] = LightState.YELLOW
+					changed = true
+				"south":
+					_directional_states["south"] = LightState.YELLOW
+					changed = true
+				"east":
+					_directional_states["east"] = LightState.YELLOW
+					changed = true
+				"west":
+					_directional_states["west"] = LightState.YELLOW
+					changed = true
+				_:
+					pass
+
+	if changed and _click_audio and not _click_audio.playing:
+		_click_audio.play()
 
 	_update_visuals()
 
@@ -385,54 +408,113 @@ func get_state() -> String:
 # ============================================
 
 ## Returns true if the light is red (or specific direction is red)
+
 func is_red(direction: String = "") -> bool:
+
 	if direction.is_empty():
-		# No direction specified, check global state
-		return current_state == LightState.RED
+
+		push_error("DEPRECATION WARNING: stoplight.is_red() called without a direction is unreliable. Please use car.at_red() instead for accurate directional checks.")
+
+		# Fail-safe by returning true to prevent cars from entering an intersection unsafely.
+
+		return true
+
 	else:
+
 		# Check specific direction
+
 		var dir_lower = direction.to_lower().strip_edges()
+
 		if _directional_states.has(dir_lower):
+
 			return _directional_states[dir_lower] == LightState.RED
+
 		# Invalid direction, return false
+
 		return false
+
+
+
 
 
 ## Returns true if the light is green (or specific direction is green)
+
 func is_green(direction: String = "") -> bool:
+
 	if direction.is_empty():
-		# No direction specified, check global state
-		return current_state == LightState.GREEN
-	else:
-		# Check specific direction
-		var dir_lower = direction.to_lower().strip_edges()
-		if _directional_states.has(dir_lower):
-			return _directional_states[dir_lower] == LightState.GREEN
-		# Invalid direction, return false
+
+		push_error("DEPRECATION WARNING: stoplight.is_green() called without a direction is unreliable. Please use car.at_green() instead for accurate directional checks.")
+
+		# Fail-safe by returning false.
+
 		return false
+
+	else:
+
+		# Check specific direction
+
+		var dir_lower = direction.to_lower().strip_edges()
+
+		if _directional_states.has(dir_lower):
+
+			return _directional_states[dir_lower] == LightState.GREEN
+
+		# Invalid direction, return false
+
+		return false
+
+
+
 
 
 ## Returns true if the light is yellow (or specific direction is yellow)
+
 func is_yellow(direction: String = "") -> bool:
+
 	if direction.is_empty():
-		# No direction specified, check global state
-		return current_state == LightState.YELLOW
+
+		push_error("DEPRECATION WARNING: stoplight.is_yellow() called without a direction is unreliable. Please use car.at_yellow() instead for accurate directional checks.")
+
+		# Fail-safe by returning true to prevent cars from entering an intersection unsafely.
+
+		return true
+
 	else:
+
 		# Check specific direction
+
 		var dir_lower = direction.to_lower().strip_edges()
+
 		if _directional_states.has(dir_lower):
+
 			return _directional_states[dir_lower] == LightState.YELLOW
+
 		# Invalid direction, return false
+
 		return false
 
 
+
+
+
 ## Returns true if vehicles should stop (red or yellow)
+
 func should_stop() -> bool:
-	return current_state == LightState.RED or current_state == LightState.YELLOW
+
+	push_error("DEPRECATION WARNING: stoplight.should_stop() is unreliable. Please use car.at_red() or car.at_yellow() instead.")
+
+	# Fail-safe by returning true to prevent cars from entering an intersection unsafely.
+
+	return true
+
+
+
 
 
 # ============================================
+
 # Internal Functions
+
 # ============================================
 
 ## Internal function to set state and emit signal
@@ -449,61 +531,23 @@ func _set_state(new_state: LightState) -> void:
 
 ## Update the visual representation of the lights
 func _update_visuals() -> void:
-	# Turn off all lights first
+	if not is_node_ready():
+		return
+
+	# All three colored lights are always visible.
+	# The active state is shown by the directional arrows.
 	if _red_light:
-		_set_light_color(_red_light, COLOR_OFF)
+		_set_light_color(_red_light, COLOR_RED)
 	if _yellow_light:
-		_set_light_color(_yellow_light, COLOR_OFF)
+		_set_light_color(_yellow_light, COLOR_YELLOW)
 	if _green_light:
-		_set_light_color(_green_light, COLOR_OFF)
+		_set_light_color(_green_light, COLOR_GREEN)
 
-	# Turn on the active light
-	match current_state:
-		LightState.RED:
-			if _red_light:
-				_set_light_color(_red_light, COLOR_RED)
-		LightState.YELLOW:
-			if _yellow_light:
-				_set_light_color(_yellow_light, COLOR_YELLOW)
-		LightState.GREEN:
-			if _green_light:
-				_set_light_color(_green_light, COLOR_GREEN)
-
-	# Update directional lights too
-	_update_directional_lights()
+	# Redraw arrows to reflect the current state.
+	queue_redraw()
 
 
-## Update directional lights (for 4-way stoplights)
-func _update_directional_lights() -> void:
-	# Direction names for 4-way stoplights
-	var directions = ["North", "South", "East", "West"]
 
-	for dir_name in directions:
-		var dir_node = get_node_or_null(dir_name)
-		if dir_node:
-			var red = dir_node.get_node_or_null("RedLight")
-			var green = dir_node.get_node_or_null("GreenLight")
-
-			# Turn off both lights first
-			if red:
-				_set_light_color(red, COLOR_OFF)
-			if green:
-				_set_light_color(green, COLOR_OFF)
-
-			# Use per-direction state from _directional_states
-			var state_key = dir_name.to_lower()
-			var dir_state = _directional_states.get(state_key, current_state)
-
-			match dir_state:
-				LightState.RED:
-					if red:
-						_set_light_color(red, COLOR_RED)
-				LightState.YELLOW:
-					if red:
-						_set_light_color(red, COLOR_YELLOW)
-				LightState.GREEN:
-					if green:
-						_set_light_color(green, COLOR_GREEN)
 
 
 ## Set the color of a light node

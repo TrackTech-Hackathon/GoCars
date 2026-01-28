@@ -1091,7 +1091,6 @@ tile_set = SubResource("TileSet_hbpaq")
 script = ExtResource("5_yaqdc")
 level_name = "Tutorial 4"
 starting_hearts = 1
-stoplight_code_editable = true
 
 [node name="LevelCars" type="Label" parent="LevelSettings"]
 visible = false
