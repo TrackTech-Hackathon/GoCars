@@ -55,6 +55,11 @@ var _current_line: int = 0  # Current line in stoplight code for UI display
 var _wait_timer: float = 0.0  # Timer for wait() function
 var _wait_duration: float = 0.0  # Total wait duration (for progress display)
 
+# When > 0, the stoplight is forced to stay solid red and its
+# normal Python code execution is temporarily paused. Used by
+# tutorial forced-failure sequences (e.g. Tutorial 4 demo).
+var _forced_red_timer: float = 0.0
+
 # Preset codes for quick setup
 const PRESET_STANDARD_4WAY = """
 while True:
@@ -127,15 +132,24 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# Handle wait timer for code execution
-	if _is_running_code:
-		if _wait_timer > 0:
-			_wait_timer -= delta
+	# When a forced-red timer is active, keep the light solid red
+	# and pause the internal Python code that normally drives it.
+	if _forced_red_timer > 0.0:
+		_forced_red_timer -= delta
+		if _forced_red_timer <= 0.0:
+			_forced_red_timer = 0.0
+			# Resume normal scripted behaviour
+			_start_code_execution()
+	else:
+		# Handle wait timer for code execution
+		if _is_running_code:
+			if _wait_timer > 0:
+				_wait_timer -= delta
+				if _wait_timer <= 0:
+					_wait_timer = 0
+			# Always continue code execution if not waiting
 			if _wait_timer <= 0:
-				_wait_timer = 0
-		# Always continue code execution if not waiting
-		if _wait_timer <= 0:
-			_continue_code_execution()
+				_continue_code_execution()
 	# Redraw direction indicators
 	queue_redraw()
 
@@ -569,8 +583,19 @@ func _set_light_color(light_node: Node, color: Color) -> void:
 
 ## Reset the stoplight to its initial state
 func reset() -> void:
+	_forced_red_timer = 0.0
 	current_state = initial_state
 	_update_visuals()
+
+
+## Force the stoplight to stay red (all directions) for a number of seconds.
+## Used by tutorial forced-failure demos so the light can't turn green
+## while the player car is approaching.
+func force_red_for_seconds(seconds: float) -> void:
+	_forced_red_timer = max(0.0, seconds)
+	# Stop any current scripted behaviour while we are forcing red.
+	_is_running_code = false
+	set_red()
 
 
 ## Get the current color for rendering

@@ -2506,11 +2506,17 @@ func _force_spawn_crashing_car() -> void:
 
 ## Force player car to run without checking stoplight (Tutorial 4)
 func _force_auto_run_player_car() -> void:
-	# Ensure stoplight is red
+	# Ensure stoplight is red and stays red long enough for a clear violation
 	if not _spawned_stoplights.is_empty():
 		var stoplight = _spawned_stoplights[0]
-		if is_instance_valid(stoplight) and stoplight.has_method("set_red"):
-			stoplight.set_red()
+		if is_instance_valid(stoplight):
+			if stoplight.has_method("force_red_for_seconds"):
+				# Hold the light red for a few seconds so it can't
+				# turn green while the player car is approaching.
+				stoplight.force_red_for_seconds(5.0)
+			elif stoplight.has_method("set_red"):
+				# Fallback for safety if API changes.
+				stoplight.set_red()
 		else:
 			push_warning("MainTilemap: Could not set stoplight to red for forced violation.")
 	else:

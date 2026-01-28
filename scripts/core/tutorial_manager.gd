@@ -264,6 +264,9 @@ func _process_step(step) -> void:
 			if step.target == "spawn_crashing_car":
 				_execute_crash_sequence()
 				return # The async function will handle advancing the step
+			elif step.target == "auto_run_player_car":
+				_execute_red_light_violation_sequence()
+				return
 			else:
 				force_event.emit(step.target)
 		"level_complete":
@@ -300,6 +303,25 @@ func _execute_crash_sequence() -> void:
 	is_awaiting_forced_crash = false
 
 	# 4. Now that the crash is done, advance to the next step (the explanation)
+	advance_step()
+
+## Executes the async red-light violation sequence for Tutorial 4
+func _execute_red_light_violation_sequence() -> void:
+	# 1. Hide Maki's dialogue box while the demo plays (player already saw STEP 3 line)
+	if dialogue_box and dialogue_box.has_method("hide_dialogue"):
+		dialogue_box.hide_dialogue()
+
+	# 2. Set the flag and emit the signal to trigger the violation in the main scene
+	# Note: we intentionally DO NOT set _is_forced_failure here, so the normal
+	# failure popup still appears when hearts reach zero.
+	is_awaiting_forced_crash = true
+	force_event.emit("auto_run_player_car")
+
+	# 3. Wait until the main scene confirms the failure has been triggered
+	await forced_crash_completed
+	is_awaiting_forced_crash = false
+
+	# 4. Now that the violation + failure popup are visible, advance to STEP 3B
 	advance_step()
 
 ## Show dialogue for current step
