@@ -738,7 +738,7 @@ func _prompt_open_code_editor() -> void:
 		)
 	
 	# Highlight the code editor button
-	_highlight_target("code_editor_button", "Click to open")
+	_highlight_target("code_editor_button")
 	
 	# Wait for code editor to open
 	is_waiting_for_action = true

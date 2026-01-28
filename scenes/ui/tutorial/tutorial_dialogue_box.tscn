@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://c7lgfwy3a3yly"]
+[gd_scene load_steps=17 format=3 uid="uid://c7lgfwy3a3yly"]
 
 [ext_resource type="Script" uid="uid://ctywxj6p4q3rq" path="res://scripts/ui/tutorial_dialogue_box.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://7c8l1bvff785" path="res://assets/sprites/Maki_Normal.png" id="2_maki"]
@@ -20,10 +20,6 @@ corner_radius_bottom_left = 25
 shadow_color = Color(0.6745098, 0.4862745, 0.35686275, 1)
 shadow_size = 10
 
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_y25l0"]
-texture = ExtResource("7_n673p")
-region_rect = Rect2(0, 0, 15.265472, 16)
-
 [sub_resource type="AtlasTexture" id="AtlasTexture_o61vv"]
 atlas = ExtResource("7_n673p")
 region = Rect2(32, 0, 16, 16)
@@ -32,9 +28,33 @@ region = Rect2(32, 0, 16, 16)
 atlas = ExtResource("7_n673p")
 region = Rect2(16, 0, 16, 16)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_voapf"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_bejsu"]
 atlas = ExtResource("7_n673p")
 region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_vmxpc"]
+atlas = ExtResource("7_n673p")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gsfmn"]
+atlas = ExtResource("7_n673p")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1xw0y"]
+atlas = ExtResource("7_n673p")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uyhkw"]
+atlas = ExtResource("7_n673p")
+region = Rect2(64, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_n673p"]
+atlas = ExtResource("7_n673p")
+region = Rect2(80, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wp2dp"]
+atlas = ExtResource("7_n673p")
+region = Rect2(96, 0, 16, 16)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_03w84"]
 animations = [{
@@ -46,7 +66,25 @@ animations = [{
 "texture": SubResource("AtlasTexture_aff83")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_voapf")
+"texture": SubResource("AtlasTexture_bejsu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_vmxpc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gsfmn")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1xw0y")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uyhkw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_n673p")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wp2dp")
 }],
 "loop": true,
 "name": &"default",
@@ -116,7 +154,7 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/default_color = Color(0.66, 0.52448, 0.36960003, 1)
 theme_override_fonts/normal_font = ExtResource("5_uyhkw")
-theme_override_font_sizes/normal_font_size = 45
+theme_override_font_sizes/normal_font_size = 50
 bbcode_enabled = true
 text = "Welcome to GoCars! I'm Maki, and I'll teach you how to code cars!"
 
@@ -127,21 +165,14 @@ theme_override_colors/font_color = Color(0.3, 0.8, 1, 1)
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 18
 
-[node name="ContinueIndicator" type="Label" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
-custom_minimum_size = Vector2(100, 100)
-layout_mode = 2
-size_flags_horizontal = 8
-theme_override_colors/font_color = Color(0.6, 0.6, 0.65, 1)
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxTexture_y25l0")
-
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
-position = Vector2(1475.4069, 236.78772)
+[node name="ContinueIndicator" type="AnimatedSprite2D" parent="DialoguePanel/HBoxContainer/VBoxContainer"]
+texture_filter = 1
+position = Vector2(1385.6935, 31.33902)
 scale = Vector2(7.0494075, 6.21501)
 sprite_frames = SubResource("SpriteFrames_03w84")
 autoplay = "default"
-frame_progress = 0.66668713
+frame_progress = 0.7356687
+speed_scale = 2.0
 
 [node name="SkipButton" type="Button" parent="DialoguePanel"]
 layout_mode = 1

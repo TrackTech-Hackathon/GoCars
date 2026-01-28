@@ -16,7 +16,7 @@ signal retry_pressed()
 @onready var speaker_name: Label = $DialoguePanel/HBoxContainer/VBoxContainer/SpeakerName
 @onready var dialogue_text: RichTextLabel = $DialoguePanel/HBoxContainer/VBoxContainer/DialogueText
 @onready var action_helper: Label = $DialoguePanel/HBoxContainer/VBoxContainer/ActionHelper
-@onready var continue_indicator: Label = $DialoguePanel/HBoxContainer/VBoxContainer/ContinueIndicator
+@onready var continue_indicator: AnimatedSprite2D = $DialoguePanel/HBoxContainer/VBoxContainer/ContinueIndicator
 @onready var skip_button: Button = $DialoguePanel/SkipButton
 
 ## Maki sprite textures
