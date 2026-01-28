@@ -32,6 +32,7 @@ var is_tutorial_active: bool = false
 var is_waiting_for_action: bool = false
 var is_awaiting_forced_crash: bool = false # NEW FLAG
 var _is_forced_failure: bool = false # Track if the current failure is a forced tutorial event
+var _allow_failure_panel_display: bool = true # Guard flag to prevent panel during dialogue sequence
 var pending_wait_action: String = ""
 
 ## Code validation tracking
@@ -487,14 +488,11 @@ func handle_scripted_failure(reason: String) -> void:
 	if not is_tutorial_active:
 		return
 
-	# Determine if the failure was forced, which dictates the flow
-	var step = get_current_step()
-	if step and step.title.to_lower().contains("forced"):
-		_is_forced_failure = true
+	# Check if this is a forced failure scenario (flag is set during crash sequence)
+	if _is_forced_failure:
 		# This is a forced failure, so execute the full sequence with commentary
-		_run_forced_failure_sequence(reason)
+		await _run_forced_failure_sequence(reason)
 	else:
-		_is_forced_failure = false
 		# This is a genuine player failure, just show the reset prompt immediately.
 		if _main_scene and _main_scene.has_method("_show_failure_popup"):
 			_main_scene._show_failure_popup(reason)
@@ -502,25 +500,28 @@ func handle_scripted_failure(reason: String) -> void:
 
 ## The full sequence for a scripted, forced failure
 func _run_forced_failure_sequence(reason: String) -> void:
-	# 1. Advance to STEP 8B (crash explanation)
-	advance_step()
+	print("[Tutorial] Starting _run_forced_failure_sequence with reason: %s" % reason)
 
-	# 2. Wait for the user to click "Continue" on STEP 8B
-	if dialogue_box and dialogue_box.has_signal("continue_pressed"):
-		await dialogue_box.continue_pressed
+	# Prevent automatic failure panel display - we'll show it after dialogue plays out
+	_allow_failure_panel_display = false
 
-	# 3. Advance to STEP 9 (obstacles explanation)
-	advance_step()
+	# Wait for the crash explanation dialogue to complete
+	# The tutorial system auto-advances through STEP 8B and STEP 9
+	# 3 seconds gives enough time for both dialogue steps to display and be read
+	print("[Tutorial] Waiting 3 seconds for dialogue to finish...")
+	await get_tree().create_timer(3.0).timeout
+	print("[Tutorial] 3 second wait complete, showing failure panel now")
 
-	# 4. Wait for the user to click "Continue" on STEP 9
-	if dialogue_box and dialogue_box.has_signal("continue_pressed"):
-		await dialogue_box.continue_pressed
-
-	# 5. NOW show the failure panel (after both explanations)
+	# Now show the failure panel (after both explanations have played)
+	print("[Tutorial] _main_scene exists: %s, has method: %s" % (_main_scene != null, _main_scene and _main_scene.has_method("_show_failure_popup")))
 	if _main_scene and _main_scene.has_method("_show_failure_popup"):
+		print("[Tutorial] Calling _main_scene._show_failure_popup()")
 		_main_scene._show_failure_popup(reason)
+	else:
+		print("[Tutorial] ERROR: Cannot call _show_failure_popup - _main_scene invalid or method missing")
 
-	# 6. Show the "Click Reset" prompt and highlight
+	# Show the "Click Reset" prompt and highlight
+	print("[Tutorial] Calling _prompt_for_reset()")
 	_prompt_for_reset()
 
 ## Shows the final prompt to reset the level

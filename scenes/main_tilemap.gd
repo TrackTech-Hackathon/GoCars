@@ -863,12 +863,12 @@ func _on_level_completed(stars: int) -> void:
 func _on_level_failed(reason: String) -> void:
 	# If a tutorial is active, let it handle the failure sequence
 	if TutorialManager and TutorialManager.is_active():
-		# The TutorialManager will be responsible for showing the failure popup after its own dialogue.
-		TutorialManager.handle_scripted_failure(reason)
-
-		# If this is a forced crash demo, notify the tutorial manager that the crash was detected
+		# Notify the tutorial manager that the crash was detected
 		if TutorialManager.is_awaiting_forced_crash:
 			TutorialManager.emit_signal("forced_crash_completed")
+
+		# The TutorialManager will be responsible for showing the failure popup after its own dialogue.
+		await TutorialManager.handle_scripted_failure(reason)
 
 		return
 
@@ -969,6 +969,9 @@ func _show_victory_popup(stars: int) -> void:
 
 
 func _show_failure_popup(reason: String) -> void:
+	print("[Main] _show_failure_popup called with reason: %s" % reason)
+	print("[Main] completion_summary exists: %s" % (completion_summary != null))
+
 	# Hide stats UI panel to prevent overlap
 	if stats_ui_panel:
 		stats_ui_panel.hide_panel()
@@ -1004,11 +1007,14 @@ func _show_failure_popup(reason: String) -> void:
 
 	# Show completion summary with failure
 	if completion_summary:
+		print("[Main] Calling completion_summary.show_failure()")
 		completion_summary.show_failure(
 			current_level_display_name,
 			reason,
 			hint
 		)
+	else:
+		print("[Main] ERROR: completion_summary is NULL!")
 
 
 func _hide_result_popup() -> void:
@@ -2196,8 +2202,8 @@ func _lose_heart() -> void:
 		# Stop spawning new cars
 		is_spawning_cars = false
 
-		# Show failure popup
-		_show_failure_popup("Out of hearts!")
+		# Route through _on_level_failed so tutorial manager can intercept if active
+		_on_level_failed("Out of hearts!")
 
 
 ## Update hearts label (fallback when no HeartsUI)
