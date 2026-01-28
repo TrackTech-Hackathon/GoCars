@@ -2306,9 +2306,6 @@ layout_mode = 3
 anchors_preset = 0
 metadata/_edit_use_custom_anchors = true
 
-[node name="HeartCount" parent="HeartsUI"]
-text = "2"
-
 [node name="Camera" type="Camera2D" parent="."]
 position = Vector2(9893, 3229)
 

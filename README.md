@@ -1,4 +1,4 @@
-# 🚦 GoCars!
+# GoCars!
 
 An educational coding-puzzle game built with Godot Engine where players write **real Python code** to control traffic flow and solve increasingly complex transportation puzzles.
 
@@ -6,7 +6,7 @@ An educational coding-puzzle game built with Godot Engine where players write **
 
 ---
 
-## 📋 Project Overview
+## Project Overview
 
 GoCars! bridges the gap between beginner-friendly coding games and real programming. Players write actual Python syntax (not visual blocks) to control vehicles, manage traffic lights, and edit road layouts in real-time. Each puzzle teaches core programming concepts: variables, conditionals, loops, and functions. The immediate feedback from live code execution makes learning intuitive and engaging.
 
@@ -16,39 +16,33 @@ Write actual Python code to program vehicles, control traffic lights, and manage
 
 ---
 
-## ✨ Features & Functionality
+## Features & Functionality
 
 ### Core Gameplay
-- **Real Python Syntax** – Write valid Python code (not visual blocks)
+- **Real Python Syntax** – Write valid Python code
 - **Live Execution** – See cars instantly react to your code changes
 - **Traffic Simulation** – Dynamic vehicle physics, collisions, and traffic light logic
-- **Progressive Difficulty** – 15+ levels introducing new programming concepts
-- **Error Feedback** – Learn from mistakes with helpful Python-style error messages
-- **Road Building** – Edit maps during gameplay with limited resources (road cards)
-- **Hearts System** – Risk-based gameplay with lives/health management
+- **Hearts System** – Risk-based gameplay with livesmanagement
 
 ### Interactive Features
 - **Real-time Code Editor** – Write and run code without recompilation
 - **Multiple Vehicles** – Handle concurrent car logic and interactions
 - **Traffic Lights** – Control intersection management with conditional logic
 - **Vehicle Stats Display** – Hover to see vehicle type, speed, direction, and state
-- **Animated UI** – Heart animations, star ratings, and smooth transitions
 - **Campaign Progression** – Save progress and unlock new levels
 
 ---
 
-## 🎯 Game Modes
+## Game Modes
 
 ### Campaign Mode
 Three progressive level sets teaching Python fundamentals:
 
-- **Tutorial (T1-T5)**: Function calls and sequencing
-- **Iloilo City (C1-C5)**: Variables, conditionals, and logic operators
-- **Water/Port (W1-W5)**: Loops and iteration
+- **Tutorial (T1-T5)**
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 
@@ -109,7 +103,7 @@ To export as a standalone executable:
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
@@ -122,36 +116,6 @@ To export as a standalone executable:
 
 ---
 
-## 🏗️ System Architecture
-
-### Core Systems
-
-```
-┌─────────────────────────────────────────┐
-│         Main Game Controller            │
-│         (main_tilemap.gd)               │
-└─────────┬───────────────────────────────┘
-          │
-    ┌─────┴──────┬────────────┬─────────────┐
-    ▼            ▼            ▼             ▼
-┌─────────┐  ┌──────────┐  ┌────────┐  ┌─────────┐
-│ Python  │  │ Simulation│ │ Level  │  │   UI    │
-│ Parser  │  │  Engine   │  │Manager │  │ System  │
-│         │  │           │  │        │  │         │
-│ • Lexer │  │ • Physics │  │ • Load │  │ • Code  │
-│ • AST   │  │ • Collision
-│ • Errors│  │ • Traffic │  │ • Spawn│  │ • Hearts│
-└────┬────┘  └────┬──────┘  └────┬───┘  └────┬────┘
-     │            │             │           │
-     └────────────┼─────────────┴───────────┘
-                  │
-            ┌─────▼──────────┐
-            │  Entity System  │
-            │  (Vehicles,     │
-            │   Stoplights)   │
-            └─────────────────┘
-```
-
 ### Data Flow
 
 1. **Player Input** → Code Editor
@@ -163,7 +127,7 @@ To export as a standalone executable:
 
 ---
 
-## 📖 User Guide
+## User Guide
 
 ### How to Play a Level
 
@@ -229,7 +193,7 @@ while not car.at_end():
 
 ---
 
-## 🖼️ Screenshots
+## Screenshots
 
 ### Main Menu
 ![Main Menu](assets/Pictures/Main%20Menu.png)
@@ -245,19 +209,7 @@ while not car.at_end():
 
 ---
 
-## 🎥 Demo Video
-
-*(Demo video link coming soon)*
-
-See the game in action:
-- Real-time code execution
-- Multiple vehicles handling
-- Traffic light control
-- Level progression
-
----
-
-## 📦 Project Structure
+## Project Structure
 
 ```
 GoCars/
@@ -324,7 +276,7 @@ GoCars/
 
 ---
 
-## 🎮 Level Editing Guide
+## Level Editing Guide
 
 ### Create a New Level
 
@@ -353,7 +305,7 @@ The game uses an 18×12 grid tileset with:
 
 ---
 
-## 🚧 Known Limitations
+## Known Limitations
 
 ### Current Version (Hackathon)
 1. **Python Subset** – Not full Python (no classes, imports, list comprehensions)
@@ -373,7 +325,7 @@ The game uses an 18×12 grid tileset with:
 
 ---
 
-## 🔮 Future Improvements
+## Future Improvements
 
 ### High Priority (Post-Hackathon)
 - [ ] **Infinite Sandbox Mode** – Unlimited levels with random generation
@@ -401,7 +353,7 @@ The game uses an 18×12 grid tileset with:
 
 ---
 
-## 📄 Where This Documentation Lives
+## Documentation
 
 ### Primary Locations
 - **README.md** (this file)
@@ -425,16 +377,16 @@ The game uses an 18×12 grid tileset with:
 - **Example Levels** – Learn by studying tutorial levels (T1-T5)
 
 ### Submission Package Contents
-- ✅ README.md (quick start)
-- ✅ CLAUDE.md (development notes)
-- ✅ Source code (all scripts)
-- ✅ Executable (when built)
-- ✅ Screenshots (main menu, level selector, gameplay, characters)
-- ⏳ Demo video (recording in progress)
+- README.md (quick start)
+- CLAUDE.md (development notes)
+- Source code (all scripts)
+- Executable (when built)
+- Screenshots (main menu, level selector, gameplay, characters)
+- Demo video (recording in progress)
 
 ---
 
-## 📊 System Requirements
+## System Requirements
 
 ### Minimum Specifications
 - **OS**: Windows 10, macOS 10.12, Ubuntu 16.04+
@@ -453,7 +405,7 @@ The game uses an 18×12 grid tileset with:
 
 ---
 
-## 👥 Credits
+## Credits
 
 ### Development Team
 
@@ -471,14 +423,13 @@ The game uses an 18×12 grid tileset with:
 - John Christopher Mateo
 
 ### Technologies
-Built with ❤️ using:
-- [Godot Engine 4.5.1](https://godotengine.org)
+Built with [Godot Engine 4.5.1](https://godotengine.org)
 - GDScript
 - Python (syntax subset)
 
 ---
 
-## 📝 License
+## License
 
 **GoCars!** is a private submission for **TrackTech: CSS Hackathon 2026**
 
@@ -486,7 +437,7 @@ All rights reserved. © 2026 Development Team
 
 ---
 
-## 🤝 Support & Contact
+## Support & Contact
 
 For questions or issues:
 1. Check [CLAUDE.md](CLAUDE.md) for development details

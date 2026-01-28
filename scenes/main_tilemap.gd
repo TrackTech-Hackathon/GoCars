@@ -127,9 +127,6 @@ var current_level_display_name: String = ""
 # Track last heart loss cause for better failure hints
 var last_heart_loss_cause: String = "crash"  # crash, red_light, off_road
 
-# Hearts UI (loaded from level)
-var hearts_ui: Node = null
-
 # Stats UI Panel (follows mouse, shows hovered car stats)
 var stats_ui_panel: Node = null
 
@@ -151,11 +148,6 @@ func _ready() -> void:
 
 	# Initialize Completion Summary UI
 	_init_completion_summary()
-
-	# Initialize HeartsUI from main scene
-	hearts_ui = get_node_or_null("UI/HeartsUI")
-	if hearts_ui and hearts_ui.has_signal("hearts_depleted"):
-		hearts_ui.hearts_depleted.connect(_on_hearts_depleted)
 
 	# Connect UI signals
 	run_button.pressed.connect(_on_run_button_pressed)
@@ -352,7 +344,6 @@ func _load_level(index: int) -> void:
 		current_level_node.queue_free()
 		current_level_node = null
 		road_layer = null
-		hearts_ui = null
 
 	# Load new level
 	current_level_node = level_loader.load_level(index)
@@ -459,7 +450,6 @@ func _load_level_by_path(level_path: String) -> void:
 		current_level_node.queue_free()
 		current_level_node = null
 		road_layer = null
-		hearts_ui = null
 
 	current_level_index = 0  # Default index for direct loads
 	current_level_node = scene.instantiate()
@@ -1243,8 +1233,6 @@ func _do_fast_retry() -> void:
 
 	# Reset hearts
 	hearts = initial_hearts
-	if hearts_ui and hearts_ui.has_method("reset_hearts"):
-		hearts_ui.reset_hearts()
 	_update_hearts_label()
 
 	# DO NOT reset timer on R key / restart button
@@ -2258,75 +2246,30 @@ func _on_menu_close() -> void:
 # Level Hearts Loading
 # ============================================
 
-## Load hearts configuration from level's HeartsUI node
+## Load hearts configuration from level
 func _load_level_hearts() -> void:
 	if current_level_node == null:
-		print("[Main] _load_level_hearts: current_level_node is null")
 		return
 
-	# HeartsUI is now in the main scene, get reference if not already set
-	if hearts_ui == null:
-		hearts_ui = get_node_or_null("UI/HeartsUI")
+	# Heart count depends on number of cars in the level
+	# Each car is one heart
+	var heart_count = spawn_data.size()
 
-	if hearts_ui:
-		# Read the heart count from the loaded level's HeartsUI configuration
-		var level_hearts_ui = current_level_node.get_node_or_null("HeartsUI")
-		var heart_count = 3  # Default fallback
+	# Minimum of 1 heart
+	heart_count = max(1, heart_count)
 
-		print("[Main] Level: %s" % current_level_node.name)
-		print("[Main] Level HeartsUI found: %s" % (level_hearts_ui != null))
+	initial_hearts = heart_count
+	hearts = heart_count
 
-		if level_hearts_ui:
-			# Read the HeartCount label from the level's HeartsUI
-			var heart_count_label = level_hearts_ui.get_node_or_null("HeartCount")
-			print("[Main] HeartCount label found: %s" % (heart_count_label != null))
-
-			if heart_count_label and heart_count_label is Label:
-				var heart_text = heart_count_label.text.strip_edges()
-				print("[Main] HeartCount text: '%s'" % heart_text)
-
-				if heart_text.is_valid_int():
-					heart_count = int(heart_text)
-					print("[Main] Parsed heart count: %d" % heart_count)
-
-		# Configure the main scene's HeartsUI with the level's heart count
-		print("[Main] Setting hearts to: %d" % heart_count)
-		if hearts_ui.has_method("set_max_hearts"):
-			hearts_ui.set_max_hearts(heart_count)
-			initial_hearts = heart_count
-			hearts = heart_count
-		else:
-			initial_hearts = heart_count
-			hearts = initial_hearts
-
-		# Hide old hearts label since we're using the animated HeartsUI
-		if hearts_label:
-			hearts_label.visible = false
-	else:
-		# No HeartsUI found - use default
-		print("[Main] Main scene HeartsUI not found!")
-		initial_hearts = 10
-		hearts = initial_hearts
-		if hearts_label:
-			hearts_label.visible = true
+	if hearts_label:
+		hearts_label.visible = true
+		_update_hearts_label()
 
 
-## Called when hearts UI reports all hearts lost
-func _on_hearts_depleted() -> void:
-	_on_level_failed("Out of hearts!")
 
-
-## Override lose_heart to use HeartsUI if available
+## Decrease hearts by one and check for game over
 func _lose_heart() -> void:
-	print("[Main] _lose_heart() called. hearts_ui=%s" % hearts_ui)
-	if hearts_ui and hearts_ui.has_method("lose_heart"):
-		print("[Main] Calling hearts_ui.lose_heart()")
-		hearts_ui.lose_heart()
-		hearts = hearts_ui.get_hearts() if hearts_ui.has_method("get_hearts") else hearts - 1
-	else:
-		print("[Main] hearts_ui is null or doesn't have lose_heart, decrementing directly")
-		hearts -= 1
-
+	hearts -= 1
 	_update_hearts_label()
 
 	if hearts <= 0:
