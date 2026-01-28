@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://c4xndr0fb8jk0"]
+[gd_scene load_steps=10 format=3 uid="uid://c4xndr0fb8jk0"]
 
 [ext_resource type="Script" uid="uid://c2xn0chj2i2d4" path="res://scripts/entities/vehicle.gd" id="1_vehicle"]
 [ext_resource type="Texture2D" uid="uid://ce38qedlya0bo" path="res://assets/cars/gocars.png" id="2_gocars"]
@@ -14,6 +14,12 @@ shader_parameter/colors_count = 20
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1ln5b"]
 size = Vector2(24, 60)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_j8q5d"]
+size = Vector2(24, 30)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pjyr1"]
+size = Vector2(24, 20)
 
 [node name="CarSedan" type="CharacterBody2D" groups=["Car"]]
 z_index = 3
@@ -53,5 +59,15 @@ texture = ExtResource("2_gocars")
 region_enabled = true
 region_rect = Rect2(0, 0, 48, 96)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CarCollision" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_1ln5b")
+
+[node name="RoadBuildingCollision" type="CollisionShape2D" parent="."]
+position = Vector2(0, -15)
+shape = SubResource("RectangleShape2D_j8q5d")
+debug_color = Color(0.9862762, 0, 0.3300369, 0.41960785)
+
+[node name="FrontChecker" type="CollisionShape2D" parent="."]
+position = Vector2(0, -40)
+shape = SubResource("RectangleShape2D_pjyr1")
+debug_color = Color(0.8833333, 1, 0, 0.41960785)
