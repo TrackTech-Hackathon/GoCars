@@ -383,8 +383,13 @@ var _stats_facing_label: Label = null
 var _stats_state_label: Label = null
 
 
-## Area2D for collision detection
-var _collision_area: Area2D = null
+## Area2D nodes for collision detection (created from existing CollisionShape2D nodes)
+var _car_collision_area: Area2D = null        # For car-to-car collision
+var _road_building_area: Area2D = null        # For road/building collision
+var _front_checker_area: Area2D = null        # For front_car() detection
+
+## Reverse movement state
+var _is_reversing: bool = false
 
 func _ready() -> void:
 	# Add to vehicles group for detection
@@ -395,8 +400,8 @@ func _ready() -> void:
 	set_collision_layer_value(1, true)  # Layer 1 for vehicles
 	set_collision_mask_value(1, true)   # Detect other vehicles
 
-	# Setup Area2D for collision detection using the existing CollisionShape2D
-	_setup_collision_area()
+	# Setup Area2D nodes for collision detection using the existing CollisionShape2D nodes
+	_setup_collision_areas()
 
 	# Apply vehicle type configuration
 	_apply_vehicle_type()
@@ -408,28 +413,58 @@ func _ready() -> void:
 	_setup_stats_node()
 
 
-## Setup Area2D for collision detection - uses existing CollisionShape2D as child
-func _setup_collision_area() -> void:
-	# Create Area2D for detecting overlaps
-	_collision_area = Area2D.new()
-	_collision_area.name = "CollisionArea"
-
-	# Set collision layers - Layer 1 = Cars, Layer 2 = Roads
-	_collision_area.collision_layer = 1  # This is a Car
-	_collision_area.collision_mask = 3   # Detect both Cars (1) and Roads (2)
-
-	add_child(_collision_area)
-
-	# Find the existing CollisionShape2D and duplicate it for the Area2D
-	var existing_shape = get_node_or_null("CollisionShape2D")
-	if existing_shape and existing_shape.shape:
+## Setup Area2D nodes for collision detection using existing CollisionShape2D children
+func _setup_collision_areas() -> void:
+	# Setup CarCollision Area2D - detects other cars for crashes
+	var car_collision_shape = get_node_or_null("CarCollision")
+	if car_collision_shape and car_collision_shape.shape:
+		_car_collision_area = Area2D.new()
+		_car_collision_area.name = "CarCollisionArea"
+		_car_collision_area.collision_layer = 1  # Layer 1 = Cars
+		_car_collision_area.collision_mask = 1   # Detect Cars only
+		_car_collision_area.monitoring = true
+		_car_collision_area.monitorable = true
+		add_child(_car_collision_area)
 		var area_shape = CollisionShape2D.new()
-		area_shape.shape = existing_shape.shape.duplicate()
-		_collision_area.add_child(area_shape)
+		area_shape.shape = car_collision_shape.shape.duplicate()
+		area_shape.position = car_collision_shape.position
+		_car_collision_area.add_child(area_shape)
+		# Disable the original CollisionShape2D (we use Area2D now)
+		car_collision_shape.disabled = true
 
-	# Connect area signals for collision detection
-	_collision_area.body_entered.connect(_on_collision_body_entered)
-	_collision_area.area_entered.connect(_on_collision_area_entered)
+	# Setup RoadBuildingCollision Area2D - detects road boundaries/buildings
+	var road_building_shape = get_node_or_null("RoadBuildingCollision")
+	if road_building_shape and road_building_shape.shape:
+		_road_building_area = Area2D.new()
+		_road_building_area.name = "RoadBuildingArea"
+		_road_building_area.collision_layer = 1  # Layer 1 = Cars
+		_road_building_area.collision_mask = 2   # Detect Roads/Buildings (Layer 2)
+		_road_building_area.monitoring = true
+		_road_building_area.monitorable = true
+		add_child(_road_building_area)
+		var area_shape = CollisionShape2D.new()
+		area_shape.shape = road_building_shape.shape.duplicate()
+		area_shape.position = road_building_shape.position
+		_road_building_area.add_child(area_shape)
+		# Disable the original CollisionShape2D
+		road_building_shape.disabled = true
+
+	# Setup FrontChecker Area2D - for front_car() detection
+	var front_checker_shape = get_node_or_null("FrontChecker")
+	if front_checker_shape and front_checker_shape.shape:
+		_front_checker_area = Area2D.new()
+		_front_checker_area.name = "FrontCheckerArea"
+		_front_checker_area.collision_layer = 0  # Don't broadcast
+		_front_checker_area.collision_mask = 1   # Detect Cars only
+		_front_checker_area.monitoring = true
+		_front_checker_area.monitorable = false
+		add_child(_front_checker_area)
+		var area_shape = CollisionShape2D.new()
+		area_shape.shape = front_checker_shape.shape.duplicate()
+		area_shape.position = front_checker_shape.position
+		_front_checker_area.add_child(area_shape)
+		# Disable the original CollisionShape2D
+		front_checker_shape.disabled = true
 
 
 ## Setup the stats node with labels that StatsUIPanel reads
@@ -677,12 +712,13 @@ func _physics_process(delta: float) -> void:
 				_check_intersection_for_turn()
 			_move(delta)
 		_check_destination()
-		# Check if we've moved enough tiles (for move(N) command)
+		# Check if we've moved enough tiles (for move(N) or move(-N) command)
 		if _tiles_to_move > 0:
 			var distance_moved = global_position.distance_to(_move_start_position)
 			if distance_moved >= _tiles_to_move * TILE_SIZE:
 				_tiles_to_move = 0
 				_is_moving = false
+				_is_reversing = false  # Reset reverse flag
 				_wants_to_move = false
 				velocity = Vector2.ZERO
 				# Move command completed - process next command
@@ -708,11 +744,18 @@ func _move(_delta: float) -> void:
 
 	# Apply both user speed multiplier and vehicle type speed multiplier
 	var actual_speed = speed * speed_multiplier * type_speed_mult
-	velocity = direction * actual_speed
+
+	# Reverse movement is 50% slower
+	if _is_reversing:
+		actual_speed *= 0.5
+		velocity = -direction * actual_speed  # Move opposite to facing direction
+	else:
+		velocity = direction * actual_speed
+
 	# Direct position update instead of move_and_slide() to avoid physics-based sliding
 	global_position += velocity * get_physics_process_delta_time()
 
-	# Collision detection is now handled by Area2D signals (_on_collision_body_entered, _on_collision_area_entered)
+	# Collision detection is handled by dedicated Area2D nodes (CarCollision, RoadBuildingCollision)
 	# Check for overlapping bodies using the collision area
 	_check_area_collisions()
 
@@ -908,7 +951,7 @@ func _move_along_path(delta: float) -> void:
 	velocity = move_dir * actual_speed
 	global_position += velocity * delta
 
-	# Collision detection is now handled by Area2D signals (_on_collision_body_entered, _on_collision_area_entered)
+	# Collision detection is handled by dedicated Area2D nodes (CarCollision, RoadBuildingCollision)
 	# Check for overlapping bodies using the collision area
 	_check_area_collisions()
 
@@ -984,124 +1027,47 @@ func _on_off_road_crash() -> void:
 	off_road_crash.emit(vehicle_id)
 
 
-## Called when Area2D detects a body entering (CharacterBody2D collision)
-func _on_collision_body_entered(body: Node2D) -> void:
-	# Skip if already crashed
-	if vehicle_state == 0:
-		return
-
-	# Check if body is in "Road" group (road walls/boundaries)
-	if body.is_in_group("Road"):
-		_on_off_road_crash()
-		return
-
-	# Check if body is in "Car" group
-	if body.is_in_group("Car") and body != self:
-		var other_vehicle = body as Vehicle
-		if other_vehicle:
-			# If hit a crashed car, only this car crashes
-			if other_vehicle.vehicle_state == 0:
-				_on_crash()
-				return
-			# If both active, both crash
-			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
-				_on_crash()
-				other_vehicle._on_crash()
-				return
-
-
-## Called when Area2D detects another area entering
-func _on_collision_area_entered(area: Area2D) -> void:
-	# Skip if already crashed
-	if vehicle_state == 0:
-		return
-
-	# Check if area is in "Road" group (road walls/boundaries)
-	if area.is_in_group("Road"):
-		_on_off_road_crash()
-		return
-
-	# Check if the area's parent is in "Road" group
-	var parent = area.get_parent()
-	if parent and parent.is_in_group("Road"):
-		_on_off_road_crash()
-		return
-
-	# Check if the area's parent is in "Car" group
-	if parent and parent.is_in_group("Car") and parent != self:
-		var other_vehicle = parent as Vehicle
-		if other_vehicle:
-			# If hit a crashed car, only this car crashes
-			if other_vehicle.vehicle_state == 0:
-				_on_crash()
-				return
-			# If both active, both crash
-			if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
-				_on_crash()
-				other_vehicle._on_crash()
-				return
-
-
-## Check for collisions using Area2D get_overlapping_bodies()
+## Check for collisions using the dedicated Area2D nodes
 func _check_area_collisions() -> void:
-	# Skip if already crashed or no collision area
-	if vehicle_state == 0 or _collision_area == null:
+	# Skip if already crashed
+	if vehicle_state == 0:
 		return
 
-	# Get all overlapping bodies (CharacterBody2D/StaticBody2D nodes)
-	var overlapping_bodies = _collision_area.get_overlapping_bodies()
-	for body in overlapping_bodies:
-		if body == self:
-			continue
+	# Check CarCollision Area - detect other cars for crashes
+	if _car_collision_area:
+		var car_overlaps = _car_collision_area.get_overlapping_areas()
+		for area in car_overlaps:
+			var parent = area.get_parent()
+			if parent and parent != self and parent.is_in_group("Car"):
+				var other_vehicle = parent as Vehicle
+				if other_vehicle:
+					# If hit a crashed car, only this car crashes
+					if other_vehicle.vehicle_state == 0:
+						_on_crash()
+						return
+					# If both active, both crash
+					if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
+						_on_crash()
+						other_vehicle._on_crash()
+						return
 
-		# Check if body is in "Road" group (road walls/boundaries)
-		if body.is_in_group("Road"):
-			_on_off_road_crash()
-			return
-
-		# Check if body is in "Car" group
-		if body.is_in_group("Car"):
-			var other_vehicle = body as Vehicle
-			if other_vehicle:
-				# If hit a crashed car, only this car crashes
-				if other_vehicle.vehicle_state == 0:
-					_on_crash()
-					return
-				# If both active, both crash
-				if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
-					_on_crash()
-					other_vehicle._on_crash()
-					return
-
-	# Also check overlapping areas (from other vehicles' Area2D collision detectors or road areas)
-	var overlapping_areas = _collision_area.get_overlapping_areas()
-	for area in overlapping_areas:
-		# Check if area itself is in "Road" group
-		if area.is_in_group("Road"):
-			_on_off_road_crash()
-			return
-
-		var parent = area.get_parent()
-		if parent == self:
-			continue
-
-		# Check if parent is in "Road" group
-		if parent and parent.is_in_group("Road"):
-			_on_off_road_crash()
-			return
-
-		if parent and parent.is_in_group("Car"):
-			var other_vehicle = parent as Vehicle
-			if other_vehicle:
-				# If hit a crashed car, only this car crashes
-				if other_vehicle.vehicle_state == 0:
-					_on_crash()
-					return
-				# If both active, both crash
-				if vehicle_state == 1 and other_vehicle.vehicle_state == 1:
-					_on_crash()
-					other_vehicle._on_crash()
-					return
+	# Check RoadBuildingCollision Area - detect road boundaries/buildings
+	if _road_building_area:
+		var road_overlaps = _road_building_area.get_overlapping_bodies()
+		for body in road_overlaps:
+			if body.is_in_group("Road") or body.is_in_group("Building"):
+				_on_off_road_crash()
+				return
+		# Also check areas in case roads use Area2D
+		var road_area_overlaps = _road_building_area.get_overlapping_areas()
+		for area in road_area_overlaps:
+			if area.is_in_group("Road") or area.is_in_group("Building"):
+				_on_off_road_crash()
+				return
+			var parent = area.get_parent()
+			if parent and (parent.is_in_group("Road") or parent.is_in_group("Building")):
+				_on_off_road_crash()
+				return
 
 
 ## Switch to the crashed sprite from row 2 of the spritesheet
@@ -1181,11 +1147,17 @@ func turn(turn_direction: String) -> void:
 	_process_next_command()
 
 
-## Move a specific number of tiles
+## Move a specific number of tiles (positive = forward, negative = reverse)
+## Reverse speed is 50% of normal speed
 func move(tiles: int = 1) -> void:
-	if tiles <= 0:
+	if tiles == 0:
 		return
-	_command_queue.append({"type": "move", "tiles": tiles})
+	if tiles < 0:
+		# Reverse movement - negative tiles
+		_command_queue.append({"type": "move_reverse", "tiles": -tiles})
+	else:
+		# Forward movement
+		_command_queue.append({"type": "move", "tiles": tiles})
 	_process_next_command()
 
 
@@ -1218,6 +1190,8 @@ func _process_next_command() -> void:
 			_exec_wait(_current_command["seconds"])
 		"move":
 			_exec_move(_current_command["tiles"])
+		"move_reverse":
+			_exec_move_reverse(_current_command["tiles"])
 
 
 ## Called when current command completes
@@ -1272,6 +1246,7 @@ func _exec_stop() -> void:
 
 	# Stop moving, but don't complete until velocity actually reaches zero
 	_is_moving = false
+	_is_reversing = false  # Reset reverse flag
 	_wants_to_move = false
 	velocity = Vector2.ZERO
 	_tiles_to_move = 0
@@ -1290,6 +1265,7 @@ func _exec_turn(turn_direction: String) -> void:
 		# NEW: Stop the car when turning (matches CLAUDE.md documentation pattern)
 		# User must call car.go() again to resume movement in new direction
 		_is_moving = false
+		_is_reversing = false  # Reset reverse flag
 		_wants_to_move = false
 		velocity = Vector2.ZERO
 
@@ -1316,9 +1292,27 @@ func _exec_move(tiles: int) -> void:
 	_tiles_to_move = tiles
 	_move_start_position = global_position
 	_is_moving = true
+	_is_reversing = false
 	_wants_to_move = true
 	# Track the direction we're moving so we don't turn back to it
 	_last_move_direction = direction
+	# Move completion is handled in _physics_process()
+
+
+## Execute reverse movement - move backwards at 50% speed
+func _exec_move_reverse(tiles: int) -> void:
+	# Safety check: don't move if already at destination or crashed
+	if at_end() or vehicle_state == 0:
+		_command_completed()
+		return
+
+	_tiles_to_move = tiles
+	_move_start_position = global_position
+	_is_moving = true
+	_is_reversing = true  # Flag for reverse movement
+	_wants_to_move = true
+	# For reverse, we move opposite to current direction
+	_last_move_direction = -direction
 	# Move completion is handled in _physics_process()
 
 
@@ -1534,18 +1528,40 @@ func right_road() -> bool:
 	return _is_road_at_position(right_pos)
 
 
-## Check if there's ANY car (crashed or active) in front (short name)
+## Check if there's ANY car (crashed or active) in front using FrontChecker Area2D
 func front_car() -> bool:
-	var front_offset = direction.normalized() * TILE_SIZE
-	var front_pos = global_position + front_offset
-	return _is_vehicle_at_position(front_pos)
+	if _front_checker_area == null:
+		# Fallback to position-based check
+		var front_offset = direction.normalized() * TILE_SIZE
+		var front_pos = global_position + front_offset
+		return _is_vehicle_at_position(front_pos)
+
+	# Use FrontChecker Area2D get_overlapping_areas()
+	var overlapping = _front_checker_area.get_overlapping_areas()
+	for area in overlapping:
+		var parent = area.get_parent()
+		if parent and parent != self and parent.is_in_group("Car"):
+			return true
+	return false
 
 
-## Check if there's a CRASHED car in front (short name)
+## Check if there's a CRASHED car in front using FrontChecker Area2D
 func front_crash() -> bool:
-	var front_offset = direction.normalized() * TILE_SIZE
-	var front_pos = global_position + front_offset
-	return _is_crashed_vehicle_at_position(front_pos)
+	if _front_checker_area == null:
+		# Fallback to position-based check
+		var front_offset = direction.normalized() * TILE_SIZE
+		var front_pos = global_position + front_offset
+		return _is_crashed_vehicle_at_position(front_pos)
+
+	# Use FrontChecker Area2D get_overlapping_areas()
+	var overlapping = _front_checker_area.get_overlapping_areas()
+	for area in overlapping:
+		var parent = area.get_parent()
+		if parent and parent != self and parent.is_in_group("Car"):
+			var other_vehicle = parent as Vehicle
+			if other_vehicle and other_vehicle.vehicle_state == 0:  # 0 = crashed
+				return true
+	return false
 
 
 ## Check if the car is at a dead end (no road in any direction) (short name)
@@ -1763,6 +1779,7 @@ func reset(start_pos: Vector2, start_dir: Vector2 = Vector2.RIGHT) -> void:
 	# Car sprite faces UP, so add PI/2 to make it face the direction
 	rotation = direction.angle() + PI / 2
 	_is_moving = false
+	_is_reversing = false  # Reset reverse flag
 	is_waiting = false
 	wait_timer = 0.0
 	queued_turn = ""

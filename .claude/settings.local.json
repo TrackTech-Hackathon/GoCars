@@ -19,7 +19,9 @@
       "Bash(\"C:\\\\Users\\\\Mist\\\\Downloads\\\\Godot_v4.5.1-stable_win64.exe\\\\Godot_v4.5.1-stable_win64_console.exe\" --path . --headless --script tests/python_interpreter_functions.test.gd)",
       "Bash(bash:*)",
       "Bash(powershell:*)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(ls -la \"C:\\\\Users\\\\Jorge Acidre\\\\Documents\\\\GitHub\\\\go-cars-\\\\assets\\\\Main_Menu_Assets\"\" 2>/dev/null | grep -i \".png|.jpg \")",
+      "Bash(find:*)"
     ]
   }
 }

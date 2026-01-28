@@ -98,14 +98,14 @@ z_index = 3
 custom_minimum_size = Vector2(50, 50)
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.517
-anchor_top = 0.60700005
-anchor_right = 0.517
-anchor_bottom = 0.60700005
-offset_left = -24.584045
-offset_top = -25.264038
-offset_right = 25.415955
-offset_bottom = 24.735962
+anchor_left = 0.53900003
+anchor_top = 0.53000003
+anchor_right = 0.53900003
+anchor_bottom = 0.53000003
+offset_left = -25.824097
+offset_top = -24.424133
+offset_right = 24.175903
+offset_bottom = 25.575867
 grow_horizontal = 2
 grow_vertical = 2
 texture_normal = ExtResource("2_h56qn")
@@ -116,7 +116,6 @@ texture_rect_path = NodePath("TextureRect")
 icon1_path = NodePath("Icon1")
 icon2_path = NodePath("Icon2")
 label_path = NodePath("Label")
-fade_group_root_path = NodePath("../../../../HoverIloilo")
 
 [node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_1"]
 z_index = 2
@@ -124,10 +123,10 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 1.0
-offset_top = -4.0
-offset_right = 1.0
-offset_bottom = -4.0
+offset_left = 2.0
+offset_top = -6.0
+offset_right = 2.0
+offset_bottom = -6.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_colors/font_color = Color(1, 1, 1, 0.95)
@@ -155,9 +154,9 @@ layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -44.000004
+offset_left = -44.0
 offset_top = -33.0
-offset_right = 8.999996
+offset_right = 9.0
 offset_bottom = 36.5625
 rotation = -0.2617994
 texture = ExtResource("5_rw8ch")
@@ -170,9 +169,9 @@ layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 0.5
-offset_top = -48.000004
+offset_top = -48.0
 offset_right = 53.0
-offset_bottom = 21.562496
+offset_bottom = 21.5625
 rotation = 0.2617994
 texture = ExtResource("6_r0spa")
 expand_mode = 1
@@ -183,18 +182,20 @@ z_index = 2
 custom_minimum_size = Vector2(50, 50)
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.38900003
-anchor_top = 0.67200005
-anchor_right = 0.38900003
-anchor_bottom = 0.67200005
-offset_left = -25.128021
-offset_top = -25.144043
-offset_right = 24.871979
-offset_bottom = 24.855957
+anchor_left = 0.517
+anchor_top = 0.60700005
+anchor_right = 0.517
+anchor_bottom = 0.60700005
+offset_left = -24.888
+offset_top = -25.344116
+offset_right = 25.112
+offset_bottom = 24.655884
 texture_normal = ExtResource("2_h56qn")
 ignore_texture_size = true
 stretch_mode = 0
 script = ExtResource("3_wnmx6")
+texture_rect_path = NodePath("TextureRect")
+label_path = NodePath("Label")
 
 [node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_2"]
 z_index = 2
@@ -236,14 +237,16 @@ anchor_left = 0.238
 anchor_top = 0.648
 anchor_right = 0.238
 anchor_bottom = 0.648
-offset_left = -25.175995
-offset_top = -25.495972
-offset_right = 24.824005
-offset_bottom = 24.504028
+offset_left = -25.176
+offset_top = -25.496
+offset_right = 24.824
+offset_bottom = 24.504
 texture_normal = ExtResource("2_h56qn")
 ignore_texture_size = true
 stretch_mode = 0
 script = ExtResource("3_wnmx6")
+texture_rect_path = NodePath("TextureRect")
+label_path = NodePath("Label")
 
 [node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_3"]
 z_index = 2
@@ -285,14 +288,16 @@ anchor_left = 0.4
 anchor_top = 0.34
 anchor_right = 0.4
 anchor_bottom = 0.34
-offset_left = -24.800018
-offset_top = -24.679993
-offset_right = 25.199982
-offset_bottom = 25.320007
+offset_left = -24.8
+offset_top = -24.68
+offset_right = 25.2
+offset_bottom = 25.32
 texture_normal = ExtResource("2_h56qn")
 ignore_texture_size = true
 stretch_mode = 0
 script = ExtResource("3_wnmx6")
+texture_rect_path = NodePath("TextureRect")
+label_path = NodePath("Label")
 
 [node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_4"]
 z_index = 2
@@ -331,17 +336,19 @@ custom_minimum_size = Vector2(50, 50)
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.535
-anchor_top = 0.39000002
+anchor_top = 0.39
 anchor_right = 0.535
-anchor_bottom = 0.39000002
-offset_left = -25.320007
-offset_top = -25.28003
-offset_right = 24.679993
-offset_bottom = 24.71997
+anchor_bottom = 0.39
+offset_left = -25.32
+offset_top = -25.28
+offset_right = 24.68
+offset_bottom = 24.72
 texture_normal = ExtResource("2_h56qn")
 ignore_texture_size = true
 stretch_mode = 0
 script = ExtResource("3_wnmx6")
+texture_rect_path = NodePath("TextureRect")
+label_path = NodePath("Label")
 
 [node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_5"]
 z_index = 2
@@ -380,17 +387,19 @@ layout_mode = 1
 anchors_preset = -1
 anchor_top = 0.23
 anchor_right = 1.0
-anchor_bottom = 0.77400005
-offset_top = -31.959991
-offset_right = 21.094727
-offset_bottom = 45.35193
+anchor_bottom = 0.774
+offset_top = -31.96
+offset_right = 21.0947
+offset_bottom = 45.3519
 grow_vertical = 0
 localize_numeral_system = false
 mouse_filter = 2
 texture = ExtResource("1_fk1gg")
 expand_mode = 1
 
-[node name="HoverIloilo" type="TextureRect" parent="."]
+[node name="HoverPanel" type="TextureRect" parent="."]
+visible = false
+modulate = Color(1, 1, 1, 0)
 z_index = 3
 layout_mode = 1
 anchors_preset = -1
@@ -402,38 +411,38 @@ offset_left = -264.448
 offset_top = -157.232
 offset_right = 265.552
 offset_bottom = 156.768
-scale = Vector2(1.1223862, 1.1811901)
+scale = Vector2(1.12239, 1.18119)
 texture = ExtResource("8_6ivqm")
 expand_mode = 1
 
-[node name="Logo" type="Label" parent="HoverIloilo"]
+[node name="Logo" type="Label" parent="HoverPanel"]
 z_index = 1000
 layout_mode = 0
-offset_left = 67.14972
-offset_top = 63.928696
-offset_right = 253.3601
-offset_bottom = 93.928696
+offset_left = 67.15
+offset_top = 63.9287
+offset_right = 253.36
+offset_bottom = 93.9287
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_fonts/font = ExtResource("9_5ywgh")
 theme_override_font_sizes/font_size = 20
-text = "•ILOILO"
+text = "* TUTORIAL"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="HorizBar" type="Label" parent="HoverIloilo"]
+[node name="HorizBar" type="Label" parent="HoverPanel"]
 z_index = 100
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.30400002
+anchor_left = 0.304
 anchor_top = 0.252
-anchor_right = 0.30400002
+anchor_right = 0.304
 anchor_bottom = 0.252
-offset_left = -92.120026
-offset_top = -3.1279984
-offset_right = 98.47685
-offset_bottom = 17.872002
+offset_left = -92.12
+offset_top = -3.128
+offset_right = 98.4769
+offset_bottom = 17.872
 size_flags_stretch_ratio = 0.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -442,112 +451,115 @@ theme_override_fonts/font = ExtResource("9_5ywgh")
 theme_override_font_sizes/font_size = 15
 text = "──────────────────────────"
 
-[node name="Objective" type="Label" parent="HoverIloilo"]
+[node name="Difficulty" type="Label" parent="HoverPanel"]
 z_index = 1000
 layout_mode = 0
-offset_left = 63.58583
-offset_top = 128.27057
-offset_right = 513.5858
-offset_bottom = 173.27057
-size_flags_stretch_ratio = 0.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 8
-theme_override_fonts/font = ExtResource("9_5ywgh")
-theme_override_font_sizes/font_size = 12
-text = "Objective:"
-autowrap_mode = 2
-
-[node name="Difficulty" type="Label" parent="HoverIloilo"]
-z_index = 1000
-layout_mode = 0
-offset_left = 63.58583
-offset_top = 99.48606
-offset_right = 513.5858
-offset_bottom = 124.48606
+offset_left = 63.5858
+offset_top = 99.4861
+offset_right = 513.586
+offset_bottom = 124.486
 size_flags_stretch_ratio = 0.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_fonts/font = ExtResource("9_5ywgh")
 theme_override_font_sizes/font_size = 13
-text = "Difficulty: ★★★☆☆"
+text = "Progress: 0 / 5 levels"
 autowrap_mode = 2
 
-[node name="Description" type="Label" parent="HoverIloilo"]
+[node name="Description" type="Label" parent="HoverPanel"]
 z_index = 1000
 layout_mode = 0
-offset_left = 60.021996
-offset_top = 194.30566
-offset_right = 510.022
-offset_bottom = 274.30566
-scale = Vector2(0.81978434, 0.9289205)
+offset_left = 60.022
+offset_top = 130.0
+offset_right = 428.0
+offset_bottom = 210.0
+scale = Vector2(0.819784, 0.928921)
 size_flags_stretch_ratio = 0.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_fonts/font = ExtResource("9_5ywgh")
 theme_override_font_sizes/font_size = 10
-text = "Design and manage traffic roads to optimize flow, reduce congestion, and solve each level using strategic traffic rules."
+text = "Learn the basics of controlling cars with Python code. Master movement, turning, and navigation."
 horizontal_alignment = 3
 autowrap_mode = 2
 
-[node name="TextureRect" type="TextureRect" parent="HoverIloilo"]
+[node name="Status" type="Label" parent="HoverPanel"]
+visible = false
+z_index = 1000
+layout_mode = 0
+offset_left = 60.022
+offset_top = 195.0
+offset_right = 428.0
+offset_bottom = 225.0
+scale = Vector2(0.819784, 0.928921)
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 11
+text = "Complete all Tutorial levels to unlock!"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="HoverPanel"]
 z_index = 1
 layout_mode = 0
-offset_left = 256.03296
-offset_top = 60.542324
-offset_right = 280.03296
-offset_bottom = 84.54233
+offset_left = 256.033
+offset_top = 60.5423
+offset_right = 280.033
+offset_bottom = 84.5423
 rotation = 0.2617994
 texture = ExtResource("2_ws25f")
 expand_mode = 1
 
-[node name="Icon" type="TextureRect" parent="HoverIloilo"]
+[node name="Icon" type="TextureRect" parent="HoverPanel"]
 z_index = 1
 layout_mode = 0
 offset_left = 381.0
-offset_top = 27.000008
-offset_right = 598.0001
-offset_bottom = 280.00003
+offset_top = 27.0
+offset_right = 598.0
+offset_bottom = 280.0
 rotation = 0.08726646
 texture = ExtResource("6_r0spa")
 expand_mode = 1
 
-[node name="TextureButton" type="TextureButton" parent="HoverIloilo"]
+[node name="PlayButton" type="TextureButton" parent="HoverPanel"]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.52000004
+anchor_left = 0.52
 anchor_top = 0.712
-anchor_right = 0.52000004
+anchor_right = 0.52
 anchor_bottom = 0.712
-offset_left = -83.60004
-offset_top = -19.568008
-offset_right = 83.39996
-offset_bottom = 19.431992
+offset_left = -83.6
+offset_top = -19.568
+offset_right = 83.4
+offset_bottom = 19.432
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("10_8gbxi")
 
-[node name="Button" type="TextureRect" parent="HoverIloilo/TextureButton"]
-modulate = Color(1.6372112, 1.6372112, 1.6372112, 1)
-self_modulate = Color(0.5251013, 0.5251013, 0.5251013, 1)
+[node name="Button" type="TextureRect" parent="HoverPanel/PlayButton"]
+modulate = Color(1.63721, 1.63721, 1.63721, 1)
+self_modulate = Color(0.525101, 0.525101, 0.525101, 1)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -102.32615
-offset_top = -24.961256
-offset_right = 109.5686
-offset_bottom = 97.03874
+offset_left = -102.326
+offset_top = -24.9613
+offset_right = 109.569
+offset_bottom = 97.0387
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("10_5ywgh")
 expand_mode = 1
 
-[node name="Logo" type="Label" parent="HoverIloilo/TextureButton/Button"]
+[node name="Logo" type="Label" parent="HoverPanel/PlayButton/Button"]
 z_index = 100
 layout_mode = 1
 anchors_preset = -1
@@ -555,10 +567,10 @@ anchor_left = 0.509
 anchor_top = 0.5
 anchor_right = 0.509
 anchor_bottom = 0.5
-offset_left = -70.85442
+offset_left = -70.8544
 offset_top = -9.0
-offset_right = 69.14561
-offset_bottom = 11.800003
+offset_right = 69.1456
+offset_bottom = 11.8
 size_flags_stretch_ratio = 0.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -568,19 +580,294 @@ theme_override_font_sizes/font_size = 20
 text = "PLAY"
 horizontal_alignment = 1
 
+[node name="LevelSelectorPanel" type="Control" parent="."]
+visible = false
+z_index = 5
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dimmer" type="ColorRect" parent="LevelSelectorPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="PanelBG" type="TextureRect" parent="LevelSelectorPanel"]
+z_index = 1
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -250.0
+offset_right = 300.0
+offset_bottom = 250.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("8_6ivqm")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="LevelSelectorPanel/PanelBG"]
+z_index = 1000
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 30.0
+offset_right = 150.0
+offset_bottom = 70.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 24
+text = "TUTORIAL LEVELS"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="LevelSelectorPanel/PanelBG"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.18
+anchor_right = 0.9
+anchor_bottom = 0.82
+offset_left = 10.0
+offset_right = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="LevelList" type="VBoxContainer" parent="LevelSelectorPanel/PanelBG/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="BackButton" type="TextureButton" parent="LevelSelectorPanel/PanelBG"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -75.0
+offset_top = -60.0
+offset_right = 75.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("10_8gbxi")
+
+[node name="Button" type="TextureRect" parent="LevelSelectorPanel/PanelBG/BackButton"]
+modulate = Color(1.63721, 1.63721, 1.63721, 1)
+self_modulate = Color(0.525101, 0.525101, 0.525101, 1)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -15.0
+offset_right = 20.0
+offset_bottom = 35.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("10_5ywgh")
+expand_mode = 1
+
+[node name="Logo" type="Label" parent="LevelSelectorPanel/PanelBG/BackButton/Button"]
+z_index = 100
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = -10.0
+offset_right = 50.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 16
+text = "BACK"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LevelHoverPanel" type="Control" parent="."]
+visible = false
+z_index = 6
+layout_mode = 1
+anchor_left = 0.7
+anchor_top = 0.3
+anchor_right = 0.95
+anchor_bottom = 0.7
+offset_left = 10.0
+offset_top = 20.0
+offset_right = -10.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="PanelBG" type="TextureRect" parent="LevelHoverPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("8_6ivqm")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LevelName" type="Label" parent="LevelHoverPanel/PanelBG"]
+z_index = 1000
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_top = 30.0
+offset_right = 120.0
+offset_bottom = 70.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 18
+text = "Level Name"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="BestTime" type="Label" parent="LevelHoverPanel/PanelBG"]
+z_index = 1000
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 80.0
+offset_right = 100.0
+offset_bottom = 110.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.5, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 14
+text = "Best Time: --:--.--"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Status" type="Label" parent="LevelHoverPanel/PanelBG"]
+visible = false
+z_index = 1000
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_top = 120.0
+offset_right = 120.0
+offset_bottom = 160.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.3, 1, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 12
+text = "Completed!"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="PlayButton" type="TextureButton" parent="LevelHoverPanel/PanelBG"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -60.0
+offset_top = -70.0
+offset_right = 60.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("10_8gbxi")
+
+[node name="Button" type="TextureRect" parent="LevelHoverPanel/PanelBG/PlayButton"]
+modulate = Color(1.63721, 1.63721, 1.63721, 1)
+self_modulate = Color(0.525101, 0.525101, 0.525101, 1)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -15.0
+offset_top = -12.0
+offset_right = 15.0
+offset_bottom = 30.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("10_5ywgh")
+expand_mode = 1
+
+[node name="Label" type="Label" parent="LevelHoverPanel/PanelBG/PlayButton/Button"]
+z_index = 100
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -10.0
+offset_right = 40.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_stretch_ratio = 0.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("9_5ywgh")
+theme_override_font_sizes/font_size = 16
+text = "PLAY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="Logo" type="Label" parent="."]
 z_index = 100
 layout_direction = 1
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.48200002
-anchor_top = 0.07300001
-anchor_right = 0.95100003
+anchor_left = 0.482
+anchor_top = 0.073
+anchor_right = 0.951
 anchor_bottom = 0.142
-offset_left = -0.2640381
-offset_top = -0.30400467
-offset_right = -0.55200195
-offset_bottom = -0.01600647
+offset_left = -0.264038
+offset_top = -0.304005
+offset_right = -0.552002
+offset_bottom = -0.0160065
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_stretch_ratio = 0.0
@@ -598,10 +885,10 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -391.0
-offset_top = -280.0
-offset_right = 393.88892
-offset_bottom = 400.0
+offset_left = -371.0
+offset_top = -315.0
+offset_right = 413.88892
+offset_bottom = 365.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
