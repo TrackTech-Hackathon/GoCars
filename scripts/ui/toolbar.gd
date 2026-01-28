@@ -23,7 +23,6 @@ func _ready() -> void:
 	# Connect signals
 	code_editor_button.pressed.connect(_on_code_editor_pressed)
 	readme_button.pressed.connect(_on_readme_pressed)
-	skill_tree_button.pressed.connect(_on_skill_tree_pressed)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.ctrl_pressed:
