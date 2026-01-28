@@ -17,6 +17,9 @@ signal execution_error_occurred(error: String, line: int)
 signal infinite_loop_detected()
 signal print_output(message: String)  # For Python print() statements
 
+var StoplightProxy = preload("res://scripts/core/stoplight_proxy.gd")
+
+
 # Simulation state
 enum State { IDLE, RUNNING, PAUSED, STEP }
 var current_state: State = State.IDLE
@@ -248,10 +251,12 @@ func _register_game_objects() -> void:
 		var first_vehicle_id = _vehicles.keys()[0]
 		_python_interpreter.register_object("car", _vehicles[first_vehicle_id])
 
-	# Register all stoplights
+	# Register a read-only proxy for the stoplight
 	if _stoplights.size() > 0:
 		var first_stoplight_id = _stoplights.keys()[0]
-		_python_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
+		var real_stoplight = _stoplights[first_stoplight_id]
+		var stoplight_proxy = StoplightProxy.new(real_stoplight)
+		_python_interpreter.register_object("stoplight", stoplight_proxy)
 
 
 ## Execute code for a specific vehicle (used for spawned cars)
@@ -263,7 +268,9 @@ func execute_code_for_vehicle(code: String, vehicle: Vehicle) -> void:
 	# Register stoplights too
 	if _stoplights.size() > 0:
 		var first_stoplight_id = _stoplights.keys()[0]
-		temp_interpreter.register_object("stoplight", _stoplights[first_stoplight_id])
+		var real_stoplight = _stoplights[first_stoplight_id]
+		var stoplight_proxy = StoplightProxy.new(real_stoplight)
+		temp_interpreter.register_object("stoplight", stoplight_proxy)
 
 	# Connect print output signal
 	temp_interpreter.print_output.connect(_on_interpreter_print_output)

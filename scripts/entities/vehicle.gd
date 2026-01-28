@@ -242,6 +242,10 @@ var _nearby_stoplights: Array = []  # Array of Stoplight nodes in range
 var _passed_stoplights: Array = []  # Track stoplights we've passed (for violation detection)
 var _wants_to_move: bool = false  # True if go() was called (intention to move)
 
+# Pending command flags - used to block interpreter until command completes
+var _pending_go_command: bool = false  # True when go() called, completes when movement starts
+var _pending_stop_command: bool = false  # True when stop() called, completes when car stops
+
 # Intersection/turn tracking
 var _intersections: Array = []  # Array of intersection positions (Vector2)
 var _is_turning: bool = false
@@ -683,6 +687,16 @@ func _physics_process(delta: float) -> void:
 				velocity = Vector2.ZERO
 				# Move command completed - process next command
 				_command_completed()
+
+		# Complete pending go() command once movement has started
+		if _pending_go_command and velocity.length() > 1.0:
+			_pending_go_command = false
+			_command_completed()
+
+	# Complete pending stop() command once movement has stopped
+	if _pending_stop_command and velocity.length() < 0.1:
+		_pending_stop_command = false
+		_command_completed()
 
 
 func _move(_delta: float) -> void:
@@ -1199,6 +1213,12 @@ func _command_completed() -> void:
 # ============================================
 
 func _exec_go() -> void:
+	if _is_moving:
+		# Already moving, complete immediately
+		_command_completed()
+		return
+
+	# Start moving, but don't complete until movement actually starts
 	_wants_to_move = true
 	_is_moving = true
 	# Track the direction we're moving so we don't turn back to it
@@ -1210,24 +1230,46 @@ func _exec_go() -> void:
 	# go() should allow subsequent turn detection when car reaches tile center
 	# Only turn() should lock the decision to prevent multiple turns
 	_update_stats_state()  # Update state label
-	# go() runs indefinitely, so mark command as complete immediately
-	# (the car keeps moving until stop() is called)
-	_command_completed()
+
+	# NEW: Set velocity IMMEDIATELY so car starts moving in the same frame
+	# This eliminates the 1-frame delay that was visible to the player
+	var actual_speed = speed * speed_multiplier * type_speed_mult
+	velocity = direction * actual_speed
+
+	# Block interpreter by setting pending command flag
+	# Command will complete once velocity reaches minimum movement threshold
+	_pending_go_command = true
 
 
 func _exec_stop() -> void:
+	if not _is_moving and velocity.length() < 0.1:
+		# Already stopped, complete immediately
+		_command_completed()
+		return
+
+	# Stop moving, but don't complete until velocity actually reaches zero
 	_is_moving = false
 	_wants_to_move = false
 	velocity = Vector2.ZERO
 	_tiles_to_move = 0
 	_update_stats_state()  # Update state label
-	_command_completed()
+
+	# Block interpreter by setting pending command flag
+	# Command will complete once velocity reaches zero
+	_pending_stop_command = true
 
 
 func _exec_turn(turn_direction: String) -> void:
 	if turn_direction == "left" or turn_direction == "right":
 		# LOCK decision for this tile (prevents zigzag from re-evaluation)
 		_decision_made_for_tile = true
+
+		# NEW: Stop the car when turning (matches CLAUDE.md documentation pattern)
+		# User must call car.go() again to resume movement in new direction
+		_is_moving = false
+		_wants_to_move = false
+		velocity = Vector2.ZERO
+
 		# ALWAYS rotate immediately - bad code will crash, good code checked first
 		_execute_turn(turn_direction)
 		# Turn completion is handled in _process_turn()
@@ -1741,8 +1783,12 @@ func _check_red_light_violation() -> void:
 	for stoplight in _nearby_stoplights:
 		var distance = global_position.distance_to(stoplight.global_position)
 
-		# If we're very close (passing through) and light is red
-		if distance < 30.0 and stoplight.is_red():
+		# Determine which side of the stoplight the car is on to check the correct arrow
+		var direction_to_stoplight = (stoplight.global_position - global_position).normalized()
+		var direction_name = _vector_to_direction_name(direction_to_stoplight)
+
+		# If we're very close (passing through) and light is red for our direction
+		if distance < 30.0 and stoplight.is_red(direction_name):
 			if stoplight not in _passed_stoplights:
 				# First time passing this red light - violation!
 				_passed_stoplights.append(stoplight)
@@ -1755,16 +1801,51 @@ func _check_red_light_violation() -> void:
 
 
 ## Check if there's a red light nearby (short name)
+
+
+
+func _vector_to_direction_name(vec: Vector2) -> String:
+	# Determine which direction the vector is pointing
+	if abs(vec.x) > abs(vec.y):
+		return "east" if vec.x > 0 else "west"
+	else:
+		return "south" if vec.y > 0 else "north"
+
+
+## Check if there's a red light nearby (short name)
 func at_red() -> bool:
 	for stoplight in _nearby_stoplights:
-		if stoplight.is_red():
-			var d = global_position.distance_to(stoplight.global_position)
-			if d < STOPLIGHT_STOP_DISTANCE:
+		if global_position.distance_to(stoplight.global_position) < STOPLIGHT_STOP_DISTANCE:
+			var direction_to_stoplight = (stoplight.global_position - global_position).normalized()
+			var direction_name = _vector_to_direction_name(direction_to_stoplight)
+			if stoplight.is_red(direction_name):
 				return true
 	return false
 
 
-## Check if there's a red light ahead (within detection range)
+## Check if there's a green light nearby (short name)
+func at_green() -> bool:
+	for stoplight in _nearby_stoplights:
+		if global_position.distance_to(stoplight.global_position) < STOPLIGHT_STOP_DISTANCE:
+			var direction_to_stoplight = (stoplight.global_position - global_position).normalized()
+			var direction_name = _vector_to_direction_name(direction_to_stoplight)
+			if stoplight.is_green(direction_name):
+				return true
+	return false
+
+
+## Check if there's a yellow light nearby (short name)
+func at_yellow() -> bool:
+	for stoplight in _nearby_stoplights:
+		if global_position.distance_to(stoplight.global_position) < STOPLIGHT_STOP_DISTANCE:
+			var direction_to_stoplight = (stoplight.global_position - global_position).normalized()
+			var direction_name = _vector_to_direction_name(direction_to_stoplight)
+			if stoplight.is_yellow(direction_name):
+				return true
+	return false
+
+
+## Check if car is blocked by light (within detection range)
 func is_blocked_by_light() -> bool:
 	for stoplight in _nearby_stoplights:
 		if stoplight.should_stop():

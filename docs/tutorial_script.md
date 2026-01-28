@@ -294,22 +294,22 @@ STEP 4: Why Loops Are Important
 STEP 5: Show Correct Pattern
 "Here's the pattern that works:"
 "while not car.at_end():"
-"    if stoplight.is_red():"
+"    if car.at_red():"
 "        car.stop()"
 "    else:"
 "        car.go()"
 
 STEP 6: Explain the Code
 "This loop CONTINUOUSLY checks the stoplight."
-"Every loop cycle, it asks: 'Is the light red?'"
+"Every loop cycle, it asks: 'Is the light red for me?'"
 "If red: stop the car"
 "If not red (green/yellow): go!"
 
 STEP 7: Stoplight Functions
-"Stoplight commands you can use:"
-"stoplight.is_red() - returns True if red"
-"stoplight.is_green() - returns True if green"
-"stoplight.is_yellow() - returns True if yellow"
+"The BEST way to check a stoplight for your car is:"
+"car.at_red() - returns True if the arrow for your car is red"
+"car.at_green() - returns True if the arrow for your car is green"
+"car.at_yellow() - returns True if the arrow for your car is yellow"
 
 STEP 8: Challenge
 [Reset level, stoplight starts red then turns green]
@@ -389,7 +389,7 @@ STEP 5: Run Code
 STEP 6A: If Fails
 [If car crashes or runs red light]
 "Not quite! Remember:"
-"- Check stoplight.is_red() before moving"
+"- Check car.at_red() before moving"
 "- Use road detection for turns"
 "Press R to reset and try again!"
 

@@ -153,15 +153,18 @@ func _is_car_busy() -> bool:
 			# Check if car is waiting (wait() command needs to block interpreter)
 			if car.has_method("is_waiting") and car.is_waiting:
 				return true
-	
-	# Check if stoplight is waiting
-	if "stoplight" in _game_objects:
-		var stoplight = _game_objects["stoplight"]
-		if stoplight != null and is_instance_valid(stoplight):
-			# Check if stoplight is waiting (wait() command needs to block interpreter)
-			if stoplight.has_method("get") and stoplight.get("_wait_timer") > 0:
-				return true
-	
+
+			# Check if car has pending go/stop commands (blocks until movement state changes)
+			if car.has_method("get"):
+				if car.get("_pending_go_command"):
+					return true
+				if car.get("_pending_stop_command"):
+					return true
+
+	# REMOVED: Stoplight wait check was blocking car execution
+	# Each interpreter should only check its own object's state, not other objects
+	# This makes car and stoplight interpreters truly independent
+
 	return false
 
 
