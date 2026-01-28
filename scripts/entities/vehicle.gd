@@ -265,7 +265,7 @@ const LANE_OFFSET: float = 0.0
 const STOPLIGHT_DETECTION_RANGE: float = 100.0
 
 # Distance at which vehicle must stop for red light (in pixels)
-const STOPLIGHT_STOP_DISTANCE: float = 50.0
+const STOPLIGHT_STOP_DISTANCE: float = 150.0
 
 # Distance at which vehicle detects intersections (in pixels)
 const INTERSECTION_DETECTION_RANGE: float = 30.0

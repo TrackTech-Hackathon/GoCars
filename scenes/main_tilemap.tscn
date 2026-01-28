@@ -1,10 +1,11 @@
-[gd_scene load_steps=9 format=3 uid="uid://cpbh6qdo618ux"]
+[gd_scene load_steps=10 format=3 uid="uid://cpbh6qdo618ux"]
 
 [ext_resource type="Script" uid="uid://df74itlomy7yj" path="res://scripts/core/simulation_engine.gd" id="1_sim"]
 [ext_resource type="Script" uid="uid://c1n1vn6nbuf04" path="res://scenes/main_tilemap.gd" id="2_main_tilemap"]
 [ext_resource type="Texture2D" uid="uid://dt40i576w11p1" path="res://assets/UI/Sprite sheets/Sprite sheet for Basic Pack.png" id="3_24qlu"]
 [ext_resource type="FontFile" uid="uid://by2afd2myjmcg" path="res://assets/fonts/Game Paused DEMO.otf" id="4_6np48"]
 [ext_resource type="FontFile" uid="uid://dcwhex08vx2qh" path="res://assets/fonts/pixelFont-7-8x14-sproutLands.ttf" id="5_ttp8s"]
+[ext_resource type="PackedScene" uid="uid://boi6cme0m6s7g" path="res://scenes/ui/hearts_ui.tscn" id="6_hearts_ui"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_6np48"]
 texture = ExtResource("3_24qlu")
@@ -44,6 +45,12 @@ theme_override_styles/normal = SubResource("StyleBoxTexture_6np48")
 theme_override_styles/pressed = SubResource("StyleBoxTexture_ttp8s")
 theme_override_styles/hover = SubResource("StyleBoxTexture_ttp8s")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_ttp8s")
+
+[node name="HeartsUI" parent="UI" instance=ExtResource("6_hearts_ui")]
+offset_left = 723.00006
+offset_top = 45.0
+offset_right = 1123.0
+offset_bottom = 85.0
 
 [node name="HBoxContainer" type="HBoxContainer" parent="UI"]
 offset_left = 173.0

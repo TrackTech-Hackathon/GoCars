@@ -152,6 +152,11 @@ func _ready() -> void:
 	# Initialize Completion Summary UI
 	_init_completion_summary()
 
+	# Initialize HeartsUI from main scene
+	hearts_ui = get_node_or_null("UI/HeartsUI")
+	if hearts_ui and hearts_ui.has_signal("hearts_depleted"):
+		hearts_ui.hearts_depleted.connect(_on_hearts_depleted)
+
 	# Connect UI signals
 	run_button.pressed.connect(_on_run_button_pressed)
 
@@ -2258,43 +2263,21 @@ func _load_level_hearts() -> void:
 	if current_level_node == null:
 		return
 
-	# Look for HeartsUI node in level
-	hearts_ui = current_level_node.get_node_or_null("HeartsUI")
+	# HeartsUI is now in the main scene, get reference if not already set
 	if hearts_ui == null:
-		# Try to find it as a child of any node
-		for child in current_level_node.get_children():
-			var found = child.get_node_or_null("HeartsUI")
-			if found:
-				hearts_ui = found
-				break
+		hearts_ui = get_node_or_null("UI/HeartsUI")
 
 	if hearts_ui:
-		# Get level settings for heart count (with backward compatibility)
-		var settings = LevelSettings.from_node(current_level_node)
-
-		# Configure hearts based on the number of vehicles
-		if hearts_ui.has_method("set_max_hearts"):
-			var num_vehicles = simulation_engine._total_vehicles
-			# Ensure at least 1 heart if no cars, or if some default is needed
-			var calculated_hearts = max(1, num_vehicles) 
-			hearts_ui.set_max_hearts(calculated_hearts)
-			initial_hearts = calculated_hearts
-			hearts = calculated_hearts
-
+		# HeartsUI self-initializes from HeartCount label in _ready()
+		# Just sync our tracking variables with the UI
+		if hearts_ui.has_method("get_max_hearts"):
+			initial_hearts = hearts_ui.get_max_hearts()
+			hearts = hearts_ui.get_hearts()
 		else:
-			initial_hearts = settings.starting_hearts
+			initial_hearts = 10
 			hearts = initial_hearts
 
-		# Move hearts UI to our UI layer
-		hearts_ui.get_parent().remove_child(hearts_ui)
-		$UI.add_child(hearts_ui)
-		hearts_ui.position = Vector2(20, 20)
-
-		# Connect signals
-		if hearts_ui.has_signal("hearts_depleted"):
-			hearts_ui.hearts_depleted.connect(_on_hearts_depleted)
-
-		# Hide old hearts label
+		# Hide old hearts label since we're using the animated HeartsUI
 		if hearts_label:
 			hearts_label.visible = false
 	else:
@@ -2312,10 +2295,13 @@ func _on_hearts_depleted() -> void:
 
 ## Override lose_heart to use HeartsUI if available
 func _lose_heart() -> void:
+	print("[Main] _lose_heart() called. hearts_ui=%s" % hearts_ui)
 	if hearts_ui and hearts_ui.has_method("lose_heart"):
+		print("[Main] Calling hearts_ui.lose_heart()")
 		hearts_ui.lose_heart()
 		hearts = hearts_ui.get_hearts() if hearts_ui.has_method("get_hearts") else hearts - 1
 	else:
+		print("[Main] hearts_ui is null or doesn't have lose_heart, decrementing directly")
 		hearts -= 1
 
 	_update_hearts_label()

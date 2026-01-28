@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://cqkqswm0ovfss"]
+[gd_scene load_steps=17 format=3 uid="uid://cqkqswm0ovfss"]
 
 [ext_resource type="Texture2D" uid="uid://cwswoagt665ls" path="res://assets/Main_Menu_Assets/PanayIsland.png" id="1_fk1gg"]
 [ext_resource type="Texture2D" uid="uid://brr7ipwciwbal" path="res://assets/Main_Menu_Assets/Water.png" id="1_n0qu6"]
@@ -6,7 +6,6 @@
 [ext_resource type="Texture2D" uid="uid://hif4f5wjhr1r" path="res://assets/Main_Menu_Assets/FinalIsometricCircle.png" id="2_h56qn"]
 [ext_resource type="Texture2D" uid="uid://dynxnxmjf1tv8" path="res://assets/Main_Menu_Assets/LandMarkIcon.png" id="2_ws25f"]
 [ext_resource type="Script" uid="uid://cvthg1ndr8tms" path="res://scripts/ui/menu/CampaignMarkerHover.gd" id="3_wnmx6"]
-[ext_resource type="Texture2D" uid="uid://w4rbvou3017d" path="res://assets/Main_Menu_Assets/IloiloIcon2.png" id="5_rw8ch"]
 [ext_resource type="Texture2D" uid="uid://bpr6rufkdg11g" path="res://assets/Main_Menu_Assets/IloiloIcon.png" id="6_r0spa"]
 [ext_resource type="Texture2D" uid="uid://dnkuocl0lrhha" path="res://assets/Main_Menu_Assets/BanigFrame.png" id="8_6ivqm"]
 [ext_resource type="FontFile" uid="uid://bg6pof5832ljm" path="res://assets/fonts/pixel.ttf" id="9_5ywgh"]
@@ -113,8 +112,6 @@ ignore_texture_size = true
 stretch_mode = 0
 script = ExtResource("3_wnmx6")
 texture_rect_path = NodePath("TextureRect")
-icon1_path = NodePath("Icon1")
-icon2_path = NodePath("Icon2")
 label_path = NodePath("Label")
 
 [node name="Label" type="Label" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_1"]
@@ -145,35 +142,6 @@ offset_top = -40.0
 offset_right = 49.0
 offset_bottom = 8.0
 texture = ExtResource("2_ws25f")
-expand_mode = 1
-
-[node name="Icon1" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_1"]
-modulate = Color(1, 1, 1, 0)
-z_index = -1
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -44.0
-offset_top = -33.0
-offset_right = 9.0
-offset_bottom = 36.5625
-rotation = -0.2617994
-texture = ExtResource("5_rw8ch")
-expand_mode = 1
-
-[node name="Icon2" type="TextureRect" parent="CM_CampaignMenu/MapAspect/MapIsland/Level_1"]
-modulate = Color(1, 1, 1, 0)
-z_index = -1
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_right = 0.5
-offset_top = -48.0
-offset_right = 53.0
-offset_bottom = 21.5625
-rotation = 0.2617994
-texture = ExtResource("6_r0spa")
 expand_mode = 1
 
 [node name="Level_2" type="TextureButton" parent="CM_CampaignMenu/MapAspect/MapIsland"]

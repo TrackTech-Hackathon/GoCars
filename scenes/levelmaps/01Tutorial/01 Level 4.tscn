@@ -1115,6 +1115,9 @@ layout_mode = 3
 anchors_preset = 0
 metadata/_edit_use_custom_anchors = true
 
+[node name="HeartCount" parent="HeartsUI"]
+text = "2"
+
 [node name="Camera Border" type="CollisionShape2D" parent="."]
 visible = false
 position = Vector2(945.5, 320.5)
