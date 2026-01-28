@@ -120,56 +120,56 @@ const VEHICLE_CONFIG: Dictionary = {
 	VehicleType.SEDAN: {
 		"name": "Sedan",
 		"speed_mult": 1.0,
-		"size_mult": 1.3,
+		"size_mult": 1.1,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
 	VehicleType.ESTATE: {
 		"name": "Estate",
 		"speed_mult": 0.9,
-		"size_mult": 1.3,
+		"size_mult": 1.1,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
 	VehicleType.SPORT: {
 		"name": "Sport",
 		"speed_mult": 1.4,
-		"size_mult": 1.3,
+		"size_mult": 1.1,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
 	VehicleType.MICRO: {
 		"name": "Micro",
 		"speed_mult": 1.1,
-		"size_mult": 1.3,
+		"size_mult": 1.1,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
 	VehicleType.PICKUP: {
 		"name": "Pickup",
 		"speed_mult": 0.8,
-		"size_mult": 1.3,
+		"size_mult": 1.1,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
 	VehicleType.JEEPNEY_1: {
 		"name": "Jeepney 1",
 		"speed_mult": 0.7,
-		"size_mult": 1.3,
+		"size_mult": 1.1,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
 	VehicleType.JEEPNEY_2: {
 		"name": "Jeepney 2",
 		"speed_mult": 0.7,
-		"size_mult": 1.3,
+		"size_mult": 1.1,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	},
 	VehicleType.BUS: {
 		"name": "Bus",
 		"speed_mult": 0.6,
-		"size_mult": 1.3,
+		"size_mult": 1.1,
 		"can_lane_split": false,
 		"stopping_distance": 1.0
 	}
