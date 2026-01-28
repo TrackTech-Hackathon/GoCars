@@ -12,7 +12,6 @@ dest_files=["res://.godot/imported/DS-DIGI.TTF-4ae78dcaf03f9b07023377420c295838.
 
 [params]
 
-Rendering=null
 antialiasing=1
 generate_mipmaps=false
 disable_embedded_bitmaps=true
@@ -26,9 +25,7 @@ hinting=1
 subpixel_positioning=4
 keep_rounding_remainders=true
 oversampling=0.0
-Fallbacks=null
 fallbacks=[]
-Compress=null
 compress=true
 preload=[]
 language_support={}
