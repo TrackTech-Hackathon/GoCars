@@ -19,8 +19,9 @@ shader_parameter/colors_count = 20
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gddnk"]
 size = Vector2(24, 63)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ticv6"]
-size = Vector2(24, 31.5)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ticv6"]
+radius = 9.0
+height = 24.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_a1xih"]
 size = Vector2(24, 20)
@@ -70,8 +71,8 @@ position = Vector2(0, 0.5)
 shape = SubResource("RectangleShape2D_gddnk")
 
 [node name="RoadBuildingCollision" type="CollisionShape2D" parent="."]
-position = Vector2(0, -15.25)
-shape = SubResource("RectangleShape2D_ticv6")
+position = Vector2(0, -12)
+shape = SubResource("CapsuleShape2D_ticv6")
 debug_color = Color(0.9862762, 0, 0.3300369, 0.41960785)
 
 [node name="FrontChecker" type="CollisionShape2D" parent="."]

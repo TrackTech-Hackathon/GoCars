@@ -551,6 +551,12 @@ func _prompt_for_reset() -> void:
 	if not dialogue_box:
 		return
 
+	# Check if the failure panel is visible before showing the reset prompt
+	var failure_scene = _get_failure_popup_scene()
+	if not failure_scene or not failure_scene.visible:
+		# Don't show the reset prompt if the failed panel isn't visible
+		return
+
 	# Directly change the text instead of showing new dialogue
 	# This preserves the dialogue box state for when retry is clicked
 	dialogue_box.dialogue_text.text = "Click the RESET button to try again!"

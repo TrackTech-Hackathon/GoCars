@@ -15,8 +15,7 @@ shader_parameter/colors_count = 20
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_jeep2"]
 size = Vector2(26, 92)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wofrs"]
-size = Vector2(26, 46)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_wofrs"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ncnhg"]
 size = Vector2(26, 20)
@@ -64,8 +63,8 @@ region_rect = Rect2(288, 0, 48, 96)
 shape = SubResource("RectangleShape2D_jeep2")
 
 [node name="RoadBuildingCollision" type="CollisionShape2D" parent="."]
-position = Vector2(0, -23)
-shape = SubResource("RectangleShape2D_wofrs")
+position = Vector2(0, -15)
+shape = SubResource("CapsuleShape2D_wofrs")
 debug_color = Color(0.9862762, 0, 0.3300369, 0.41960785)
 
 [node name="FrontChecker" type="CollisionShape2D" parent="."]
