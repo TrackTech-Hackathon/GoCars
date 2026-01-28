@@ -231,13 +231,17 @@ while not car.at_end():
 
 ## 🖼️ Screenshots
 
-*(Screenshots coming soon)*
+### Main Menu
+![Main Menu](assets/Pictures/Main%20Menu.png)
 
-- Level selection screen
-- Code editor with live execution
-- Vehicles navigating roads
-- Heart loss animation
-- Level completion summary with stars
+### Level Selection
+![Level Selector](assets/Pictures/Level%20Selector%202.png)
+
+### Gameplay
+![Gameplay](assets/Pictures/image.png)
+
+### Character Dialogue
+![Character](assets/Pictures/maki%20talking.png)
 
 ---
 
@@ -425,8 +429,8 @@ The game uses an 18×12 grid tileset with:
 - ✅ CLAUDE.md (development notes)
 - ✅ Source code (all scripts)
 - ✅ Executable (when built)
-- ✅ Screenshots (once captured)
-- ✅ Demo video (once recorded)
+- ✅ Screenshots (main menu, level selector, gameplay, characters)
+- ⏳ Demo video (recording in progress)
 
 ---
 
