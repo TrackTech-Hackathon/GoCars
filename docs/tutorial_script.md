@@ -167,6 +167,11 @@ STEP 9: Crashed Cars Stay
 "Notice the crashed car is still there - darker and stopped."
 "Crashed cars become OBSTACLES! Other cars must avoid them."
 
+STEP 9.5: Press Reset
+[Arrow points to Reset button]
+"Press R or click RESET to try again!"
+[WAIT: Player presses reset]
+
 STEP 10: Run Your Code
 "Now run YOUR code and navigate safely!"
 [WAIT: Player runs code successfully]

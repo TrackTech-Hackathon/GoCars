@@ -47,8 +47,6 @@ var is_tutorial_active: bool = false
 var is_waiting_for_action: bool = false
 var is_awaiting_forced_crash: bool = false # NEW FLAG
 var _is_forced_failure: bool = false # Track if the current failure is a forced tutorial event
-var _allow_failure_panel_display: bool = true # Guard flag to prevent panel during dialogue sequence
-var _in_forced_failure_sequence: bool = false # Track when in forced failure dialogue sequence
 var pending_wait_action: String = ""
 
 ## Code validation tracking
@@ -92,7 +90,6 @@ func start_tutorial(level_name: String, parent_node: Node) -> bool:
 	# Reset tutorial state flags
 	_was_code_editor_prompt_shown = false
 	_expected_code = ""
-	_in_forced_failure_sequence = false
 
 	# Check if already completed and should skip
 	if GameData.has_completed_tutorial(level_name):
@@ -339,11 +336,6 @@ func _show_dialogue(step) -> void:
 
 ## Continue to next dialogue line or step
 func continue_dialogue() -> void:
-	# If in forced failure sequence, don't auto-advance
-	# Let _run_forced_failure_sequence() control the flow
-	if _in_forced_failure_sequence:
-		return
-
 	if not is_tutorial_active or not current_tutorial:
 		return
 
@@ -374,6 +366,11 @@ func notify_action(action_type: String) -> void:
 		pending_wait_action = ""
 		_expected_code = ""
 
+		# If this was a reset action during forced failure, clear the flag
+		if action_type == "reset" and _is_forced_failure:
+			_is_forced_failure = false
+			print("[Tutorial] Forced failure sequence complete, cleared flag")
+
 		# Clear any highlight from previous step
 		_clear_highlight()
 
@@ -397,6 +394,7 @@ func _action_matches(performed: String, waited: String) -> bool:
 		"run_code": ["player presses run", "player presses f5", "player runs code", "run", "f5"],
 		"open_code_editor": ["player clicks to open code editor", "open editor", "code editor"],
 		"type_code": ["player types", "player writes", "player writes code", "player adds", "player completes", "type", "car.go()"],
+		"reset": ["player presses reset", "player clicks reset", "reset", "r"],
 	}
 
 	for key in mappings:
@@ -509,60 +507,21 @@ func _restart_current_step() -> void:
 
 ## Called by main_tilemap when level fails during a tutorial
 func handle_scripted_failure(reason: String) -> void:
-	_debug_list_failure_popup_nodes()
 	if not is_tutorial_active:
 		return
 
-	# Check if this is a forced failure scenario (flag is set during crash sequence)
+	# Check if this is a forced failure scenario
 	if _is_forced_failure:
-		# This is a forced failure, so execute the full sequence with commentary
-		await _run_forced_failure_sequence(reason)
+		# Forced failure - don't show failure panel
+		# The tutorial steps will continue naturally with their dialogues
+		print("[Tutorial] Forced failure detected - normal dialogue flow continues")
+		return
 	else:
-		# This is a genuine player failure, just show the reset prompt if the failure panel is shown.
+		# This is a genuine player failure, show the failure panel
 		var failure_scene = _get_failure_popup_scene()
 		if failure_scene and failure_scene.has_method("show_failure_popup"):
 			failure_scene.show_failure_popup(reason)
 		_prompt_for_reset()
-
-## The full sequence for a scripted, forced failure
-func _run_forced_failure_sequence(reason: String) -> void:
-	print("[Tutorial] Starting forced failure sequence")
-
-	# Set flag to prevent continue_dialogue() from auto-advancing
-	_in_forced_failure_sequence = true
-
-	# 1. Advance to STEP 8B (crash explanation)
-	print("[Tutorial] Advancing to STEP 8B")
-	advance_step()
-
-	# 2. Wait for player to click through STEP 8B dialogue
-	print("[Tutorial] Waiting for STEP 8B continue...")
-	if dialogue_box and dialogue_box.has_signal("continue_pressed"):
-		await dialogue_box.continue_pressed
-		print("[Tutorial] STEP 8B continue clicked")
-
-	# 3. Advance to STEP 9 (obstacles explanation)
-	print("[Tutorial] Advancing to STEP 9")
-	advance_step()
-
-	# 4. Wait for player to click through STEP 9 dialogue
-	print("[Tutorial] Waiting for STEP 9 continue...")
-	if dialogue_box and dialogue_box.has_signal("continue_pressed"):
-		await dialogue_box.continue_pressed
-		print("[Tutorial] STEP 9 continue clicked")
-
-	# 5. Clear the flag - forced sequence is done
-	_in_forced_failure_sequence = false
-
-	# 6. NOW show the failure panel (after both explanations)
-	print("[Tutorial] Showing failure panel")
-	var failure_scene = _get_failure_popup_scene()
-	if failure_scene and failure_scene.has_method("show_failure_popup"):
-		failure_scene.show_failure_popup(reason)
-
-	# 7. Show the "Click Reset" prompt
-	print("[Tutorial] Showing reset prompt")
-	_prompt_for_reset()
 
 ## Shows the final prompt to reset the level
 func _prompt_for_reset() -> void:

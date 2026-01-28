@@ -51,7 +51,7 @@ func setup(parent_canvas_layer: CanvasLayer) -> void:
 
 	# Load window classes/scenes
 	var ToolbarScene = load("res://scenes/ui/toolbar.tscn")
-	var ReadmeWindowClass = load("res://scripts/ui/readme_window.gd")
+	var ReadmeWindowClass = load("res://scenes/ui/readme_window.tscn")
 	var SkillTreeWindowClass = load("res://scripts/ui/skill_tree_window.gd")
 
 	# Create toolbar
@@ -75,7 +75,7 @@ func setup(parent_canvas_layer: CanvasLayer) -> void:
 	ui_container.add_child(code_editor_window)
 	code_editor_window.set_virtual_filesystem(virtual_fs)
 
-	readme_window = ReadmeWindowClass.new()
+	readme_window = ReadmeWindowClass.instantiate()
 	readme_window.name = "ReadmeWindow"
 	readme_window.visible = false
 	ui_container.add_child(readme_window)

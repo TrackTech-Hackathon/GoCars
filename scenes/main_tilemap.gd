@@ -1255,9 +1255,9 @@ func _do_fast_retry() -> void:
 	_update_status("Reset - Ready")
 	run_button.disabled = false
 
-	# If a tutorial is active, notify it of the retry
+	# If a tutorial is active, notify it of the reset action
 	if TutorialManager and TutorialManager.is_active():
-		TutorialManager.notify_retry()
+		TutorialManager.notify_action("reset")
 
 	# Spawn initial cars again
 	_spawn_initial_cars()
@@ -2588,7 +2588,7 @@ func _force_spawn_crashing_car() -> void:
 
 	# Define crash position and direction
 	var crash_spawn_pos = Vector2(0 * TILE_SIZE + TILE_SIZE/2, 1 * TILE_SIZE + TILE_SIZE/2)
-	var crash_spawn_dir = Vector2.LEFT # Make it face left to drive off road
+	var crash_spawn_dir = Vector2.RIGHT # Make it face right (EAST) to drive off road
 
 	# Reposition and re-orient the player car for the crash
 	player_car.global_position = crash_spawn_pos
