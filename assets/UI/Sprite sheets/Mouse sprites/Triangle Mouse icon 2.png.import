@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cg1se462juwds"
-path="res://.godot/imported/Untitled25_20260121002907.png-0c1062ab05fd994d507441e68d46ffb6.ctex"
+uid="uid://b8jhk15fhb4m1"
+path="res://.godot/imported/Triangle Mouse icon 2.png-098c8a7e886845a00ccea9f919b48591.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://scenes/ui/code_editor/Untitled25_20260121002907.png"
-dest_files=["res://.godot/imported/Untitled25_20260121002907.png-0c1062ab05fd994d507441e68d46ffb6.ctex"]
+source_file="res://assets/UI/Sprite sheets/Mouse sprites/Triangle Mouse icon 2.png"
+dest_files=["res://.godot/imported/Triangle Mouse icon 2.png-098c8a7e886845a00ccea9f919b48591.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dc2my8dekkscf"
-path="res://.godot/imported/Untitled22.png-44a00e5328425df6f4d580046347926d.ctex"
+uid="uid://ddcjky5c7ebh8"
+path="res://.godot/imported/UI Big Play Button.png-1b335a3833bbebfcda806f3ebad70599.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://scenes/ui/code_editor/Untitled22.png"
-dest_files=["res://.godot/imported/Untitled22.png-44a00e5328425df6f4d580046347926d.ctex"]
+source_file="res://assets/UI/Sprite sheets/UI Big Play Button.png"
+dest_files=["res://.godot/imported/UI Big Play Button.png-1b335a3833bbebfcda806f3ebad70599.ctex"]
 
 [params]
 

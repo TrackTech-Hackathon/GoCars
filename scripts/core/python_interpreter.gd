@@ -153,6 +153,18 @@ func _is_car_busy() -> bool:
 			# Check if car is waiting (wait() command needs to block interpreter)
 			if car.has_method("is_waiting") and car.is_waiting:
 				return true
+
+			# Check if car has pending go/stop commands (blocks until movement state changes)
+			if car.has_method("get"):
+				if car.get("_pending_go_command"):
+					return true
+				if car.get("_pending_stop_command"):
+					return true
+
+	# REMOVED: Stoplight wait check was blocking car execution
+	# Each interpreter should only check its own object's state, not other objects
+	# This makes car and stoplight interpreters truly independent
+
 	return false
 
 
@@ -204,6 +216,11 @@ func pause_execution() -> void:
 ## Resume execution
 func resume_execution() -> void:
 	_is_paused = false
+
+
+## Get current executing line number
+func get_current_line() -> int:
+	return _current_line
 
 
 ## Legacy execute function (runs all at once - for backwards compatibility)
@@ -858,6 +875,18 @@ func _evaluate_call_expr(expr: Dictionary) -> Variant:
 				_add_error("TypeError: round() requires a number", _current_line)
 				return null
 			return 0
+		# Handle wait() built-in function (for stoplight code)
+		if method == "wait":
+			if args.size() > 0:
+				var val = args[0]
+				if val is int or val is float:
+					# Call wait on the registered stoplight
+					if "stoplight" in _game_objects:
+						_game_objects["stoplight"].wait(float(val))
+					return null
+				_add_error("TypeError: wait() requires a number", _current_line)
+				return null
+			return null
 		# NEW: Check if it's a user-defined function
 		if _functions.has(method):
 			return _call_user_function(method, args)
@@ -912,6 +941,12 @@ func _is_car_near_stoplight(stoplight: Variant) -> bool:
 
 
 func _call_method(obj: Variant, obj_name: String, method: String, args: Array) -> Variant:
+	# Debug output for stoplight and car method calls
+	if obj_name == "stoplight":
+		print("[INTERPRETER] Calling stoplight.", method, "() with args: ", args)
+	elif obj_name == "car":
+		print("[INTERPRETER] Calling car.", method, "() with args: ", args)
+	
 	# Emit command signal for the simulation engine
 	command_executed.emit(obj_name, method, args)
 

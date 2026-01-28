@@ -81,13 +81,12 @@ func get_level_display_name_by_path(path: String) -> String:
 
 ## Extract level name from a level instance
 func _extract_level_name(level_instance: Node) -> String:
-	# Look for LevelSettings/LevelName label
-	var level_info = level_instance.get_node_or_null("LevelSettings")
-	if level_info:
-		var level_name_label = level_info.get_node_or_null("LevelName")
-		if level_name_label and level_name_label is Label:
-			return level_name_label.text.strip_edges()
-	return ""
+	# Use LevelSettings to get level name (with backward compatibility)
+	var settings = LevelSettings.from_node(level_instance)
+	var name = settings.level_name
+	if name.is_empty():
+		return level_instance.name  # Fallback to node name
+	return name
 
 
 ## Get level name from an already loaded level instance

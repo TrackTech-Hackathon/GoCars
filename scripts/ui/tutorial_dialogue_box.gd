@@ -8,6 +8,7 @@ extends CanvasLayer
 ## Signals
 signal continue_pressed()
 signal skip_pressed()
+signal retry_pressed()
 
 ## Node references
 @onready var dialogue_panel: Panel = $DialoguePanel
@@ -21,6 +22,8 @@ signal skip_pressed()
 ## Maki sprite textures
 var sprites: Dictionary = {}
 var current_emotion: String = "normal"
+
+
 
 ## Typewriter effect
 var _typewriter_tween: Tween = null

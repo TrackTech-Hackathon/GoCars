@@ -1,20 +1,80 @@
-[gd_scene load_steps=12 format=3 uid="uid://cc0deed1t0r"]
+[gd_scene load_steps=27 format=3 uid="uid://cc0deed1t0r"]
 
 [ext_resource type="Script" uid="uid://bmgmiyp6xksf" path="res://scripts/ui/code_editor_window.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://cgbavmtdf15km" path="res://assets/UI/Untitled27_20260121011226.png" id="1_ypdp2"]
 [ext_resource type="Texture2D" uid="uid://bpp4egpvi1amx" path="res://assets/UI/Untitled19.png" id="2_0iwse"]
 [ext_resource type="PackedScene" uid="uid://cf1leexpl0rer" path="res://scenes/ui/code_editor/file_explorer.tscn" id="2_file_explorer"]
+[ext_resource type="FontFile" uid="uid://dcwhex08vx2qh" path="res://assets/fonts/pixelFont-7-8x14-sproutLands.ttf" id="2_qtohr"]
+[ext_resource type="Texture2D" uid="uid://bpqhh0b4t8ipb" path="res://assets/UI/Sprite sheets/buttons/Normal Maximize.png" id="3_0v0sx"]
 [ext_resource type="PackedScene" uid="uid://cdsh2e12boepr" path="res://scenes/ui/code_editor/terminal_panel.tscn" id="3_terminal_panel"]
 [ext_resource type="Texture2D" uid="uid://cmhpkgys7cirg" path="res://assets/UI/Pause Button.png" id="3_ypdp2"]
 [ext_resource type="Texture2D" uid="uid://ust86fnsqddb" path="res://Untitled21_20260121003628.png" id="4_qly7m"]
+[ext_resource type="Texture2D" uid="uid://cpl8yxbmdcyc4" path="res://assets/UI/Sprite sheets/buttons/Maximize Button.png" id="4_uo274"]
+[ext_resource type="Texture2D" uid="uid://cj1kjs52xbb4s" path="res://assets/UI/Sprite sheets/buttons/Normal Minimize.png" id="5_0v0sx"]
+[ext_resource type="Texture2D" uid="uid://dl33j1x5drn4f" path="res://assets/UI/Sprite sheets/buttons/Close Button.png" id="6_0ejjt"]
+[ext_resource type="Texture2D" uid="uid://b1as05u3w5eaj" path="res://assets/UI/Sprite sheets/buttons/Minimize Button.png" id="6_uo274"]
+[ext_resource type="Texture2D" uid="uid://bq576j3kdot3g" path="res://assets/UI/Sprite sheets/buttons/Hover Close.png" id="7_0v0sx"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_84dpb"]
+bg_color = Color(0.86285365, 0.72563636, 0.54137826, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.9098039, 0.8117647, 0.6509804, 1)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+corner_radius_bottom_right = 25
+corner_radius_bottom_left = 25
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qtohr"]
+bg_color = Color(0.8627451, 0.7254902, 0.5411765, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_color = Color(0.9098039, 0.8117647, 0.6509804, 1)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_0v0sx"]
+texture = ExtResource("3_0v0sx")
+region_rect = Rect2(2.9182997, 1.6270111, 26.289063, 28.435822)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_36amu"]
+texture = ExtResource("4_uo274")
+region_rect = Rect2(1.8666077, 1.036691, 28.13176, 28.991682)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_uo274"]
+texture = ExtResource("5_0v0sx")
+region_rect = Rect2(2.8599129, 1.4818164, 26.313362, 28.525938)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_qly7m"]
-texture = ExtResource("1_ypdp2")
+texture = ExtResource("6_uo274")
+region_rect = Rect2(1.8316536, -0.07172012, 28.509449, 30.032856)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_c4xln"]
+texture = ExtResource("6_0ejjt")
+texture_margin_left = 0.3006711
+region_rect = Rect2(3.4607563, 1.6802747, 24.873798, 27.630138)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_bd2a1"]
+texture = ExtResource("7_0v0sx")
+region_rect = Rect2(1.948905, 0.025421143, 28.192234, 30.138361)
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_qly7m"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+color = Color(0.9098039, 0.8117647, 0.6509804, 1)
+grow_begin = -9.0
+grow_end = -9.0
+thickness = 6
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_qtohr"]
 texture = ExtResource("2_0iwse")
 axis_stretch_horizontal = 2
 axis_stretch_vertical = 2
+region_rect = Rect2(0, 0, 1280.1746, 1281.3314)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_8x871"]
 texture = ExtResource("3_ypdp2")
@@ -22,11 +82,23 @@ texture = ExtResource("3_ypdp2")
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_84dpb"]
 texture = ExtResource("4_qly7m")
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8x871"]
+bg_color = Color(0.21, 0.06853, 0.029399997, 0.78431374)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
 [node name="CodeEditorWindow" type="Panel"]
 custom_minimum_size = Vector2(700, 500)
-offset_right = 900.0
-offset_bottom = 600.0
-theme_override_styles/panel = SubResource("StyleBoxTexture_qly7m")
+offset_right = 789.0
+offset_bottom = 560.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_84dpb")
 script = ExtResource("1_script")
 min_size = Vector2(700, 500)
 max_size = Vector2(1600, 1000)
@@ -46,6 +118,7 @@ size_flags_vertical = 3
 [node name="TitleBar" type="PanelContainer" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_qtohr")
 
 [node name="TitleHBox" type="HBoxContainer" parent="VBoxContainer/TitleBar"]
 layout_mode = 2
@@ -58,27 +131,31 @@ layout_mode = 2
 [node name="TitleLabel" type="Label" parent="VBoxContainer/TitleBar/TitleHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_constants/shadow_outline_size = 12
+theme_override_fonts/font = ExtResource("2_qtohr")
+theme_override_font_sizes/font_size = 20
 text = "Code Editor"
-
-[node name="MinimizeButton" type="Button" parent="VBoxContainer/TitleBar/TitleHBox"]
-custom_minimum_size = Vector2(28, 28)
-layout_mode = 2
-tooltip_text = "Minimize"
-theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
-theme_override_font_sizes/font_size = 18
-text = "−"
-flat = true
 
 [node name="MaximizeButton" type="Button" parent="VBoxContainer/TitleBar/TitleHBox"]
 custom_minimum_size = Vector2(28, 28)
 layout_mode = 2
 tooltip_text = "Maximize"
-theme_override_colors/font_color = Color(0.7, 0.7, 0.75, 1)
 theme_override_font_sizes/font_size = 14
-text = "□"
-flat = true
+theme_override_styles/normal = SubResource("StyleBoxTexture_0v0sx")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_36amu")
+theme_override_styles/hover = SubResource("StyleBoxTexture_36amu")
+theme_override_styles/focus = SubResource("StyleBoxTexture_36amu")
+
+[node name="MinimizeButton" type="Button" parent="VBoxContainer/TitleBar/TitleHBox"]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+tooltip_text = "Minimize"
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxTexture_uo274")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_qly7m")
+theme_override_styles/hover = SubResource("StyleBoxTexture_qly7m")
 
 [node name="CloseButton" type="Button" parent="VBoxContainer/TitleBar/TitleHBox"]
 custom_minimum_size = Vector2(28, 28)
@@ -86,12 +163,17 @@ layout_mode = 2
 tooltip_text = "Close"
 theme_override_colors/font_color = Color(0.9, 0.4, 0.4, 1)
 theme_override_font_sizes/font_size = 20
-text = "×"
-flat = true
+theme_override_styles/normal = SubResource("StyleBoxTexture_c4xln")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_bd2a1")
+theme_override_styles/hover = SubResource("StyleBoxTexture_bd2a1")
 
 [node name="SpacerRight" type="Control" parent="VBoxContainer/TitleBar/TitleHBox"]
 custom_minimum_size = Vector2(4, 0)
 layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxLine_qly7m")
 
 [node name="ContentContainer" type="MarginContainer" parent="VBoxContainer"]
 layout_mode = 2
@@ -105,6 +187,7 @@ theme_override_constants/margin_bottom = 8
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_constants/separation = 5
 
 [node name="ControlBar" type="HBoxContainer" parent="VBoxContainer/ContentContainer/ContentVBox"]
 layout_mode = 2
@@ -115,22 +198,33 @@ custom_minimum_size = Vector2(37, 8.235)
 layout_mode = 2
 tooltip_text = "Run code (F5 or Ctrl+Enter)"
 theme_override_styles/normal = SubResource("StyleBoxTexture_qtohr")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_qtohr")
+theme_override_styles/hover = SubResource("StyleBoxTexture_qtohr")
+theme_override_styles/focus = SubResource("StyleBoxTexture_qtohr")
 
 [node name="PauseButton" type="Button" parent="VBoxContainer/ContentContainer/ContentVBox/ControlBar"]
 custom_minimum_size = Vector2(37, 0)
 layout_mode = 2
 tooltip_text = "Pause execution (Space)"
 theme_override_styles/normal = SubResource("StyleBoxTexture_8x871")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_8x871")
+theme_override_styles/hover = SubResource("StyleBoxTexture_8x871")
+theme_override_styles/focus = SubResource("StyleBoxTexture_8x871")
 
 [node name="ResetButton" type="Button" parent="VBoxContainer/ContentContainer/ContentVBox/ControlBar"]
 custom_minimum_size = Vector2(37, 0)
 layout_mode = 2
 tooltip_text = "Reset level (R or Ctrl+R)"
 theme_override_styles/normal = SubResource("StyleBoxTexture_84dpb")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_84dpb")
+theme_override_styles/hover = SubResource("StyleBoxTexture_84dpb")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_84dpb")
+theme_override_styles/focus = SubResource("StyleBoxTexture_84dpb")
 
 [node name="SpeedButton" type="MenuButton" parent="VBoxContainer/ContentContainer/ContentVBox/ControlBar"]
 layout_mode = 2
 tooltip_text = "Change simulation speed"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "1x ▼"
 
 [node name="MainVSplit" type="VSplitContainer" parent="VBoxContainer/ContentContainer/ContentVBox"]
@@ -143,12 +237,17 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="FileExplorer" parent="VBoxContainer/ContentContainer/ContentVBox/MainVSplit/HSplit" instance=ExtResource("2_file_explorer")]
+custom_minimum_size = Vector2(200.42, 0)
 layout_mode = 2
+theme_override_constants/separation = 9
 
 [node name="CodeEdit" type="CodeEdit" parent="VBoxContainer/ContentContainer/ContentVBox/MainVSplit/HSplit"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_8x871")
 scroll_smooth = true
 caret_blink = true
 caret_blink_interval = 0.5
@@ -168,6 +267,7 @@ layout_mode = 2
 [node name="StatusLabel" type="Label" parent="VBoxContainer/ContentContainer/ContentVBox/StatusBar"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 text = "Ln 1, Col 1 | main.py | ✓ Saved"
 
 [node name="Spacer" type="Control" parent="VBoxContainer/ContentContainer/ContentVBox/StatusBar"]
@@ -176,5 +276,5 @@ size_flags_horizontal = 3
 
 [node name="MetricsLabel" type="Label" parent="VBoxContainer/ContentContainer/ContentVBox/StatusBar"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.8, 0.6, 1)
+theme_override_colors/font_color = Color(1.4679879e-06, 0.6295585, 0.22552982, 1)
 text = "Steps: 0 | LOC: 0"

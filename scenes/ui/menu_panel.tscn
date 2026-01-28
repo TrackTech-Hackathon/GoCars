@@ -1,7 +1,49 @@
-[gd_scene load_steps=3 format=3 uid="uid://ghvhotmyn81m"]
+[gd_scene load_steps=13 format=3 uid="uid://ghvhotmyn81m"]
 
 [ext_resource type="Script" uid="uid://ereanulcubu4" path="res://scripts/ui/menu_panel.gd" id="1_script"]
-[ext_resource type="FontFile" uid="uid://bg6pof5832ljm" path="res://assets/fonts/pixel.ttf" id="2_font"]
+[ext_resource type="FontFile" uid="uid://dcwhex08vx2qh" path="res://assets/fonts/pixelFont-7-8x14-sproutLands.ttf" id="2_7rmui"]
+[ext_resource type="FontFile" uid="uid://by2afd2myjmcg" path="res://assets/fonts/Game Paused DEMO.otf" id="3_e5it4"]
+[ext_resource type="Texture2D" uid="uid://ddcjky5c7ebh8" path="res://assets/UI/Sprite sheets/UI Big Play Button.png" id="4_yp7by"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lf2ey"]
+bg_color = Color(0.8627451, 0.7254902, 0.5411765, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.89411765, 0.78431374, 0.6156863, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_wmis4"]
+color = Color(0.6509804, 0.47843137, 0.3882353, 1)
+thickness = 2
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_10waa"]
+texture = ExtResource("4_yp7by")
+region_rect = Rect2(2.5921574, 2.0054839, 90.533966, 27.203714)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_t8l8s"]
+texture = ExtResource("4_yp7by")
+region_rect = Rect2(98.669304, 4.079156, 90.469215, 25.000439)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_8twnq"]
+texture = ExtResource("4_yp7by")
+region_rect = Rect2(2.863781, 1.6333196, 90.353775, 27.769552)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_ic5wi"]
+texture = ExtResource("4_yp7by")
+region_rect = Rect2(98.69681, 3.7796433, 90.25665, 25.343805)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_l8cl3"]
+texture = ExtResource("4_yp7by")
+region_rect = Rect2(2.566534, 1.8362594, 90.729836, 27.290768)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_081kt"]
+texture = ExtResource("4_yp7by")
+region_rect = Rect2(98.69833, 3.780607, 90.41525, 25.324188)
 
 [node name="MenuPanel" type="CanvasLayer"]
 layer = 200
@@ -9,52 +51,86 @@ script = ExtResource("1_script")
 
 [node name="Panel" type="Panel" parent="."]
 visible = false
+custom_minimum_size = Vector2(0, 1.04)
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -251.0
-offset_top = -113.0
-offset_right = 239.0
-offset_bottom = 80.0
+offset_left = -163.5
+offset_top = -175.0
+offset_right = 163.5
+offset_bottom = 175.0
 grow_horizontal = 2
 grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_lf2ey")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = -20.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -132.0
+offset_top = -159.0
+offset_right = 129.0
+offset_bottom = 159.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 27
 
 [node name="TitleLabel" type="Label" parent="Panel/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 28
+theme_override_fonts/font = ExtResource("2_7rmui")
+theme_override_font_sizes/font_size = 63
 text = "Menu"
 horizontal_alignment = 1
 
-[node name="BackToLevelsButton" type="Button" parent="Panel/VBoxContainer"]
+[node name="HSeparator7" type="HSeparator" parent="Panel/VBoxContainer"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
+theme_override_styles/separator = SubResource("StyleBoxLine_wmis4")
+
+[node name="BackToLevelsButton" type="Button" parent="Panel/VBoxContainer"]
+custom_minimum_size = Vector2(10.03, 50.44)
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(0.6509804, 0.47843137, 0.3882353, 1)
+theme_override_fonts/font = ExtResource("3_e5it4")
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxTexture_10waa")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_t8l8s")
+theme_override_styles/hover = SubResource("StyleBoxTexture_t8l8s")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_t8l8s")
+theme_override_styles/focus = SubResource("StyleBoxTexture_t8l8s")
 text = "Back to Levels"
 
 [node name="ResetWindowsButton" type="Button" parent="Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50.44)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(0.6509804, 0.47843137, 0.3882353, 1)
+theme_override_fonts/font = ExtResource("3_e5it4")
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxTexture_8twnq")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_ic5wi")
+theme_override_styles/hover = SubResource("StyleBoxTexture_ic5wi")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_ic5wi")
+theme_override_styles/focus = SubResource("StyleBoxTexture_ic5wi")
 text = "Reset Window Positions"
 
 [node name="CloseButton" type="Button" parent="Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50.44)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
+size_flags_vertical = 8
+theme_override_colors/font_color = Color(0.6509804, 0.47843137, 0.3882353, 1)
+theme_override_fonts/font = ExtResource("3_e5it4")
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxTexture_l8cl3")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_081kt")
+theme_override_styles/hover = SubResource("StyleBoxTexture_081kt")
+theme_override_styles/disabled = SubResource("StyleBoxTexture_081kt")
+theme_override_styles/focus = SubResource("StyleBoxTexture_081kt")
 text = "Close"

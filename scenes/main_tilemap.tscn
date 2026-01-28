@@ -1,7 +1,18 @@
-[gd_scene load_steps=3 format=3 uid="uid://cpbh6qdo618ux"]
+[gd_scene load_steps=8 format=3 uid="uid://cpbh6qdo618ux"]
 
 [ext_resource type="Script" uid="uid://df74itlomy7yj" path="res://scripts/core/simulation_engine.gd" id="1_sim"]
 [ext_resource type="Script" uid="uid://c1n1vn6nbuf04" path="res://scenes/main_tilemap.gd" id="2_main_tilemap"]
+[ext_resource type="Texture2D" uid="uid://dt40i576w11p1" path="res://assets/UI/Sprite sheets/Sprite sheet for Basic Pack.png" id="3_24qlu"]
+[ext_resource type="FontFile" uid="uid://by2afd2myjmcg" path="res://assets/fonts/Game Paused DEMO.otf" id="4_6np48"]
+[ext_resource type="FontFile" uid="uid://dcwhex08vx2qh" path="res://assets/fonts/pixelFont-7-8x14-sproutLands.ttf" id="5_ttp8s"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_6np48"]
+texture = ExtResource("3_24qlu")
+region_rect = Rect2(644.8423, 67.81682, 22.356445, 24.1371)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_ttp8s"]
+texture = ExtResource("3_24qlu")
+region_rect = Rect2(676.9333, 67.87599, 22.198242, 24.374512)
 
 [node name="Main" type="Node2D"]
 script = ExtResource("2_main_tilemap")
@@ -18,29 +29,41 @@ zoom = Vector2(0.5, 0.5)
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="MenuButton" type="Button" parent="UI"]
+custom_minimum_size = Vector2(45, 45)
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -120.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = 60.0
-grow_horizontal = 0
-text = "Menu"
-
-[node name="HeartsLabel" type="Label" parent="UI"]
-offset_left = 347.0
-offset_top = 21.0
-offset_right = 527.0
-offset_bottom = 51.0
-text = "Hearts: 10"
-
-[node name="RoadCardsLabel" type="Label" parent="UI"]
-offset_left = 220.0
-offset_top = 20.0
-offset_right = 400.0
+offset_left = -49.0
+offset_top = 5.0
+offset_right = -4.0
 offset_bottom = 50.0
+grow_horizontal = 0
+theme_override_styles/normal = SubResource("StyleBoxTexture_6np48")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_ttp8s")
+theme_override_styles/hover = SubResource("StyleBoxTexture_ttp8s")
+theme_override_styles/focus = SubResource("StyleBoxTexture_6np48")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI"]
+offset_left = 173.0
+offset_top = 9.0
+offset_right = 495.0
+offset_bottom = 49.0
+theme_override_constants/separation = 29
+
+[node name="SpeedLabel" type="Label" parent="UI/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_6np48")
+text = "Speed: 1.0x"
+
+[node name="RoadCardsLabel" type="Label" parent="UI/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_6np48")
 text = "Road Cards: 10"
+
+[node name="HeartsLabel" type="Label" parent="UI/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("4_6np48")
+text = "Hearts: 10"
 
 [node name="CodeEditor" type="TextEdit" parent="UI"]
 offset_left = 20.0
@@ -61,14 +84,9 @@ offset_left = 20.0
 offset_top = 60.0
 offset_right = 400.0
 offset_bottom = 90.0
+theme_override_fonts/font = ExtResource("5_ttp8s")
+theme_override_font_sizes/font_size = 21
 text = "Status: Ready"
-
-[node name="SpeedLabel" type="Label" parent="UI"]
-offset_left = 438.0
-offset_top = 21.0
-offset_right = 618.0
-offset_bottom = 51.0
-text = "Speed: 1.0x"
 
 [node name="ResultPopup" type="Panel" parent="UI"]
 visible = false
@@ -83,7 +101,7 @@ offset_left = 20.0
 offset_top = 20.0
 offset_right = 380.0
 offset_bottom = 60.0
-text = "LEVEL COMPLETE!"
+text = "LEVEL COMPLETE!sadwaj"
 horizontal_alignment = 1
 vertical_alignment = 1
 

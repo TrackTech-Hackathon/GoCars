@@ -1,12 +1,8 @@
-[gd_resource type="Theme" load_steps=4 format=3 uid="uid://oh1p0ojtw4tq"]
-
-[ext_resource type="Texture2D" uid="uid://cgbavmtdf15km" path="res://assets/UI/Untitled27_20260121011226.png" id="1_cfbn3"]
+[gd_resource type="Theme" load_steps=3 format=3 uid="uid://oh1p0ojtw4tq"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_cfbn3"]
-texture = ExtResource("1_cfbn3")
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_3yem3"]
-texture = ExtResource("1_cfbn3")
 
 [resource]
 Button/styles/normal = SubResource("StyleBoxTexture_cfbn3")

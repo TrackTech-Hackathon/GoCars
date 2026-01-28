@@ -12,9 +12,9 @@ const RoadTileProxy = preload("res://scripts/map_editor/road_tile_proxy.gd")
 @onready var code_editor: TextEdit = $UI/CodeEditor
 @onready var run_button: Button = $UI/RunButton
 @onready var status_label: Label = $UI/StatusLabel
-@onready var speed_label: Label = $UI/SpeedLabel
-@onready var hearts_label: Label = $UI/HeartsLabel
-@onready var road_cards_label: Label = $UI/RoadCardsLabel
+@onready var speed_label: Label = $UI/HBoxContainer/SpeedLabel
+@onready var hearts_label: Label = $UI/HBoxContainer/HeartsLabel
+@onready var road_cards_label: Label = $UI/HBoxContainer/RoadCardsLabel
 # Stoplights are now spawned from stoplight tiles in levels
 # Use _spawned_stoplights array to access them
 
@@ -22,13 +22,16 @@ const RoadTileProxy = preload("res://scripts/map_editor/road_tile_proxy.gd")
 var window_manager: Variant = null
 var use_new_ui: bool = true
 
-# Result popup elements
+# Result popup elements (old system - deprecated)
 @onready var result_popup: Panel = $UI/ResultPopup
 @onready var result_title: Label = $UI/ResultPopup/ResultTitle
 @onready var result_message: Label = $UI/ResultPopup/ResultMessage
 @onready var retry_button: Button = $UI/ResultPopup/RetryButton
 @onready var next_button: Button = $UI/ResultPopup/NextButton
 var menu_button: Button = null  # Created dynamically
+
+# Completion Summary UI (new system)
+var completion_summary: CompletionSummary = null
 
 # Help panel elements
 @onready var help_panel: Panel = $UI/HelpPanel
@@ -92,6 +95,12 @@ var level_cars_config: Dictionary = {}  # group_name -> Array of {type, color} o
 # Spawned stoplights (from stoplight tiles)
 var _spawned_stoplights: Array = []
 
+# Stoplight hover UI
+var stoplight_code_popup: Variant = null  # StoplightCodePopup instance
+var _hovered_stoplight: Variant = null  # Currently hovered stoplight
+var _pinned_stoplight: Variant = null  # Stoplight pinned by click
+var _popup_pinned: bool = false  # Whether the popup is pinned open
+
 # Tile editing state
 var is_editing_enabled: bool = true
 var is_building_enabled: bool = false  # Whether building roads is enabled for this level
@@ -110,9 +119,13 @@ var selection_highlight: ColorRect = null
 var level_timer: float = 0.0
 var timer_running: bool = false
 var level_won: bool = false
+var level_failed: bool = false  # Prevents victory logic after failure
 var code_is_running: bool = false  # True when code is executing (cars moving from code)
 var current_level_id: String = ""
 var current_level_display_name: String = ""
+
+# Track last heart loss cause for better failure hints
+var last_heart_loss_cause: String = "crash"  # crash, red_light, off_road
 
 # Hearts UI (loaded from level)
 var hearts_ui: Node = null
@@ -126,11 +139,18 @@ func _ready() -> void:
 	if MusicManager:
 		MusicManager.set_game_volume()
 
+	# Print debug info to confirm script and method
+	print("[MainTilemap] main_tilemap.gd _ready() called. has_method('show_failure_popup'): %s" % has_method("show_failure_popup"))
+	print("[MainTilemap] Script path: %s, Instance ID: %s" % [get_script(), get_instance_id()])
+
 	# Initialize level loader
 	level_loader = LevelLoaderScript.new()
 
 	# Create stats UI panel
 	_setup_stats_ui_panel()
+
+	# Initialize Completion Summary UI
+	_init_completion_summary()
 
 	# Connect UI signals
 	run_button.pressed.connect(_on_run_button_pressed)
@@ -164,6 +184,9 @@ func _ready() -> void:
 	
 	# Create menu panel
 	_create_menu_panel()
+
+	# Setup stoplight code popup
+	_setup_stoplight_popup()
 
 	# Note: Stoplights are spawned from tiles when level is loaded
 
@@ -238,6 +261,9 @@ func _process(delta: float) -> void:
 
 	# Update preview tile position
 	_update_preview_tile()
+
+	# Check for stoplight hover
+	_check_stoplight_hover()
 
 
 func _update_preview_tile() -> void:
@@ -362,7 +388,9 @@ func _load_level(index: int) -> void:
 	level_timer = 0.0
 	timer_running = true  # Timer starts immediately on level load
 	level_won = false
+	level_failed = false  # Reset failure flag for new level
 	code_is_running = false  # Code not running yet - timer at 1x speed
+	last_heart_loss_cause = "crash"  # Reset to default cause
 	_update_timer_label()
 
 	# Calculate camera bounds and set initial position
@@ -566,13 +594,32 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	next_car_id += 1
 
 	# Set position and direction from spawn data
-	new_car.global_position = spawn["position"]
-	new_car.direction = spawn["direction"]
-	new_car.rotation = spawn["rotation"]
+	if spawn.has("position"):
+		new_car.global_position = spawn["position"]
+	if spawn.has("direction"):
+		new_car.direction = spawn["direction"]
+	if spawn.has("rotation"):
+		new_car.rotation = spawn["rotation"]
+	if spawn.has("facing"):
+		# Convert facing string to direction if needed (for forced tutorial events)
+		new_car.direction = spawn["facing"]
 
 	# Set spawn group if present
 	if spawn.has("group"):
-		new_car.set_spawn_group(spawn["group"])
+		var group_val = spawn["group"]
+		var group_enum: int
+
+		if typeof(group_val) == TYPE_STRING:
+			# If it's a string (from my forced scenario), convert it.
+			group_enum = _get_spawngroup_enum_from_string(group_val)
+		elif typeof(group_val) == TYPE_INT:
+			# If it's an int (from the tilemap data), use it directly.
+			group_enum = group_val
+		else:
+			# Fallback for any other type
+			group_enum = Vehicle.SpawnGroup.NONE
+			
+		new_car.set_spawn_group(group_enum)
 
 	# Initialize navigation state for proper guideline following
 	# The entry_dir tells us what direction the car will enter the NEXT tile from
@@ -624,6 +671,21 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	var color_str = new_car.get_color_name() if new_car.has_method("get_color_name") else "?"
 	_update_status("Spawned %s (%s): %s (Group %s)" % [new_car.get_vehicle_type_name(), color_str, new_car.vehicle_id, group_str])
 	return new_car
+
+
+## Convert spawn group string to enum value
+func _get_spawngroup_enum_from_string(group_string: String) -> int:
+	match group_string.to_upper():
+		"A":
+			return Vehicle.SpawnGroup.A
+		"B":
+			return Vehicle.SpawnGroup.B
+		"C":
+			return Vehicle.SpawnGroup.C
+		"D":
+			return Vehicle.SpawnGroup.D
+		_:
+			return Vehicle.SpawnGroup.NONE
 
 
 ## Get opposite direction string
@@ -707,7 +769,8 @@ func _on_run_button_pressed() -> void:
 		return
 
 	# Notify tutorial system that player pressed Run
-	_notify_tutorial_action("run_code")
+	if TutorialManager and TutorialManager.is_active():
+		TutorialManager.notify_action("run_code")
 
 	# Mark paths dirty
 	if road_layer:
@@ -796,6 +859,7 @@ func _on_car_reached_destination(car_id: String) -> void:
 
 
 func _on_car_crashed(car_id: String) -> void:
+	last_heart_loss_cause = "crash"
 	_lose_heart()
 	_update_status("Car '%s' crashed! Lost 1 heart" % car_id)
 	if engine_audio and engine_audio.playing:
@@ -805,6 +869,7 @@ func _on_car_crashed(car_id: String) -> void:
 
 
 func _on_car_off_road(car_id: String) -> void:
+	last_heart_loss_cause = "off_road"
 	_lose_heart()
 	_update_status("Car '%s' went off-road! Lost 1 heart" % car_id)
 	if engine_audio and engine_audio.playing:
@@ -814,23 +879,35 @@ func _on_car_off_road(car_id: String) -> void:
 
 
 func _on_car_ran_red_light(vehicle_id: String, _stoplight_id: String) -> void:
-	hearts -= 1
-	_update_hearts_label()
+	last_heart_loss_cause = "red_light"
+	_lose_heart()
 	_update_status("%s ran a red light! (-1 heart)" % vehicle_id)
-	if hearts <= 0:
-		_update_status("GAME OVER - Press R to Reset")
-		status_label.add_theme_color_override("font_color", Color.RED)
 
 
 func _on_level_completed(stars: int) -> void:
+	# Don't show victory if already failed (race condition prevention)
+	if level_failed:
+		return
+
 	_update_status("Level Complete! Stars: %s" % stars)
 	_show_victory_popup(stars)
 
 
 func _on_level_failed(reason: String) -> void:
+	# If a tutorial is active, let it handle the failure sequence
+	if TutorialManager and TutorialManager.is_active():
+		# Notify the tutorial manager that the crash was detected
+		if TutorialManager.is_awaiting_forced_crash:
+			TutorialManager.emit_signal("forced_crash_completed")
+
+		# The TutorialManager will be responsible for showing the failure popup after its own dialogue.
+		await TutorialManager.handle_scripted_failure(reason)
+
+		return
+
 	_update_status("Level Failed: %s" % reason)
 	_stop_all_cars()
-	_show_failure_popup(reason)
+	show_failure_popup(reason)
 
 
 ## Stop all cars when level fails
@@ -882,25 +959,22 @@ func _on_toggle_help_pressed() -> void:
 # ============================================
 
 func _show_victory_popup(stars: int) -> void:
+	# Hide stats UI panel to prevent overlap
+	if stats_ui_panel:
+		stats_ui_panel.hide_panel()
+
 	# Stop timer on win
 	timer_running = false
 	level_won = true
 
 	# Save best time
-	var is_new_best = false
+	var best_time = 0.0
 	if GameData:
-		is_new_best = GameData.save_best_time(current_level_id, level_timer)
+		GameData.save_best_time(current_level_id, level_timer)
+		best_time = GameData.get_best_time(current_level_id)
 		GameData.mark_level_completed(current_level_id)
 
-	result_title.text = "%s\nCOMPLETE!" % current_level_display_name
-
-	var star_display = ""
-	for i in range(3):
-		if i < stars:
-			star_display += "[*]"
-		else:
-			star_display += "[ ]"
-
+	# Count cars at destination
 	var cars_completed = 0
 	var total_cars = 0
 	var vehicles = get_tree().get_nodes_in_group("vehicles")
@@ -909,61 +983,71 @@ func _show_victory_popup(stars: int) -> void:
 		if vehicle.at_end():
 			cars_completed += 1
 
-	var message_parts: Array = []
-	message_parts.append("Stars: %s" % star_display)
-
-	# Show time with best time
-	var time_str = "Time: %s" % _format_time(level_timer)
-	if is_new_best:
-		time_str += " (NEW BEST!)"
-	elif GameData and GameData.has_best_time(current_level_id):
-		time_str += " (Best: %s)" % _format_time(GameData.get_best_time(current_level_id))
-	message_parts.append(time_str)
-
-	message_parts.append("Cars: %d/%d" % [cars_completed, total_cars])
-	message_parts.append("Hearts remaining: %d" % hearts)
-
-	result_message.text = "\n".join(message_parts)
-
 	# Check if there's a next level
 	var has_next_level = (current_level_index + 1) < level_loader.get_level_count()
-	next_button.visible = has_next_level
-	if menu_button:
-		menu_button.visible = true
 
-	result_popup.visible = true
+	# Show completion summary
+	if completion_summary:
+		completion_summary.show_victory(
+			current_level_display_name,
+			stars,
+			level_timer,
+			best_time,
+			cars_completed,
+			total_cars,
+			hearts,
+			initial_hearts,
+			has_next_level
+		)
 
 
-func _show_failure_popup(reason: String) -> void:
+func show_failure_popup(reason: String) -> void:
+	print("[Main] _show_failure_popup called with reason: %s" % reason)
+	print("[Main] completion_summary exists: %s" % (completion_summary != null))
+
+	# Hide stats UI panel to prevent overlap
+	if stats_ui_panel:
+		stats_ui_panel.hide_panel()
+
 	# Stop timer on failure (don't save time)
 	timer_running = false
 
-	result_title.text = "%s\nFAILED" % current_level_display_name
+	# Generate contextual hint based on failure reason
+	var hint = ""
 
-	var message_parts: Array = []
-	message_parts.append(reason)
-	message_parts.append("")
+	# Check if failure is due to running out of hearts
+	if reason.to_lower().find("out of hearts") >= 0:
+		# Use the tracked cause for more specific hints
+		match last_heart_loss_cause:
+			"crash":
+				hint = "💡 Too many vehicle collisions! Avoid other cars on the road."
+			"off_road":
+				hint = "💡 Your cars kept driving off the road! Stay on the pavement."
+			"red_light":
+				hint = "💡 Too many red light violations! Use if statements to check car.at_red()"
+			_:
+				hint = "💡 Too many mistakes! Watch your code carefully."
+	elif reason.to_lower().find("time") >= 0:
+		hint = "💡 Try to be more efficient with your code."
+	elif reason.to_lower().find("infinite") >= 0 or reason.to_lower().find("loop") >= 0:
+		hint = "💡 Check your code for infinite loops."
+	elif reason.to_lower().find("map") >= 0 or reason.to_lower().find("boundary") >= 0:
+		hint = "💡 Keep cars on the road!"
+	elif reason.to_lower().find("error") >= 0 or reason.to_lower().find("syntax") >= 0:
+		hint = "💡 Check your Python syntax."
+	else:
+		hint = "💡 Press R to retry the level."
 
-	if reason.find("hearts") >= 0 or reason.find("Hearts") >= 0:
-		message_parts.append("Too many crashes!")
-	elif reason.find("Time") >= 0 or reason.find("time") >= 0:
-		message_parts.append("Try to be more efficient.")
-	elif reason.find("infinite loop") >= 0:
-		message_parts.append("Check your code for infinite loops.")
-		message_parts.append("Use break or proper conditions.")
-	elif reason.find("map") >= 0 or reason.find("boundary") >= 0:
-		message_parts.append("Keep cars on the road!")
-	elif reason.find("Error") >= 0 or reason.find("error") >= 0:
-		message_parts.append("Check your Python syntax.")
-
-	message_parts.append("")
-	message_parts.append("Press R to retry")
-
-	result_message.text = "\n".join(message_parts)
-	next_button.visible = false
-	if menu_button:
-		menu_button.visible = true
-	result_popup.visible = true
+	# Show completion summary with failure
+	if completion_summary:
+		print("[Main] Calling completion_summary.show_failure()")
+		completion_summary.show_failure(
+			current_level_display_name,
+			reason,
+			hint
+		)
+	else:
+		print("[Main] ERROR: completion_summary is NULL!")
 
 
 func _hide_result_popup() -> void:
@@ -981,6 +1065,38 @@ func _on_retry_pressed() -> void:
 
 func _on_next_pressed() -> void:
 	_hide_result_popup()
+	_load_next_level()
+
+
+func _on_completion_summary_retry() -> void:
+	# Show stats UI panel again
+	if stats_ui_panel:
+		stats_ui_panel.show_panel()
+	if completion_summary:
+		completion_summary.hide()
+	# Reset timer when pressing Retry from game over screen
+	level_timer = 0.0
+	timer_running = true
+	_update_timer_label()
+	_do_fast_retry()
+
+
+func _on_completion_summary_menu() -> void:
+	# Show stats UI panel again
+	if stats_ui_panel:
+		stats_ui_panel.show_panel()
+	if completion_summary:
+		completion_summary.hide()
+	# Return to main menu
+	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/MainMenu.tscn")
+
+
+func _on_completion_summary_next() -> void:
+	# Show stats UI panel again
+	if stats_ui_panel:
+		stats_ui_panel.show_panel()
+	if completion_summary:
+		completion_summary.hide()
 	_load_next_level()
 
 
@@ -1034,12 +1150,18 @@ func _do_fast_retry() -> void:
 	# Timer only resets from game over screen buttons (Retry/Next Level)
 	# Timer keeps running (was started on level load)
 	level_won = false
+	level_failed = false
+	last_heart_loss_cause = "crash"  # Reset to default cause
 
 	# Code stopped running - timer goes back to 1x speed
 	code_is_running = false
 
 	_update_status("Reset - Ready")
 	run_button.disabled = false
+
+	# If a tutorial is active, notify it of the retry
+	if TutorialManager and TutorialManager.is_active():
+		TutorialManager.notify_retry()
 
 	# Spawn initial cars again
 	_spawn_initial_cars()
@@ -1062,6 +1184,12 @@ func _is_code_editor_focused() -> bool:
 	return false
 
 func _input(event: InputEvent) -> void:
+	# Handle stoplight pin toggle on mouse click early so UI doesn't consume it
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _toggle_stoplight_popup_on_click():
+			get_viewport().set_input_as_handled()
+			return
+
 	if event is InputEventKey and event.pressed:
 		var ctrl_pressed = event.ctrl_pressed
 
@@ -1115,6 +1243,45 @@ func _unhandled_input(event: InputEvent) -> void:
 			_handle_zoom_in()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_handle_zoom_out()
+
+
+# Toggle pinning/unpinning of stoplight popup on click
+func _toggle_stoplight_popup_on_click() -> bool:
+	if stoplight_code_popup == null or _spawned_stoplights.is_empty():
+		return false
+
+	var mouse_pos = get_global_mouse_position()
+	var click_distance = 55.0  # Slightly larger than hover to make clicks easy
+
+	# Find clicked stoplight
+	var clicked: Variant = null
+	for stoplight in _spawned_stoplights:
+		if stoplight == null or not is_instance_valid(stoplight):
+			continue
+		if mouse_pos.distance_to(stoplight.global_position) <= click_distance:
+			clicked = stoplight
+			break
+
+	if clicked == null:
+		return false
+
+	# Toggle pin state
+	if _popup_pinned and _pinned_stoplight == clicked:
+		# Unpin and hide
+		_popup_pinned = false
+		_pinned_stoplight = null
+		_hovered_stoplight = null
+		stoplight_code_popup.hide_popup()
+	else:
+		# Pin to this stoplight
+		_popup_pinned = true
+		_pinned_stoplight = clicked
+		_hovered_stoplight = clicked
+		var level_settings = LevelSettings.from_node(current_level_node) if current_level_node else null
+		var editable = level_settings.stoplight_code_editable if level_settings else false
+		stoplight_code_popup.show_for_stoplight(clicked, editable)
+
+	return true
 
 
 # ============================================
@@ -1751,6 +1918,26 @@ func _setup_stats_ui_panel() -> void:
 		push_warning("Could not load StatsUIPanel scene")
 
 
+func _init_completion_summary() -> void:
+	var summary_scene = load("res://scenes/ui/completion_summary.tscn")
+	if summary_scene:
+		completion_summary = summary_scene.instantiate()
+		if completion_summary:
+			# Add to UI layer
+			var ui = get_node_or_null("UI")
+			if ui:
+				ui.add_child(completion_summary)
+			else:
+				add_child(completion_summary)
+
+			# Connect signals
+			completion_summary.retry_pressed.connect(_on_completion_summary_retry)
+			completion_summary.menu_pressed.connect(_on_completion_summary_menu)
+			completion_summary.next_level_pressed.connect(_on_completion_summary_next)
+	else:
+		push_warning("Could not load CompletionSummary scene")
+
+
 # ============================================
 # New UI System
 # ============================================
@@ -1796,7 +1983,8 @@ func _on_window_manager_code_run(code: String) -> void:
 		return
 	
 	# Notify tutorial system
-	_notify_tutorial_action("run_code")
+	if TutorialManager and TutorialManager.is_active():
+		TutorialManager.notify_action("run_code")
 
 	if road_layer:
 		road_layer.mark_paths_dirty()
@@ -1910,13 +2098,13 @@ func _on_menu_pressed() -> void:
 # Menu Panel
 # ============================================
 
-## Create the menu panel with options
 func _create_menu_panel() -> void:
 	# Load and instantiate the menu panel scene
 	var menu_panel_scene = load("res://scenes/ui/menu_panel.tscn")
 	if menu_panel_scene:
 		menu_panel = menu_panel_scene.instantiate()
 		$UI.add_child(menu_panel)
+		menu_panel.layer = 50 # Set a high layer to ensure it's on top
 		
 		# Connect signals
 		menu_panel.back_to_levels_pressed.connect(_on_menu_back_to_levels)
@@ -1985,13 +2173,20 @@ func _load_level_hearts() -> void:
 				break
 
 	if hearts_ui:
-		# HeartsUI found - use its configuration
-		if hearts_ui.has_method("get_max_hearts"):
-			initial_hearts = hearts_ui.get_max_hearts()
-			hearts = initial_hearts
-		elif hearts_ui.has_method("set_max_hearts"):
-			# Already initialized from label
-			initial_hearts = hearts_ui.max_hearts if "max_hearts" in hearts_ui else 3
+		# Get level settings for heart count (with backward compatibility)
+		var settings = LevelSettings.from_node(current_level_node)
+
+		# Configure hearts based on the number of vehicles
+		if hearts_ui.has_method("set_max_hearts"):
+			var num_vehicles = simulation_engine._total_vehicles
+			# Ensure at least 1 heart if no cars, or if some default is needed
+			var calculated_hearts = max(1, num_vehicles) 
+			hearts_ui.set_max_hearts(calculated_hearts)
+			initial_hearts = calculated_hearts
+			hearts = calculated_hearts
+
+		else:
+			initial_hearts = settings.starting_hearts
 			hearts = initial_hearts
 
 		# Move hearts UI to our UI layer
@@ -2016,7 +2211,7 @@ func _load_level_hearts() -> void:
 
 ## Called when hearts UI reports all hearts lost
 func _on_hearts_depleted() -> void:
-	_show_failure_popup("Out of hearts!")
+	_on_level_failed("Out of hearts!")
 
 
 ## Override lose_heart to use HeartsUI if available
@@ -2030,7 +2225,18 @@ func _lose_heart() -> void:
 	_update_hearts_label()
 
 	if hearts <= 0:
-		_show_failure_popup("Out of hearts!")
+		# Mark level as failed to prevent victory logic from running
+		level_failed = true
+		timer_running = false
+
+		# Stop all cars immediately so they can't reach destinations
+		_stop_all_cars()
+
+		# Stop spawning new cars
+		is_spawning_cars = false
+
+		# Route through _on_level_failed so tutorial manager can intercept if active
+		_on_level_failed("Out of hearts!")
 
 
 ## Update hearts label (fallback when no HeartsUI)
@@ -2048,37 +2254,17 @@ func _load_level_build_roads() -> void:
 	if current_level_node == null:
 		return
 
-	# Look for LevelSettings/LevelBuildRoads label
-	var level_settings = current_level_node.get_node_or_null("LevelSettings")
-	if level_settings == null:
-		# No settings node - disable building by default
-		is_building_enabled = false
-		road_cards = 0
-		initial_road_cards = 0
-		_update_road_cards_label()
-		return
+	# Get level settings (with backward compatibility for Label-based config)
+	var settings = LevelSettings.from_node(current_level_node)
 
-	var build_roads_label = level_settings.get_node_or_null("LevelBuildRoads")
-	if build_roads_label and build_roads_label is Label:
-		var build_roads_text = build_roads_label.text.strip_edges()
-		var build_roads_count = int(build_roads_text)
-
-		if build_roads_count <= 0:
-			# 0 = Building disabled, no roads UI
-			is_building_enabled = false
-			road_cards = 0
-			initial_road_cards = 0
-			if road_cards_label:
-				road_cards_label.visible = false
-		else:
-			# 1+ = Building enabled with specified count
-			is_building_enabled = true
-			road_cards = build_roads_count
-			initial_road_cards = build_roads_count
-			if road_cards_label:
-				road_cards_label.visible = true
+	# Configure road building from settings
+	if settings.build_mode_enabled:
+		is_building_enabled = true
+		road_cards = settings.road_cards
+		initial_road_cards = settings.road_cards
+		if road_cards_label:
+			road_cards_label.visible = true
 	else:
-		# No LevelBuildRoads label found - disable building
 		is_building_enabled = false
 		road_cards = 0
 		initial_road_cards = 0
@@ -2268,82 +2454,134 @@ func _start_tutorial_if_available() -> void:
 	if TutorialManager.has_tutorial(level_name):
 		print("Starting tutorial for level: %s" % level_name)
 
-		# Connect to TutorialManager signals if not already connected
-		_connect_tutorial_signals()
-
 		# Start the tutorial - pass self as parent for dialogue box
 		TutorialManager.start_tutorial(level_name, self)
+
+		# Connect to tutorial force events
+		if TutorialManager.has_signal("force_event"):
+			if not TutorialManager.force_event.is_connected(_on_tutorial_force_event):
+				TutorialManager.force_event.connect(_on_tutorial_force_event)
 	else:
 		print("No tutorial for level: %s" % level_name)
 
-## Connect to TutorialManager signals
-func _connect_tutorial_signals() -> void:
-	if not TutorialManager:
+## Handle forced tutorial events
+func _on_tutorial_force_event(event_type: String) -> void:
+	print("[Tutorial] Force event received: %s" % event_type)
+
+	match event_type:
+		"spawn_crashing_car":
+			_force_spawn_crashing_car()
+		"auto_run_player_car":
+			_force_auto_run_player_car()
+		_:
+			print("[Tutorial] Unknown force event: %s" % event_type)
+
+## Force an already-spawned car to crash off-road (Tutorial 2)
+func _force_spawn_crashing_car() -> void:
+	# Get the player's car (assume the first one registered)
+	if simulation_engine._vehicles.is_empty():
+		push_warning("MainTilemap: No player car found for forced crash. Skipping.")
 		return
 
-	# Disconnect first to avoid duplicate connections
-	if TutorialManager.wait_for_action.is_connected(_on_tutorial_wait_for_action):
-		TutorialManager.wait_for_action.disconnect(_on_tutorial_wait_for_action)
-	if TutorialManager.force_event.is_connected(_on_tutorial_force_event):
-		TutorialManager.force_event.disconnect(_on_tutorial_force_event)
-	if TutorialManager.highlight_requested.is_connected(_on_tutorial_highlight_requested):
-		TutorialManager.highlight_requested.disconnect(_on_tutorial_highlight_requested)
-	if TutorialManager.highlight_cleared.is_connected(_on_tutorial_highlight_cleared):
-		TutorialManager.highlight_cleared.disconnect(_on_tutorial_highlight_cleared)
-	if TutorialManager.tutorial_completed.is_connected(_on_tutorial_completed):
-		TutorialManager.tutorial_completed.disconnect(_on_tutorial_completed)
+	var player_car_id = simulation_engine._vehicles.keys()[0]
+	var player_car = simulation_engine._vehicles[player_car_id]
 
-	# Connect signals
-	TutorialManager.wait_for_action.connect(_on_tutorial_wait_for_action)
-	TutorialManager.force_event.connect(_on_tutorial_force_event)
-	TutorialManager.highlight_requested.connect(_on_tutorial_highlight_requested)
-	TutorialManager.highlight_cleared.connect(_on_tutorial_highlight_cleared)
-	TutorialManager.tutorial_completed.connect(_on_tutorial_completed)
+	if not is_instance_valid(player_car):
+		push_warning("MainTilemap: Player car instance invalid for forced crash. Skipping.")
+		return
 
-## Called when tutorial is waiting for a player action
-func _on_tutorial_wait_for_action(action_type: String) -> void:
-	print("Tutorial waiting for action: %s" % action_type)
-	# The tutorial will wait until we call TutorialManager.notify_action()
+	# Define crash position and direction
+	var crash_spawn_pos = Vector2(0 * TILE_SIZE + TILE_SIZE/2, 1 * TILE_SIZE + TILE_SIZE/2)
+	var crash_spawn_dir = Vector2.LEFT # Make it face left to drive off road
 
-## Called when tutorial wants to force an event (like a crash demo)
-func _on_tutorial_force_event(event_type: String) -> void:
-	print("Tutorial forcing event: %s" % event_type)
-	# Handle forced events like crash demos
-	match event_type.to_lower():
-		"crash", "car crashes":
-			# Force a crash on the current car for demo purposes
-			var vehicles = get_tree().get_nodes_in_group("vehicles")
-			if vehicles.size() > 0:
-				var vehicle = vehicles[0]
-				if vehicle.has_method("crash"):
-					vehicle.crash()
-		"red light violation":
-			# Force a red light violation demo
-			pass
+	# Reposition and re-orient the player car for the crash
+	player_car.global_position = crash_spawn_pos
+	player_car.direction = crash_spawn_dir
+	player_car.rotation = crash_spawn_dir.angle() + PI/2 # Adjust for car sprite facing UP
 
-## Called when tutorial wants to highlight a UI element
-func _on_tutorial_highlight_requested(target: String) -> void:
-	print("Tutorial highlight requested: %s" % target)
-	# TODO: Implement highlighting system
-	# For now, just log the request
+	# Directly command the car to go, which will cause it to crash
+	player_car.go()
+	# The level_failed signal will be emitted when the crash is detected,
+	# and _on_level_failed() will notify the tutorial manager
 
-## Called when tutorial highlight should be cleared
-func _on_tutorial_highlight_cleared() -> void:
-	print("Tutorial highlight cleared")
-	# TODO: Clear any active highlights
-
-## Called when tutorial is completed
-func _on_tutorial_completed(level_id: String) -> void:
-	print("Tutorial completed: %s" % level_id)
-
-## Notify TutorialManager of player actions
-func _notify_tutorial_action(action: String) -> void:
-	print("Main: _notify_tutorial_action called with: %s" % action)
-	if TutorialManager and TutorialManager.is_active():
-		print("Main: TutorialManager is active, calling notify_action")
-		TutorialManager.notify_action(action)
+## Force player car to run without checking stoplight (Tutorial 4)
+func _force_auto_run_player_car() -> void:
+	# Ensure stoplight is red
+	if not _spawned_stoplights.is_empty():
+		var stoplight = _spawned_stoplights[0]
+		if is_instance_valid(stoplight) and stoplight.has_method("set_red"):
+			stoplight.set_red()
+		else:
+			push_warning("MainTilemap: Could not set stoplight to red for forced violation.")
 	else:
-		if not TutorialManager:
-			print("Main: TutorialManager not found")
-		elif not TutorialManager.is_active():
-			print("Main: TutorialManager not active")
+		push_warning("MainTilemap: No stoplights found for forced violation.")
+
+	# Get the player's car (assume the first one)
+	if not simulation_engine._vehicles.is_empty():
+		var player_car_id = simulation_engine._vehicles.keys()[0]
+		var player_car = simulation_engine._vehicles[player_car_id]
+		if is_instance_valid(player_car):
+			# Directly command the car to go, which will cause the violation.
+			player_car.go()
+	else:
+		push_warning("MainTilemap: No player cars found for forced auto-run.")
+
+# ============================================
+# Stoplight Popup UI Functions
+# ============================================
+
+## Setup the stoplight code popup
+func _setup_stoplight_popup() -> void:
+	if stoplight_code_popup != null:
+		return  # Already setup
+	
+	var popup_scene = load("res://scenes/ui/stoplight_code_popup.tscn")
+	if popup_scene == null:
+		push_error("Could not load stoplight_code_popup.tscn")
+		return
+	
+	stoplight_code_popup = popup_scene.instantiate()
+	add_child(stoplight_code_popup)
+	print("Main: Stoplight popup created and added to scene")
+
+
+## Check if mouse is hovering over a stoplight and show popup
+func _check_stoplight_hover() -> void:
+	if stoplight_code_popup == null or _spawned_stoplights.is_empty():
+		return
+
+	# If popup is pinned by click, ignore hover logic
+	if _popup_pinned:
+		return
+	
+	var mouse_pos = get_global_mouse_position()
+	var hover_distance = 40.0  # Hover range
+	var found_stoplight = null
+	
+	# Find closest stoplight within hover range
+	for stoplight in _spawned_stoplights:
+		if stoplight == null or not is_instance_valid(stoplight):
+			continue
+		
+		var distance = mouse_pos.distance_to(stoplight.global_position)
+		# Debug: print distance for first stoplight
+		#print("Stoplight %s distance: %.1f" % [stoplight.stoplight_id, distance])
+		
+		if distance <= hover_distance:
+			found_stoplight = stoplight
+			break
+	
+	# Update popup based on hover state
+	if found_stoplight != _hovered_stoplight:
+		_hovered_stoplight = found_stoplight
+		
+		if _hovered_stoplight != null:
+			# Show popup for hovered stoplight
+			print("Main: Showing popup for stoplight %s" % _hovered_stoplight.stoplight_id)
+			var level_settings = LevelSettings.from_node(current_level_node) if current_level_node else null
+			var editable = level_settings.stoplight_code_editable if level_settings else false
+			stoplight_code_popup.show_for_stoplight(_hovered_stoplight, editable)
+		else:
+			# Hide popup
+			if stoplight_code_popup:
+				stoplight_code_popup.hide_popup()

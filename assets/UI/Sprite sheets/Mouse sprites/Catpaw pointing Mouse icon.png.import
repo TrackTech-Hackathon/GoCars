@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cgbavmtdf15km"
-path="res://.godot/imported/Untitled27_20260121011226.png-2be708b0ffe2b0c76404bd0691b6f8df.ctex"
+uid="uid://crcdodhslumty"
+path="res://.godot/imported/Catpaw pointing Mouse icon.png-b91d1e6f42f73a4ec9722613554f6143.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/UI/Untitled27_20260121011226.png"
-dest_files=["res://.godot/imported/Untitled27_20260121011226.png-2be708b0ffe2b0c76404bd0691b6f8df.ctex"]
+source_file="res://assets/UI/Sprite sheets/Mouse sprites/Catpaw pointing Mouse icon.png"
+dest_files=["res://.godot/imported/Catpaw pointing Mouse icon.png-b91d1e6f42f73a4ec9722613554f6143.ctex"]
 
 [params]
 

@@ -152,11 +152,15 @@ STEP 7: Continue Navigation
 STEP 8: Demonstrate Crash (FORCED)
 [Before player runs code, force a crash scenario]
 "Wait! Before you run that, let me show you something important."
-[Spawn a second car that crashes off-road]
+
+STEP 8A: TRIGGER CRASH
+[FORCE: spawn_crashing_car]
+
+STEP 8B: EXPLAIN CRASH
 "See that? When a car leaves the road, it CRASHES!"
 [Arrow points to hearts/lives display]
-"You lost 1 LIFE! You have 3 lives total."
-"Lose all 3 and it's GAME OVER!"
+"That crash cost you 1 LIFE! When you run out of lives, the level ends."
+"You started with as many lives as there are cars on the map."
 
 STEP 9: Crashed Cars Stay
 [Point at crashed car]
@@ -176,76 +180,7 @@ STEP 11: Success
 
 ---
 
-## TUTORIAL 3: "Traffic Lights"
-
-**Level Layout:** Straight road with stoplight in middle
-- Spawn: (0, 3)
-- Stoplight at: (3, 3) - starts RED
-- Destination: (6, 3)
-
-**Objective:** Learn if statements and stoplight handling
-
-### Script:
-
-```
-STEP 1: Introduction
-"Time to learn about traffic lights!"
-"In real life AND in code, you must stop at red lights."
-
-STEP 2: Show the Stoplight
-[Arrow points to red stoplight]
-"See that red light? Your car needs to check it!"
-
-STEP 3: FORCED RED LIGHT VIOLATION
-"First, let me show you what happens if you ignore it..."
-[Auto-run: car.go() without checking stoplight]
-[Car runs the red light]
-[Arrow points to hearts display]
-"VIOLATION! Running a red light costs you 1 LIFE!"
-"You now have 2 lives left. Be careful!"
-
-STEP 4: Introduce if Statements
-"To avoid this, we use IF statements."
-"IF statements check a condition before doing something."
-
-STEP 5: Show Syntax
-"Here's the pattern:"
-"if stoplight.is_red():"
-"    car.stop()"
-"else:"
-"    car.go()"
-
-STEP 6: Explain the Code
-"This code CHECKS if the light is red."
-"If red: stop the car"
-"If not red (green/yellow): go!"
-
-STEP 7: Stoplight Functions
-"Stoplight commands you can use:"
-"stoplight.is_red() - returns True if red"
-"stoplight.is_green() - returns True if green"
-"stoplight.is_yellow() - returns True if yellow"
-
-STEP 8: Challenge
-[Reset level, stoplight starts red then turns green]
-"Now YOU write the code!"
-"Make the car wait for green, then go."
-[WAIT: Player writes if statement code]
-
-STEP 9: Run Code
-"Run your code and watch the car obey the traffic light!"
-[WAIT: Player runs code]
-
-STEP 10: Success
-"Excellent! Your car waited for the green light!"
-"IF statements let your car make DECISIONS."
-
-[LEVEL COMPLETE]
-```
-
----
-
-## TUTORIAL 4: "Loops - The Power of Repetition"
+## TUTORIAL 3: "Loops - The Power of Repetition"
 
 **Level Layout:** Long winding road with multiple turns
 ```
@@ -327,6 +262,82 @@ STEP 10: Success
 
 ---
 
+## TUTORIAL 4: "Traffic Lights"
+
+**Level Layout:** Straight road with stoplight in middle
+- Spawn: (0, 3)
+- Stoplight at: (3, 3) - starts RED
+- Destination: (6, 3)
+
+**Objective:** Learn if statements and stoplight handling inside loops
+
+### Script:
+
+```
+STEP 1: Introduction
+"Time to learn about traffic lights!"
+"In real life AND in code, you must stop at red lights."
+
+STEP 2: Show the Stoplight
+[Arrow points to red stoplight]
+"See that red light? Your car needs to check it!"
+
+STEP 3: FORCED RED LIGHT VIOLATION
+"First, let me show you what happens if you ignore it..."
+
+STEP 3A: TRIGGER VIOLATION
+[FORCE: auto_run_player_car]
+
+STEP 3B: EXPLAIN VIOLATION
+[Car runs the red light]
+[Arrow points to hearts display]
+"VIOLATION! Running a red light costs you 1 LIFE!"
+"You now have 2 lives left. Be careful!"
+
+STEP 4: Why Loops Are Important
+"Remember loops from the last tutorial?"
+"We need a loop here too - to CONTINUOUSLY check the stoplight!"
+"The light can change while the car is moving."
+
+STEP 5: Show Correct Pattern
+"Here's the pattern that works:"
+"while not car.at_end():"
+"    if car.at_red():"
+"        car.stop()"
+"    else:"
+"        car.go()"
+
+STEP 6: Explain the Code
+"This loop CONTINUOUSLY checks the stoplight."
+"Every loop cycle, it asks: 'Is the light red for me?'"
+"If red: stop the car"
+"If not red (green/yellow): go!"
+
+STEP 7: Stoplight Functions
+"The BEST way to check a stoplight for your car is:"
+"car.at_red() - returns True if the arrow for your car is red"
+"car.at_green() - returns True if the arrow for your car is green"
+"car.at_yellow() - returns True if the arrow for your car is yellow"
+
+STEP 8: Challenge
+[Reset level, stoplight starts red then turns green]
+"Now YOU write the code!"
+"Remember to use a while loop with stoplight checking inside!"
+[WAIT: Player writes loop with if statement code]
+
+STEP 9: Run Code
+"Run your code and watch the car obey the traffic light!"
+[WAIT: Player runs code]
+
+STEP 10: Success
+"Excellent! Your car waited for the green light!"
+"Loops + IF statements = Smart cars that react to changes!"
+
+[LEVEL COMPLETE]
+```
+
+---
+
 ## TUTORIAL 5: "Putting It All Together"
 
 **Level Layout:** Complex road with:
@@ -386,7 +397,7 @@ STEP 5: Run Code
 STEP 6A: If Fails
 [If car crashes or runs red light]
 "Not quite! Remember:"
-"- Check stoplight.is_red() before moving"
+"- Check car.at_red() before moving"
 "- Use road detection for turns"
 "Press R to reset and try again!"
 
@@ -418,8 +429,8 @@ STEP 8: Send Off
 |----------|-------|--------------|
 | T1 | Interface | UI tour, `car.go()` |
 | T2 | Navigation | `car.move()`, `car.turn()`, crash demo |
-| T3 | Conditionals | `if/else`, stoplights, red light demo |
-| T4 | Loops | `while`, road detection |
+| T3 | Loops | `while`, road detection |
+| T4 | Conditionals | `if/else` in loops, stoplights, red light demo |
 | T5 | Everything | Combine all skills |
 
 ---
