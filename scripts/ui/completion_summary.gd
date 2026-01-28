@@ -62,8 +62,18 @@ func _ready() -> void:
 	if overlay:
 		overlay.visible = show_overlay
 		overlay.color = overlay_color
+		# Block mouse input from passing through to elements below
+		overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# Connect to visibility changes to re-enable code editor when hidden
+	visibility_changed.connect(_on_visibility_changed)
 
 	hide()
+
+## Handle visibility changes to manage code editor state
+func _on_visibility_changed() -> void:
+	if not visible:
+		_enable_code_editor()
 
 ## Show victory screen
 func show_victory(level_name: String, stars: int, time: float, best_time: float,
@@ -109,6 +119,9 @@ func show_victory(level_name: String, stars: int, time: float, best_time: float,
 	if next_button:
 		next_button.visible = has_next_level
 
+	# Disable code editor to prevent input conflicts
+	_disable_code_editor()
+
 	show()
 
 ## Show failure screen
@@ -136,6 +149,9 @@ func show_failure(level_name: String, reason: String, hint: String) -> void:
 	# Hide Next button
 	if next_button:
 		next_button.visible = false
+
+	# Disable code editor to prevent input conflicts
+	_disable_code_editor()
 
 	show()
 
@@ -192,3 +208,17 @@ func _format_hearts(current: int, maximum: int) -> String:
 	for i in range(maximum):
 		result += "❤" if i < current else "○"
 	return result
+
+## Disable code editor to prevent input conflicts
+func _disable_code_editor() -> void:
+	var code_editor = get_tree().get_root().find_child("CodeEditor", true, false)
+	if code_editor:
+		code_editor.editable = false
+		code_editor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+## Re-enable code editor when panel is hidden
+func _enable_code_editor() -> void:
+	var code_editor = get_tree().get_root().find_child("CodeEditor", true, false)
+	if code_editor:
+		code_editor.editable = true
+		code_editor.mouse_filter = Control.MOUSE_FILTER_STOP

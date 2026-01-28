@@ -127,9 +127,6 @@ var current_level_display_name: String = ""
 # Track last heart loss cause for better failure hints
 var last_heart_loss_cause: String = "crash"  # crash, red_light, off_road
 
-# Hearts UI (loaded from level)
-var hearts_ui: Node = null
-
 # Stats UI Panel (follows mouse, shows hovered car stats)
 var stats_ui_panel: Node = null
 
@@ -347,7 +344,6 @@ func _load_level(index: int) -> void:
 		current_level_node.queue_free()
 		current_level_node = null
 		road_layer = null
-		hearts_ui = null
 
 	# Load new level
 	current_level_node = level_loader.load_level(index)
@@ -454,7 +450,6 @@ func _load_level_by_path(level_path: String) -> void:
 		current_level_node.queue_free()
 		current_level_node = null
 		road_layer = null
-		hearts_ui = null
 
 	current_level_index = 0  # Default index for direct loads
 	current_level_node = scene.instantiate()
@@ -1238,8 +1233,6 @@ func _do_fast_retry() -> void:
 
 	# Reset hearts
 	hearts = initial_hearts
-	if hearts_ui and hearts_ui.has_method("reset_hearts"):
-		hearts_ui.reset_hearts()
 	_update_hearts_label()
 
 	# DO NOT reset timer on R key / restart button
@@ -1484,21 +1477,35 @@ func _calculate_camera_bounds() -> void:
 	)
 
 
-## Set initial camera position from level's "Camera Start" node or keep current position
+## Set initial camera position and zoom from level's Camera2D node
+## Looks for "Camera" or "Camera Start" node in the level
 func _set_initial_camera_position() -> void:
 	if camera == null:
 		return
 
-	# Look for a "Camera Start" node in the level to override the camera position
 	if current_level_node:
-		var camera_start = current_level_node.get_node_or_null("Camera Start")
-		if camera_start:
-			# Use the Camera Start node's position
-			camera.position = camera_start.global_position
+		# First, try to find a "Camera" node (Camera2D) in the level
+		var level_camera = current_level_node.get_node_or_null("Camera")
+		if level_camera and level_camera is Camera2D:
+			# Use the level's Camera2D position and zoom
+			camera.position = level_camera.global_position
+			camera.zoom = level_camera.zoom
+			print("Camera initialized from level Camera2D: pos=%s, zoom=%s" % [camera.position, camera.zoom])
 			return
 
-	# No Camera Start node - keep the camera's current position from the scene
+		# Fallback: try "Camera Start" node (older levels)
+		var camera_start = current_level_node.get_node_or_null("Camera Start")
+		if camera_start:
+			camera.position = camera_start.global_position
+			# Check if Camera Start has zoom property (if it's a Camera2D)
+			if camera_start is Camera2D:
+				camera.zoom = camera_start.zoom
+			print("Camera initialized from Camera Start: pos=%s" % camera.position)
+			return
+
+	# No camera node found - keep the camera's current position from the scene
 	# This allows devs to set the default camera position in main_tilemap.tscn
+	print("No level camera found, using default camera settings")
 
 
 ## Clamp camera position to stay within bounds
@@ -2253,71 +2260,30 @@ func _on_menu_close() -> void:
 # Level Hearts Loading
 # ============================================
 
-## Load hearts configuration from level's HeartsUI node
+## Load hearts configuration from level
 func _load_level_hearts() -> void:
 	if current_level_node == null:
 		return
 
-	# Look for HeartsUI node in level
-	hearts_ui = current_level_node.get_node_or_null("HeartsUI")
-	if hearts_ui == null:
-		# Try to find it as a child of any node
-		for child in current_level_node.get_children():
-			var found = child.get_node_or_null("HeartsUI")
-			if found:
-				hearts_ui = found
-				break
+	# Heart count depends on number of cars in the level
+	# Each car is one heart
+	var heart_count = spawn_data.size()
 
-	if hearts_ui:
-		# Get level settings for heart count (with backward compatibility)
-		var settings = LevelSettings.from_node(current_level_node)
+	# Minimum of 1 heart
+	heart_count = max(1, heart_count)
 
-		# Configure hearts based on the number of vehicles
-		if hearts_ui.has_method("set_max_hearts"):
-			var num_vehicles = simulation_engine._total_vehicles
-			# Ensure at least 1 heart if no cars, or if some default is needed
-			var calculated_hearts = max(1, num_vehicles) 
-			hearts_ui.set_max_hearts(calculated_hearts)
-			initial_hearts = calculated_hearts
-			hearts = calculated_hearts
+	initial_hearts = heart_count
+	hearts = heart_count
 
-		else:
-			initial_hearts = settings.starting_hearts
-			hearts = initial_hearts
-
-		# Move hearts UI to our UI layer
-		hearts_ui.get_parent().remove_child(hearts_ui)
-		$UI.add_child(hearts_ui)
-		hearts_ui.position = Vector2(20, 20)
-
-		# Connect signals
-		if hearts_ui.has_signal("hearts_depleted"):
-			hearts_ui.hearts_depleted.connect(_on_hearts_depleted)
-
-		# Hide old hearts label
-		if hearts_label:
-			hearts_label.visible = false
-	else:
-		# No HeartsUI found - use default
-		initial_hearts = 10
-		hearts = initial_hearts
-		if hearts_label:
-			hearts_label.visible = true
+	if hearts_label:
+		hearts_label.visible = true
+		_update_hearts_label()
 
 
-## Called when hearts UI reports all hearts lost
-func _on_hearts_depleted() -> void:
-	_on_level_failed("Out of hearts!")
 
-
-## Override lose_heart to use HeartsUI if available
+## Decrease hearts by one and check for game over
 func _lose_heart() -> void:
-	if hearts_ui and hearts_ui.has_method("lose_heart"):
-		hearts_ui.lose_heart()
-		hearts = hearts_ui.get_hearts() if hearts_ui.has_method("get_hearts") else hearts - 1
-	else:
-		hearts -= 1
-
+	hearts -= 1
 	_update_hearts_label()
 
 	if hearts <= 0:

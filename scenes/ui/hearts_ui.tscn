@@ -1,14 +1,125 @@
-[gd_scene load_steps=2 format=3 uid="uid://hearts_ui_gocars"]
+[gd_scene load_steps=8 format=3 uid="uid://boi6cme0m6s7g"]
 
-[ext_resource type="Script" path="res://scenes/ui/hearts_ui.gd" id="1_hearts_script"]
+[ext_resource type="Script" uid="uid://blnr5q3v04f8i" path="res://scenes/ui/hearts_ui.gd" id="1_hearts_script"]
+[ext_resource type="Texture2D" uid="uid://bmrllcbhg5bg1" path="res://assets/UI/Heart.png" id="2_heart_texture"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_t3165"]
+atlas = ExtResource("2_heart_texture")
+region = Rect2(0, 0, 1280, 1280)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8mrfq"]
+atlas = ExtResource("2_heart_texture")
+region = Rect2(1280, 0, 1280, 1280)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_su6gi"]
+atlas = ExtResource("2_heart_texture")
+region = Rect2(2560, 0, 1280, 1280)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kk01g"]
+atlas = ExtResource("2_heart_texture")
+region = Rect2(3840, 0, 1280, 1280)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_hearts"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_t3165")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8mrfq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_su6gi")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kk01g")
+}],
+"loop": false,
+"name": &"break",
+"speed": 6.666667
+}]
 
 [node name="HeartsUI" type="Control"]
-custom_minimum_size = Vector2(200, 40)
-offset_right = 200.0
-offset_bottom = 40.0
+custom_minimum_size = Vector2(400, 40)
+layout_mode = 3
+anchors_preset = 0
+offset_left = 768.0
+offset_top = 386.0
+offset_right = 1168.0
+offset_bottom = 426.0
+scale = Vector2(0.09193658, 0.09193658)
 script = ExtResource("1_hearts_script")
 
+[node name="HeartContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 4
+
+[node name="Heart1" type="AnimatedSprite2D" parent="HeartContainer"]
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
+[node name="Heart2" type="AnimatedSprite2D" parent="HeartContainer"]
+position = Vector2(1000.6899, 0)
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
+[node name="Heart3" type="AnimatedSprite2D" parent="HeartContainer"]
+position = Vector2(2044.888, 0)
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
+[node name="Heart4" type="AnimatedSprite2D" parent="HeartContainer"]
+position = Vector2(3089.0862, 0)
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
+[node name="Heart5" type="AnimatedSprite2D" parent="HeartContainer"]
+position = Vector2(4133.284, 0)
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
+[node name="Heart6" type="AnimatedSprite2D" parent="HeartContainer"]
+position = Vector2(5253.622, 0)
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
+[node name="Heart7" type="AnimatedSprite2D" parent="HeartContainer"]
+position = Vector2(6308.697, 0)
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
+[node name="Heart8" type="AnimatedSprite2D" parent="HeartContainer"]
+position = Vector2(7385.5264, 0)
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
+[node name="Heart9" type="AnimatedSprite2D" parent="HeartContainer"]
+position = Vector2(8527.618, 0)
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
+[node name="Heart10" type="AnimatedSprite2D" parent="HeartContainer"]
+position = Vector2(9593.57, 0)
+sprite_frames = SubResource("SpriteFrames_hearts")
+animation = &"break"
+offset = Vector2(16, 16)
+
 [node name="HeartCount" type="Label" parent="."]
+layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
 text = "3"

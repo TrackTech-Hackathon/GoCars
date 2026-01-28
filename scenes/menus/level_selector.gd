@@ -71,25 +71,32 @@ func _create_level_button(level_id: String, display_name: String) -> Button:
 # ============================================
 
 ## Scan the levelmaps folder for .tscn files
+## Uses DirAccess in editor, falls back to LevelManifest in exported builds
 func _scan_levels_folder() -> Array[String]:
 	var level_paths: Array[String] = []
 
+	# Try DirAccess first (works in editor)
 	var dir = DirAccess.open(levels_path)
-	if dir == null:
-		push_warning("Could not open levels folder: %s" % levels_path)
+	if dir != null:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+
+		while file_name != "":
+			if not dir.current_is_dir() and file_name.ends_with(".tscn"):
+				level_paths.append(levels_path + file_name)
+			file_name = dir.get_next()
+
+		dir.list_dir_end()
+
+		# Sort alphabetically/numerically
+		level_paths.sort()
 		return level_paths
 
-	dir.list_dir_begin()
-	var file_name = dir.get_next()
-
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".tscn"):
-			level_paths.append(levels_path + file_name)
-		file_name = dir.get_next()
-
-	dir.list_dir_end()
-
-	# Sort alphabetically/numerically
+	# Fallback to LevelManifest for exported builds
+	push_warning("DirAccess failed, using LevelManifest fallback for: %s" % levels_path)
+	var root_levels = LevelManifest.get_root_levels()
+	for level_path in root_levels:
+		level_paths.append(level_path)
 	level_paths.sort()
 	return level_paths
 

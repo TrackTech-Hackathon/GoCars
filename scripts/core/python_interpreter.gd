@@ -24,7 +24,7 @@ signal print_output(message: String)  # For Python print() statements
 # const MAX_EXECUTION_TIME_MS: int = 10000  # 10 seconds
 
 # Proximity threshold for stoplight state checks (matches Vehicle's detection range)
-const STOPLIGHT_PROXIMITY_RANGE: float = 100.0
+const STOPLIGHT_PROXIMITY_RANGE: float = 150.0
 
 # ============================================
 # State
@@ -941,12 +941,6 @@ func _is_car_near_stoplight(stoplight: Variant) -> bool:
 
 
 func _call_method(obj: Variant, obj_name: String, method: String, args: Array) -> Variant:
-	# Debug output for stoplight and car method calls
-	if obj_name == "stoplight":
-		print("[INTERPRETER] Calling stoplight.", method, "() with args: ", args)
-	elif obj_name == "car":
-		print("[INTERPRETER] Calling car.", method, "() with args: ", args)
-	
 	# Emit command signal for the simulation engine
 	command_executed.emit(obj_name, method, args)
 

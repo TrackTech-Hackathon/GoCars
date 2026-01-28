@@ -141,28 +141,41 @@ func _scan_levels_folder() -> void:
 
 
 ## Recursively scan a folder for .tscn files
+## Uses DirAccess in editor, falls back to LevelManifest in exported builds
 func _scan_folder_recursive(folder_path: String) -> void:
 	var dir = DirAccess.open(folder_path)
-	if dir == null:
-		push_warning("Could not open folder: %s" % folder_path)
+	if dir != null:
+		# DirAccess works (editor or unpacked resources)
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+
+		while file_name != "":
+			var full_path = folder_path + file_name
+
+			if dir.current_is_dir():
+				# Skip hidden folders
+				if not file_name.begins_with("."):
+					_scan_folder_recursive(full_path + "/")
+			elif file_name.ends_with(".tscn"):
+				_level_paths.append(full_path)
+
+			file_name = dir.get_next()
+
+		dir.list_dir_end()
 		return
 
-	dir.list_dir_begin()
-	var file_name = dir.get_next()
-
-	while file_name != "":
-		var full_path = folder_path + file_name
-
-		if dir.current_is_dir():
-			# Skip hidden folders
-			if not file_name.begins_with("."):
-				_scan_folder_recursive(full_path + "/")
-		elif file_name.ends_with(".tscn"):
-			_level_paths.append(full_path)
-
-		file_name = dir.get_next()
-
-	dir.list_dir_end()
+	# Fallback to LevelManifest for exported builds
+	if folder_path == LEVELS_PATH:
+		# Root folder - get all levels from manifest
+		var all_levels = LevelManifest.get_all_levels()
+		var root_levels = LevelManifest.get_root_levels()
+		for level_path in all_levels:
+			_level_paths.append(level_path)
+		for level_path in root_levels:
+			if level_path not in _level_paths:
+				_level_paths.append(level_path)
+	else:
+		push_warning("Could not open folder: %s (expected in exported build)" % folder_path)
 
 
 ## Force rescan of levels folder

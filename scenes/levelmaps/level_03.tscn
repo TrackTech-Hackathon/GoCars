@@ -3,7 +3,7 @@
 [ext_resource type="TileSet" uid="uid://bqq1sck3ns3dj" path="res://assets/tiles/road_tileset.tres" id="1_mfnu5"]
 [ext_resource type="Texture2D" uid="uid://cwu47msqph826" path="res://assets/tiles/backgroundtiles.png" id="1_wkl1d"]
 [ext_resource type="Script" uid="uid://cj6mm55w6w81k" path="res://scripts/map_editor/road_tilemap_layer.gd" id="2_rt80c"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hearts_ui.tscn" id="3_wkl1d"]
+[ext_resource type="PackedScene" uid="uid://boi6cme0m6s7g" path="res://scenes/ui/hearts_ui.tscn" id="3_wkl1d"]
 [ext_resource type="Texture2D" uid="uid://cufjl83qsyjj7" path="res://assets/tiles/buildingtiles.png" id="4_yaqdc"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_wl2k6"]
@@ -1105,9 +1105,10 @@ Group C - Random, Random
 Group D - Random, Random"
 
 [node name="HeartsUI" parent="." instance=ExtResource("3_wkl1d")]
-visible = false
-layout_mode = 3
-anchors_preset = 0
+offset_left = 604.0
+offset_top = 69.0
+offset_right = 1004.0
+offset_bottom = 109.0
 metadata/_edit_use_custom_anchors = true
 
 [node name="Camera Border" type="CollisionShape2D" parent="."]
