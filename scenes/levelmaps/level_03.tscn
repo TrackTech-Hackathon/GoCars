@@ -1,11 +1,10 @@
-[gd_scene load_steps=12 format=4 uid="uid://m44ums3jalnl"]
+[gd_scene load_steps=11 format=4 uid="uid://d32udxd3pu66u"]
 
 [ext_resource type="TileSet" uid="uid://bqq1sck3ns3dj" path="res://assets/tiles/road_tileset.tres" id="1_mfnu5"]
 [ext_resource type="Texture2D" uid="uid://cwu47msqph826" path="res://assets/tiles/backgroundtiles.png" id="1_wkl1d"]
 [ext_resource type="Script" uid="uid://cj6mm55w6w81k" path="res://scripts/map_editor/road_tilemap_layer.gd" id="2_rt80c"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hearts_ui.tscn" id="3_wkl1d"]
 [ext_resource type="Texture2D" uid="uid://cufjl83qsyjj7" path="res://assets/tiles/buildingtiles.png" id="4_yaqdc"]
-[ext_resource type="Script" uid="uid://chiis4gsgupk4" path="res://scripts/core/level_settings.gd" id="5_obwya"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_wl2k6"]
 texture = ExtResource("1_wkl1d")
@@ -1088,10 +1087,6 @@ tile_map_data = PackedByteArray("AAAAAPz/AAAAAAAAAAABAPz/AAAAAAAAAAACAPz/AAAAAAA
 tile_set = SubResource("TileSet_hbpaq")
 
 [node name="LevelSettings" type="Node" parent="."]
-script = ExtResource("5_obwya")
-level_name = "Tutorial 4"
-starting_hearts = 2
-auto_spawn_enabled = false
 
 [node name="LevelName" type="Label" parent="LevelSettings"]
 visible = false

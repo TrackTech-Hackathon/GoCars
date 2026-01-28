@@ -35,11 +35,11 @@ var tutorials: Dictionary = {}  # id -> TutorialLevel
 
 ## Level filename to tutorial ID mapping
 var level_to_tutorial: Dictionary = {
-	"level_00": "T1",
-	"level_01": "T2",
-	"level_02": "T3",
-	"level_03": "T4",
-	"level_04": "T5"
+	"01 Level 1": "T1",
+	"01 Level 2": "T2",
+	"01 Level 3": "T3",
+	"01 Level 4": "T4",
+	"01 Level 5": "T5"
 }
 
 func _init() -> void:

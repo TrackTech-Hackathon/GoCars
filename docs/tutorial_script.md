@@ -297,7 +297,13 @@ STEP 3B: EXPLAIN VIOLATION
 [Car runs the red light]
 [Arrow points to hearts display]
 "VIOLATION! Running a red light costs you 1 LIFE!"
-"You now have 2 lives left. Be careful!"
+"Your HEARTS always match the number of cars in this level."
+"If there's only 1 car, you only get 1 life—so every decision counts!"
+
+STEP 3C: PRESS RESET AFTER VIOLATION
+[Arrow points to RetryButton]
+"Now click the RESET button in the failure window to try again."
+[WAIT: Player presses reset]
 
 STEP 4: Why Loops Are Important
 "Remember loops from the last tutorial?"
