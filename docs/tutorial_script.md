@@ -23,24 +23,24 @@ STEP 1: Welcome
 "Welcome to GoCars! I'm Maki, and I'll teach you how to code cars!"
 "In this game, you write REAL Python code to control vehicles."
 
-STEP 2: Point at Car
-[Arrow points to car on screen]
-"See that car? That's YOUR car!"
+STEP 2: Introduce Your Car
+[Character appears]
+"See that car on the road? That's YOUR car!"
 "In your code, you'll control it using the name: car"
 "It won't move on its own - YOU have to tell it what to do with code."
 
 STEP 2.5: Explain Spawn and Destination
-[Arrow points to spawn parking spot with green outline]
-"See that green parking spot with the letter? That's where your car starts."
-[Arrow points to destination parking spot with red outline]
-"And see that red parking spot with the same letter? That's your DESTINATION!"
+[Character appears]
+"Look at the parking spots with letters on them!"
+"The green parking spot is where your car STARTS."
+"The red parking spot is your DESTINATION!"
 "Cars must park at the destination with the MATCHING letter."
 "Green A goes to Red A, Green B goes to Red B, and so on."
 "If a car parks at the wrong letter, you lose a life but the car still counts as parked."
 
 STEP 2.6: Your Car's Name
-[Arrow points to car]
-"In your code, you'll control this car using the name: car"
+[Character appears]
+"In your code, you'll control your car using the name: car"
 "Every command you write starts with 'car.' - like car.go() or car.stop()"
 
 STEP 3: Point at Code Editor Button
@@ -311,8 +311,8 @@ STEP 1: Introduction
 "In real life AND in code, you must stop at red lights."
 
 STEP 2: Show the Stoplight
-[Arrow points to red stoplight]
-"See that stoplight? It's a special 4-WAY directional stoplight!"
+[Character appears]
+"See that stoplight on the road? It's a special 4-WAY directional stoplight!"
 "It has arrows pointing in each direction: North, South, East, West."
 "Each arrow can be RED, YELLOW, or GREEN independently."
 "Your car only cares about the arrow pointing in ITS direction!"
