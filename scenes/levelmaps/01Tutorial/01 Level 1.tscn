@@ -2473,7 +2473,7 @@ position = Vector2(2659, 7662)
 [node name="LevelSettings" type="Node" parent="."]
 script = ExtResource("6_vackf")
 level_name = "Tutorial 1"
-starting_hearts = 1
+starting_hearts = 2
 auto_spawn_enabled = false
 
 [node name="LevelCars" type="Label" parent="LevelSettings"]
