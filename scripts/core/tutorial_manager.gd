@@ -2,7 +2,20 @@ extends Node
 
 ## Helper to always get the current node with show_failure_popup
 func _get_failure_popup_scene() -> Node:
-	return get_tree().get_root().find_child("show_failure_popup", true, true) # fully recursive
+	# Use the stored reference if available
+	if failure_popup and is_instance_valid(failure_popup):
+		print("[Tutorial] Using stored failure_popup reference")
+		return failure_popup
+
+	# Fallback: search by node name (for backwards compatibility)
+	print("[Tutorial] Searching for CompletionSummary node...")
+	var found = get_tree().get_root().find_child("CompletionSummary", true, true)
+	if found:
+		print("[Tutorial] Found CompletionSummary, storing reference")
+		failure_popup = found
+	else:
+		print("[Tutorial] Could not find CompletionSummary node!")
+	return found
 
 func _debug_list_failure_popup_nodes():
 	var nodes = []
@@ -48,6 +61,9 @@ var is_waiting_for_action: bool = false
 var is_awaiting_forced_crash: bool = false # NEW FLAG
 var _is_forced_failure: bool = false # Track if the current failure is a forced tutorial event
 var pending_wait_action: String = ""
+
+## Reference to the failure popup scene (set by main_tilemap)
+var failure_popup: Node = null
 
 ## Code validation tracking
 var _was_code_editor_prompt_shown: bool = false
@@ -171,6 +187,25 @@ func advance_step() -> void:
 	# Process the step
 	_process_step(step)
 
+## Hide the tutorial dialogue box (called when resetting/retrying)
+func hide_dialogue_box() -> void:
+	if dialogue_box and dialogue_box.has_method("hide_dialogue"):
+		dialogue_box.hide_dialogue()
+
+## Called when reset/retry is pressed - allows tutorial to continue to next step
+func on_reset_pressed() -> void:
+	if not is_tutorial_active:
+		return
+
+	# Special case: T2 step 9.5 (index 11) is "Press Reset" - pressing R should advance
+	# All other steps: pressing R should restart the current step
+	if current_tutorial and current_tutorial.id == "T2" and current_step_index == 11:
+		print("[Tutorial] Reset pressed at T2 step 9.5 - advancing")
+		advance_step()
+	else:
+		print("[Tutorial] Reset pressed - restarting current step")
+		_restart_current_step()
+
 ## Process a tutorial step
 func _process_step(step) -> void:
 	print("TutorialManager: Processing step - action: %s, target: %s" % [step.action, step.target])
@@ -292,15 +327,19 @@ func _execute_crash_sequence() -> void:
 	# 1. Hide Maki's dialogue box
 	if dialogue_box and dialogue_box.has_method("hide_dialogue"):
 		dialogue_box.hide_dialogue()
+	print("[Tutorial] Crash sequence: hiding dialogue")
 
 	# 2. Set the flag and emit the signal to trigger the crash in the main scene
 	is_awaiting_forced_crash = true
 	_is_forced_failure = true # Mark this as a forced failure scenario
 	force_event.emit("spawn_crashing_car")
+	print("[Tutorial] Crash sequence: spawning crashing car")
 
 	# 3. Wait here until the main scene confirms the crash has happened
 	await forced_crash_completed
 	is_awaiting_forced_crash = false
+	_is_forced_failure = false # Clear the flag so next step isn't treated as forced failure
+	print("[Tutorial] Crash sequence: crash completed, advancing to next step")
 
 	# 4. Now that the crash is done, advance to the next step (the explanation)
 	advance_step()
@@ -529,21 +568,54 @@ func _restart_current_step() -> void:
 
 ## Called by main_tilemap when level fails during a tutorial
 func handle_scripted_failure(reason: String) -> void:
+	print("[Tutorial] handle_scripted_failure() called with reason: %s" % reason)
 	if not is_tutorial_active:
+		print("[Tutorial] Tutorial not active, returning")
 		return
+
+	# Determine if we should suppress the failure screen
+	var suppress_failure_screen = false
 
 	# Check if this is a forced failure scenario
 	if _is_forced_failure:
-		# Forced failure - don't show failure panel
-		# The tutorial steps will continue naturally with their dialogues
-		print("[Tutorial] Forced failure detected - normal dialogue flow continues")
+		suppress_failure_screen = true
+		print("[Tutorial] Forced failure detected - suppressing failure panel")
+
+	# For T2, suppress failure screen during the crash demo sequence (steps 8A-9.5)
+	# Step 9.5 is "Press Reset" (around step index 11), so suppress through that
+	if current_tutorial and current_tutorial.id == "T2":  # Tutorial 2
+		if current_step_index >= 8 and current_step_index <= 11:
+			suppress_failure_screen = true
+			print("[Tutorial] In crash demo range (steps 8-11 / 8A-9.5) for T2 - suppressing failure panel")
+
+	# For T4, suppress failure screen during the red light violation demo
+	# The red light violation happens in step 3, don't show failure screen there
+	if current_tutorial and current_tutorial.id == "T4":  # Tutorial 4
+		if current_step_index >= 2 and current_step_index <= 4:
+			suppress_failure_screen = true
+			print("[Tutorial] In red light violation demo range for T4 - suppressing failure panel")
+
+	if suppress_failure_screen:
+		# Don't show failure panel - let tutorial continue
+		print("[Tutorial] Failure suppressed - normal dialogue flow continues")
 		return
-	else:
-		# This is a genuine player failure, show the failure panel
-		var failure_scene = _get_failure_popup_scene()
-		if failure_scene and failure_scene.has_method("show_failure_popup"):
+
+	# This is a genuine player failure, show the failure panel
+	print("[Tutorial] Genuine failure - attempting to show failure panel")
+	print("[Tutorial] Current step index: %d, total steps: %d" % [current_step_index, current_tutorial.steps.size() if current_tutorial else -1])
+
+	var failure_scene = _get_failure_popup_scene()
+	print("[Tutorial] Failure scene found: %s" % (failure_scene != null))
+	if failure_scene:
+		print("[Tutorial] Failure scene type: %s, has show_failure_popup: %s" % [failure_scene.get_class(), failure_scene.has_method("show_failure_popup")])
+		if failure_scene.has_method("show_failure_popup"):
+			print("[Tutorial] Calling show_failure_popup('%s')" % reason)
 			failure_scene.show_failure_popup(reason)
-		_prompt_for_reset()
+		else:
+			print("[Tutorial] ERROR: failure_scene doesn't have show_failure_popup method!")
+	else:
+		print("[Tutorial] ERROR: failure_scene not found!")
+	_prompt_for_reset()
 
 ## Shows the final prompt to reset the level
 func _prompt_for_reset() -> void:

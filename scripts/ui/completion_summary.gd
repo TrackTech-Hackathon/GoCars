@@ -155,6 +155,19 @@ func show_failure(level_name: String, reason: String, hint: String) -> void:
 
 	show()
 
+## Wrapper method for tutorial manager compatibility
+## Converts show_failure_popup(reason) to show_failure(level_name, reason, hint)
+func show_failure_popup(reason: String) -> void:
+	# Get the current level display name from main
+	var main_scene = get_tree().root.find_child("MainTilemap", true, false)
+	var level_name = "Level"
+	var hint = "💡 Too many mistakes! Try again."
+
+	if main_scene and main_scene.has_method("get_current_level_display_name"):
+		level_name = main_scene.current_level_display_name
+
+	show_failure(level_name, reason, hint)
+
 ## Display star rating with optional animation
 func _display_stars(count: int) -> void:
 	if not star_container:

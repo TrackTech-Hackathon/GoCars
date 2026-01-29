@@ -31,6 +31,9 @@ var _full_text: String = ""
 var _chars_per_second: float = 40.0
 var _is_typing: bool = false
 
+## Cooldown to prevent spamming when character is gone
+var _last_advance_time: float = 0.0
+var _advance_cooldown: float = 0.2  # 200ms between advances when character is hidden
 
 ## Dialogue typewriter sound
 var _typewriter_audio: AudioStreamPlayer = null
@@ -98,6 +101,9 @@ func show_dialogue(text: String, speaker: String = "Maki", emotion: String = "ta
 	else:
 		action_helper.text = ">> " + action_hint
 		action_helper.visible = true
+
+	# Reset advance cooldown when showing new dialogue
+	_last_advance_time = Time.get_ticks_msec() / 1000.0
 
 	# Start typewriter effect
 	_start_typewriter(text)
@@ -225,11 +231,18 @@ func _on_panel_input(event: InputEvent) -> void:
 
 ## Handle click
 func _handle_click() -> void:
+	# Check if character is visible
+	var character_visible = character_portrait.visible and character_portrait.modulate.a > 0.1
+
+	# Don't allow any interaction when character is hidden
+	if not character_visible:
+		return
+
 	if _is_typing:
 		# Skip typewriter
 		_skip_typewriter()
 	else:
-		# Continue to next dialogue
+		# Character is visible - allow advancing dialogue
 		continue_pressed.emit()
 
 ## Handle skip button

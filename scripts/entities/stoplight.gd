@@ -136,6 +136,15 @@ func _process(delta: float) -> void:
 	# and pause the internal Python code that normally drives it.
 	if _forced_red_timer > 0.0:
 		_forced_red_timer -= delta
+		# Keep all directions red while forced red is active
+		_directional_states = {
+			"north": LightState.RED,
+			"south": LightState.RED,
+			"east": LightState.RED,
+			"west": LightState.RED,
+		}
+		# Ensure no code runs while forced red is active
+		_is_running_code = false
 		if _forced_red_timer <= 0.0:
 			_forced_red_timer = 0.0
 			# Resume normal scripted behaviour
