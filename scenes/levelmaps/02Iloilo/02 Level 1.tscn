@@ -1,12 +1,12 @@
 [gd_scene load_steps=13 format=4 uid="uid://dqbc3pbjj8wu0"]
 
-[ext_resource type="PackedScene" uid="uid://dpi0cop1ewgxj" path="res://scenes/entities/house.tscn" id="1_a6j56"]
+[ext_resource type="PackedScene" uid="uid://dpi0cop1ewgxj" path="res://scenes/entities/Buildings/house.tscn" id="1_a6j56"]
 [ext_resource type="Texture2D" uid="uid://cwu47msqph826" path="res://assets/tiles/backgroundtiles.png" id="2_sgjl4"]
 [ext_resource type="TileSet" uid="uid://bqq1sck3ns3dj" path="res://assets/tiles/road_tileset.tres" id="3_1753j"]
 [ext_resource type="Script" uid="uid://cj6mm55w6w81k" path="res://scripts/map_editor/road_tilemap_layer.gd" id="4_gi7a3"]
 [ext_resource type="Texture2D" uid="uid://cufjl83qsyjj7" path="res://assets/tiles/buildingtiles.png" id="5_2pykj"]
-[ext_resource type="Script" path="res://scripts/core/level_settings.gd" id="6_rut0y"]
-[ext_resource type="PackedScene" path="res://scenes/ui/hearts_ui.tscn" id="7_ji0ua"]
+[ext_resource type="Script" uid="uid://chiis4gsgupk4" path="res://scripts/core/level_settings.gd" id="6_rut0y"]
+[ext_resource type="PackedScene" uid="uid://boi6cme0m6s7g" path="res://scenes/ui/hearts_ui.tscn" id="7_ji0ua"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_rnc2h"]
 texture = ExtResource("2_sgjl4")
