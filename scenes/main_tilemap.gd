@@ -8,6 +8,26 @@ const RoadTileMapLayerScript = preload("res://scripts/map_editor/road_tilemap_la
 const LevelLoaderScript = preload("res://scripts/core/level_loader.gd")
 const RoadTileProxy = preload("res://scripts/map_editor/road_tile_proxy.gd")
 
+# Preload vehicle scenes (prevents memory leak from repeated load() calls)
+const VEHICLE_SCENES = {
+	"sedan": preload("res://scenes/entities/car_sedan.tscn"),
+	"estate": preload("res://scenes/entities/car_estate.tscn"),
+	"sport": preload("res://scenes/entities/car_sport.tscn"),
+	"micro": preload("res://scenes/entities/car_micro.tscn"),
+	"pickup": preload("res://scenes/entities/car_pickup.tscn"),
+	"jeepney": preload("res://scenes/entities/car_jeepney.tscn"),
+	"jeepney_2": preload("res://scenes/entities/car_jeepney_2.tscn"),
+	"bus": preload("res://scenes/entities/car_bus.tscn")
+}
+
+# Preload UI scenes (prevents memory buildup from repeated load() calls)
+const STOPLIGHT_SCENE = preload("res://scenes/entities/stoplight.tscn")
+const STATS_PANEL_SCENE = preload("res://scenes/ui/stats_ui_panel.tscn")
+const COMPLETION_SUMMARY_SCENE = preload("res://scenes/ui/completion_summary.tscn")
+const MENU_PANEL_SCENE = preload("res://scenes/ui/menu_panel.tscn")
+const HEARTS_UI_SCENE = preload("res://scenes/ui/hearts_ui.tscn")
+const STOPLIGHT_CODE_POPUP_SCENE = preload("res://scenes/ui/stoplight_code_popup.tscn")
+
 @onready var simulation_engine: SimulationEngine = $SimulationEngine
 @onready var code_editor: TextEdit = $UI/CodeEditor
 @onready var run_button: Button = $UI/RunButton
@@ -103,6 +123,9 @@ var stoplight_code_popup: Variant = null  # StoplightCodePopup instance
 var _hovered_stoplight: Variant = null  # Currently hovered stoplight
 var _pinned_stoplight: Variant = null  # Stoplight pinned by click
 var _popup_pinned: bool = false  # Whether the popup is pinned open
+# Performance optimization - throttle hover check
+var _stoplight_hover_timer: float = 0.0
+const STOPLIGHT_HOVER_INTERVAL: float = 0.1  # Check hover every 100ms
 
 # Tile editing state
 var is_editing_enabled: bool = true
@@ -203,20 +226,12 @@ func _ready() -> void:
 	# Setup audio
 	_setup_audio()
 
-	# Load level from GameState or default to first level
-	if GameState.selected_level_path != "":
-		# Load by full path (preferred - from new campaign menu)
-		_load_level_by_path(GameState.selected_level_path)
-	elif GameState.selected_level_id != "":
-		# Try to find level by name (legacy support)
-		_load_level_by_name(GameState.selected_level_id)
-	else:
-		# Load first available level
-		_load_level(0)
-
 	_update_speed_label()
 	_update_hearts_label()
 	_update_road_cards_label()
+
+	# Defer level loading to prevent freezing during scene transition
+	call_deferred("_deferred_load_level")
 
 
 func _process(delta: float) -> void:
@@ -276,8 +291,11 @@ func _process(delta: float) -> void:
 	# Update preview tile position
 	_update_preview_tile()
 
-	# Check for stoplight hover
-	_check_stoplight_hover()
+	# Check for stoplight hover (throttled for performance)
+	_stoplight_hover_timer += delta
+	if _stoplight_hover_timer >= STOPLIGHT_HOVER_INTERVAL:
+		_stoplight_hover_timer = 0.0
+		_check_stoplight_hover()
 
 
 func _update_preview_tile() -> void:
@@ -362,8 +380,8 @@ func _load_level(index: int) -> void:
 		current_level_node = null
 		road_layer = null
 
-	# Load new level
-	current_level_node = level_loader.load_level(index)
+	# Load new level (async to prevent freezing)
+	current_level_node = await level_loader.load_level_async(index)
 	if current_level_node == null:
 		_update_status("Failed to load level %d" % index)
 		return
@@ -429,11 +447,34 @@ func _load_level_by_name(level_name: String) -> void:
 	for i in range(paths.size()):
 		# Match by filename (level_01, level_02, etc.)
 		if level_loader.get_level_filename(i) == level_name:
-			_load_level(i)
+			await _load_level(i)
 			return
 
 	# Fallback to first level
-	_load_level(0)
+	await _load_level(0)
+
+
+## Deferred level loading to prevent freezing during scene transition
+func _deferred_load_level() -> void:
+	# Show loading screen while level loads
+	if SceneLoader:
+		SceneLoader._show_loading_screen()
+
+	# Load level from GameState or default to first level
+	if GameState.selected_level_path != "":
+		# Load by full path (preferred - from new campaign menu)
+		await _load_level_by_path(GameState.selected_level_path)
+	elif GameState.selected_level_id != "":
+		# Try to find level by name (legacy support)
+		await _load_level_by_name(GameState.selected_level_id)
+	else:
+		# Load first available level
+		await _load_level(0)
+
+	# Hide loading screen after level loads
+	await get_tree().create_timer(0.1).timeout
+	if SceneLoader:
+		SceneLoader._hide_loading_screen()
 
 
 func _load_level_by_path(level_path: String) -> void:
@@ -447,14 +488,36 @@ func _load_level_by_path(level_path: String) -> void:
 
 	# If we found the index, use _load_level for consistent behavior
 	if found_index >= 0:
-		_load_level(found_index)
+		await _load_level(found_index)
 		return
 
-	# Fallback: try to load directly if path not in cache
-	var scene = load(level_path)
+	# Fallback: try to load directly if path not in cache (async)
+	var status = ResourceLoader.load_threaded_request(level_path)
+	if status != OK:
+		push_error("Failed to start loading level scene: %s" % level_path)
+		await _load_level(0)
+		return
+
+	# Wait for load to complete
+	while true:
+		var load_status = ResourceLoader.load_threaded_get_status(level_path)
+		if load_status == ResourceLoader.THREAD_LOAD_LOADED:
+			var scene = ResourceLoader.load_threaded_get(level_path)
+			if scene == null:
+				push_error("Failed to get loaded scene: %s" % level_path)
+				await _load_level(0)
+				return
+			break
+		elif load_status == ResourceLoader.THREAD_LOAD_FAILED or load_status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			push_error("Failed to load level scene: %s" % level_path)
+			await _load_level(0)
+			return
+		await get_tree().process_frame
+
+	var scene = ResourceLoader.load_threaded_get(level_path)
 	if scene == null:
-		push_error("Failed to load level scene: %s" % level_path)
-		_load_level(0)
+		push_error("Failed to get scene after loading: %s" % level_path)
+		await _load_level(0)
 		return
 
 	# Clear all existing cars first
@@ -670,27 +733,17 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	var car_type = car_config.get("type", "Random")
 	var car_color = car_config.get("color", "Random")
 
-	# Determine which scene to load
+	# Determine which scene to use (using preloaded scenes to prevent memory leak)
 	var vehicle_scene: Resource = null
-	var scene_path = _get_scene_path_for_type(car_type)
 
-	if scene_path != "":
-		# Specific type requested
-		vehicle_scene = load(scene_path)
+	if car_type.to_lower() != "random":
+		# Specific type requested - use preloaded scene
+		vehicle_scene = _get_preloaded_vehicle_scene(car_type)
 	else:
-		# Random type - pick from all available
-		var car_scenes = [
-			"res://scenes/entities/car_sedan.tscn",
-			"res://scenes/entities/car_estate.tscn",
-			"res://scenes/entities/car_sport.tscn",
-			"res://scenes/entities/car_micro.tscn",
-			"res://scenes/entities/car_pickup.tscn",
-			"res://scenes/entities/car_jeepney.tscn",
-			"res://scenes/entities/car_jeepney_2.tscn",
-			"res://scenes/entities/car_bus.tscn"
-		]
-		var random_index = randi() % car_scenes.size()
-		vehicle_scene = load(car_scenes[random_index])
+		# Random type - pick from preloaded scenes
+		var scene_keys = VEHICLE_SCENES.keys()
+		var random_key = scene_keys[randi() % scene_keys.size()]
+		vehicle_scene = VEHICLE_SCENES[random_key]
 
 	if vehicle_scene == null:
 		_update_status("Error: Could not load vehicle scene")
@@ -811,6 +864,17 @@ func _clear_all_cars() -> void:
 	print("[Main] _clear_all_cars() called, clearing %d vehicles" % vehicles.size())
 	for vehicle in vehicles:
 		print("[Main] Clearing vehicle: %s" % vehicle.vehicle_id)
+
+		# Disconnect signals to prevent memory leak
+		if vehicle.reached_destination.is_connected(_on_car_reached_destination):
+			vehicle.reached_destination.disconnect(_on_car_reached_destination)
+		if vehicle.crashed.is_connected(_on_car_crashed):
+			vehicle.crashed.disconnect(_on_car_crashed)
+		if vehicle.off_road_crash.is_connected(_on_car_off_road):
+			vehicle.off_road_crash.disconnect(_on_car_off_road)
+		if vehicle.ran_red_light.is_connected(_on_car_ran_red_light):
+			vehicle.ran_red_light.disconnect(_on_car_ran_red_light)
+
 		simulation_engine.unregister_vehicle(vehicle.vehicle_id)
 		vehicle.queue_free()
 
@@ -836,8 +900,8 @@ func _spawn_stoplights_from_tiles() -> void:
 	if stoplight_data.is_empty():
 		return
 
-	# Load stoplight scene
-	var stoplight_scene = load("res://scenes/entities/stoplight.tscn")
+	# Use preloaded stoplight scene (prevents memory leak)
+	var stoplight_scene = STOPLIGHT_SCENE
 	if stoplight_scene == null:
 		_update_status("Error: Could not load stoplight scene")
 		return
@@ -1218,8 +1282,8 @@ func _on_completion_summary_menu() -> void:
 	if TutorialManager:
 		TutorialManager.hide_dialogue_box()
 
-	# Return to main menu
-	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/MainMenu.tscn")
+	# Return to main menu (async to prevent freezing)
+	SceneLoader.load_scene_async("res://scenes/ui/Main_Menu/MainMenu.tscn")
 
 
 func _on_completion_summary_next() -> void:
@@ -2071,7 +2135,7 @@ func _update_neighbors_after_removal(removed_pos: Vector2i) -> void:
 # ============================================
 
 func _setup_stats_ui_panel() -> void:
-	var stats_panel_scene = load("res://scenes/ui/stats_ui_panel.tscn")
+	var stats_panel_scene = STATS_PANEL_SCENE
 	if stats_panel_scene:
 		stats_ui_panel = stats_panel_scene.instantiate()
 		add_child(stats_ui_panel)
@@ -2080,7 +2144,7 @@ func _setup_stats_ui_panel() -> void:
 
 
 func _init_completion_summary() -> void:
-	var summary_scene = load("res://scenes/ui/completion_summary.tscn")
+	var summary_scene = COMPLETION_SUMMARY_SCENE
 	if summary_scene:
 		completion_summary = summary_scene.instantiate()
 		if completion_summary:
@@ -2260,7 +2324,7 @@ func _create_menu_button() -> void:
 ## Return to main menu
 func _on_menu_pressed() -> void:
 	_hide_result_popup()
-	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/CampaignMenu.tscn")
+	SceneLoader.load_scene_async("res://scenes/ui/Main_Menu/CampaignMenu.tscn")
 
 
 # ============================================
@@ -2268,8 +2332,8 @@ func _on_menu_pressed() -> void:
 # ============================================
 
 func _create_menu_panel() -> void:
-	# Load and instantiate the menu panel scene
-	var menu_panel_scene = load("res://scenes/ui/menu_panel.tscn")
+	# Use preloaded menu panel scene (prevents memory leak)
+	var menu_panel_scene = MENU_PANEL_SCENE
 	if menu_panel_scene:
 		menu_panel = menu_panel_scene.instantiate()
 		$UI.add_child(menu_panel)
@@ -2293,7 +2357,7 @@ func _on_menu_button_pressed() -> void:
 func _on_menu_back_to_levels() -> void:
 	if menu_panel:
 		menu_panel.hide_panel()
-	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/CampaignMenu.tscn")
+	SceneLoader.load_scene_async("res://scenes/ui/Main_Menu/CampaignMenu.tscn")
 
 ## Reset window positions
 func _on_menu_reset_windows() -> void:
@@ -2345,8 +2409,8 @@ func _load_level_hearts() -> void:
 		hearts = heart_count
 		print("[Main] Hearts loaded: %d (based on spawn points)" % hearts)
 
-	# Load and instantiate HeartsUI scene
-	var hearts_ui_scene = load("res://scenes/ui/hearts_ui.tscn")
+	# Use preloaded HeartsUI scene (prevents memory leak)
+	var hearts_ui_scene = HEARTS_UI_SCENE
 	if hearts_ui_scene:
 		hearts_ui_instance = hearts_ui_scene.instantiate()
 		# Add to UI layer so it displays as UI
@@ -2553,7 +2617,7 @@ func _get_car_config_for_group(group_name: String) -> Dictionary:
 	return options[randi() % options.size()]
 
 
-## Convert type string to scene path
+## Convert type string to scene path (DEPRECATED - use _get_preloaded_vehicle_scene instead)
 func _get_scene_path_for_type(type_name: String) -> String:
 	match type_name.to_lower():
 		"sedan": return "res://scenes/entities/car_sedan.tscn"
@@ -2565,6 +2629,20 @@ func _get_scene_path_for_type(type_name: String) -> String:
 		"jeepney2", "jeepney_2": return "res://scenes/entities/car_jeepney_2.tscn"
 		"bus": return "res://scenes/entities/car_bus.tscn"
 		_: return ""  # Random or unknown
+
+
+## Get preloaded vehicle scene by type name (prevents memory leak)
+func _get_preloaded_vehicle_scene(type_name: String) -> Resource:
+	match type_name.to_lower():
+		"sedan": return VEHICLE_SCENES["sedan"]
+		"estate": return VEHICLE_SCENES["estate"]
+		"sport": return VEHICLE_SCENES["sport"]
+		"micro": return VEHICLE_SCENES["micro"]
+		"pickup": return VEHICLE_SCENES["pickup"]
+		"jeepney": return VEHICLE_SCENES["jeepney"]
+		"jeepney2", "jeepney_2": return VEHICLE_SCENES["jeepney_2"]
+		"bus": return VEHICLE_SCENES["bus"]
+		_: return null  # Random or unknown
 
 
 ## Convert color string to VehicleColor enum index
@@ -2719,8 +2797,8 @@ func _force_auto_run_player_car() -> void:
 func _setup_stoplight_popup() -> void:
 	if stoplight_code_popup != null:
 		return  # Already setup
-	
-	var popup_scene = load("res://scenes/ui/stoplight_code_popup.tscn")
+
+	var popup_scene = STOPLIGHT_CODE_POPUP_SCENE
 	if popup_scene == null:
 		push_error("Could not load stoplight_code_popup.tscn")
 		return

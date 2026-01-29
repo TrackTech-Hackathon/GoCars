@@ -129,9 +129,9 @@ func _do_open_toggle() -> void:
 		get_tree().quit()
 		return
 
-	# If scene_to_load is set, change scene instead of toggling visibility
+	# If scene_to_load is set, change scene instead of toggling visibility (async to prevent freezing)
 	if scene_to_load != "":
-		get_tree().change_scene_to_file(scene_to_load)
+		SceneLoader.load_scene_async(scene_to_load)
 		return
 
 	if show_node:

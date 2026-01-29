@@ -116,6 +116,36 @@ func load_level(index: int) -> Node:
 	return scene.instantiate()
 
 
+## Load and instantiate a level scene by index (async - prevents freezing)
+func load_level_async(index: int) -> Node:
+	var path = get_level_path(index)
+	if path.is_empty():
+		push_error("Level index %d not found" % index)
+		return null
+
+	# Request threaded load
+	var status = ResourceLoader.load_threaded_request(path)
+	if status != OK:
+		push_error("Failed to start loading level scene: %s" % path)
+		return null
+
+	# Wait for load to complete
+	while true:
+		var load_status = ResourceLoader.load_threaded_get_status(path)
+		if load_status == ResourceLoader.THREAD_LOAD_LOADED:
+			var scene = ResourceLoader.load_threaded_get(path)
+			if scene:
+				return scene.instantiate()
+			return null
+		elif load_status == ResourceLoader.THREAD_LOAD_FAILED or load_status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			push_error("Failed to load level scene: %s" % path)
+			return null
+		# Still loading, wait a frame
+		await Engine.get_main_loop().process_frame
+
+	return null
+
+
 ## Load and instantiate a level scene by name (searches all subfolders)
 func load_level_by_name(level_name: String) -> Node:
 	if not _levels_loaded:

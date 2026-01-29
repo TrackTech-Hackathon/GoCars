@@ -167,6 +167,14 @@ func register_vehicle(vehicle: Vehicle) -> void:
 ## Unregister a vehicle
 func unregister_vehicle(vehicle_id: String) -> void:
 	if vehicle_id in _vehicles:
+		var vehicle = _vehicles[vehicle_id]
+
+		# Disconnect signals to prevent memory leak
+		if vehicle.reached_destination.is_connected(_on_vehicle_reached_destination):
+			vehicle.reached_destination.disconnect(_on_vehicle_reached_destination)
+		if vehicle.crashed.is_connected(_on_vehicle_crashed):
+			vehicle.crashed.disconnect(_on_vehicle_crashed)
+
 		_vehicles.erase(vehicle_id)
 		_total_vehicles -= 1
 
