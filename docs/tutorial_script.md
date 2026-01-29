@@ -126,6 +126,7 @@ STEP 13: Success
 
 ```
 STEP 1: Introduction
+[Character appears]
 "Welcome back! Today we'll learn how to navigate turns."
 "This road has corners - car.go() alone won't work here!"
 
@@ -223,6 +224,7 @@ STEP 11: Success
 
 ```
 STEP 1: Introduction
+[Character appears]
 "What if the road is REALLY long with MANY turns?"
 "Writing car.move() and car.turn() for each one is tedious!"
 
@@ -232,10 +234,10 @@ STEP 2: Introduce Loops
 
 STEP 3: Show the Problem
 "Look at this winding road. Without loops, you'd write:"
-"car.move(2)"
+"car.move(4)"
 "car.turn('right')"
-"car.move(2)"
-"car.turn('left')"
+"car.move(3)"
+"car.turn('right')"
 "...and on and on for 20+ lines! There's a better way."
 "Loops let you write ONCE and run MANY times - that's the power of programming!"
 
@@ -250,9 +252,8 @@ STEP 5: The Magic Loop
 "Here's the magic code that handles ANY road:"
 
   while not car.at_end():
-      if car.front_road():
-          car.go()
-      elif car.left_road():
+      car.go()
+      if car.left_road():
           car.turn("left")
       elif car.right_road():
           car.turn("right")
@@ -264,8 +265,8 @@ STEP 6: Explain the Loop
 "while not car.at_end(): - Keep going until destination"
 "  The 'not' means 'while the car is NOT at the end yet'"
 "  So the loop runs UNTIL the car reaches the red parking spot"
-"if car.front_road(): car.go() - If road ahead, go straight!"
-"elif car.left_road(): car.turn('left') - Otherwise turn left"
+"car.go() - go straight!"
+"if car.left_road(): car.turn('left') - if theres a road to the left turn left"
 "elif car.right_road(): car.turn('right') - Or turn right"
 
 STEP 7: Challenge
@@ -305,6 +306,7 @@ STEP 10: Success
 
 ```
 STEP 1: Introduction
+[Character appears]
 "Time to learn about traffic lights!"
 "In real life AND in code, you must stop at red lights."
 
@@ -411,6 +413,7 @@ STEP 10: Success
 
 ```
 STEP 1: Final Challenge
+[Character appears]
 "This is your FINAL tutorial challenge!"
 "You'll need EVERYTHING you've learned:"
 "- Movement commands"
