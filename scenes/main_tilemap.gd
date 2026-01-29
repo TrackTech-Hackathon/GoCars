@@ -103,6 +103,9 @@ var stoplight_code_popup: Variant = null  # StoplightCodePopup instance
 var _hovered_stoplight: Variant = null  # Currently hovered stoplight
 var _pinned_stoplight: Variant = null  # Stoplight pinned by click
 var _popup_pinned: bool = false  # Whether the popup is pinned open
+# Performance optimization - throttle hover check
+var _stoplight_hover_timer: float = 0.0
+const STOPLIGHT_HOVER_INTERVAL: float = 0.1  # Check hover every 100ms
 
 # Tile editing state
 var is_editing_enabled: bool = true
@@ -203,20 +206,12 @@ func _ready() -> void:
 	# Setup audio
 	_setup_audio()
 
-	# Load level from GameState or default to first level
-	if GameState.selected_level_path != "":
-		# Load by full path (preferred - from new campaign menu)
-		_load_level_by_path(GameState.selected_level_path)
-	elif GameState.selected_level_id != "":
-		# Try to find level by name (legacy support)
-		_load_level_by_name(GameState.selected_level_id)
-	else:
-		# Load first available level
-		_load_level(0)
-
 	_update_speed_label()
 	_update_hearts_label()
 	_update_road_cards_label()
+
+	# Defer level loading to prevent freezing during scene transition
+	call_deferred("_deferred_load_level")
 
 
 func _process(delta: float) -> void:
@@ -276,8 +271,11 @@ func _process(delta: float) -> void:
 	# Update preview tile position
 	_update_preview_tile()
 
-	# Check for stoplight hover
-	_check_stoplight_hover()
+	# Check for stoplight hover (throttled for performance)
+	_stoplight_hover_timer += delta
+	if _stoplight_hover_timer >= STOPLIGHT_HOVER_INTERVAL:
+		_stoplight_hover_timer = 0.0
+		_check_stoplight_hover()
 
 
 func _update_preview_tile() -> void:
@@ -434,6 +432,20 @@ func _load_level_by_name(level_name: String) -> void:
 
 	# Fallback to first level
 	_load_level(0)
+
+
+## Deferred level loading to prevent freezing during scene transition
+func _deferred_load_level() -> void:
+	# Load level from GameState or default to first level
+	if GameState.selected_level_path != "":
+		# Load by full path (preferred - from new campaign menu)
+		_load_level_by_path(GameState.selected_level_path)
+	elif GameState.selected_level_id != "":
+		# Try to find level by name (legacy support)
+		_load_level_by_name(GameState.selected_level_id)
+	else:
+		# Load first available level
+		_load_level(0)
 
 
 func _load_level_by_path(level_path: String) -> void:
@@ -1218,8 +1230,8 @@ func _on_completion_summary_menu() -> void:
 	if TutorialManager:
 		TutorialManager.hide_dialogue_box()
 
-	# Return to main menu
-	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/MainMenu.tscn")
+	# Return to main menu (async to prevent freezing)
+	SceneLoader.load_scene_async("res://scenes/ui/Main_Menu/MainMenu.tscn")
 
 
 func _on_completion_summary_next() -> void:
@@ -2260,7 +2272,7 @@ func _create_menu_button() -> void:
 ## Return to main menu
 func _on_menu_pressed() -> void:
 	_hide_result_popup()
-	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/CampaignMenu.tscn")
+	SceneLoader.load_scene_async("res://scenes/ui/Main_Menu/CampaignMenu.tscn")
 
 
 # ============================================
@@ -2293,7 +2305,7 @@ func _on_menu_button_pressed() -> void:
 func _on_menu_back_to_levels() -> void:
 	if menu_panel:
 		menu_panel.hide_panel()
-	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/CampaignMenu.tscn")
+	SceneLoader.load_scene_async("res://scenes/ui/Main_Menu/CampaignMenu.tscn")
 
 ## Reset window positions
 func _on_menu_reset_windows() -> void:

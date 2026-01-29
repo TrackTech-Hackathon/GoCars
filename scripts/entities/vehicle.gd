@@ -237,6 +237,14 @@ var auto_navigate: bool = false
 var _nav_check_timer: float = 0.0
 const NAV_CHECK_INTERVAL: float = 0.1  # Check road every 100ms
 
+# Performance optimization - throttle expensive checks
+var _red_light_check_timer: float = 0.0
+const RED_LIGHT_CHECK_INTERVAL: float = 0.1  # Check red lights every 100ms
+var _dest_check_timer: float = 0.0
+const DEST_CHECK_INTERVAL: float = 0.15  # Check destination every 150ms
+var _collision_check_timer: float = 0.0
+const COLLISION_CHECK_INTERVAL: float = 0.05  # Check collisions every 50ms
+
 # Stoplight awareness (for red light violation detection)
 var _nearby_stoplights: Array = []  # Array of Stoplight nodes in range
 var _passed_stoplights: Array = []  # Track stoplights we've passed (for violation detection)
@@ -272,6 +280,9 @@ const INTERSECTION_DETECTION_RANGE: float = 30.0
 
 # Turn animation duration in seconds
 const TURN_DURATION: float = 0.3
+
+# Debug mode - set to true to enable verbose logging
+const DEBUG_VEHICLE: bool = false
 
 # Road checker reference (main scene with road_tiles Dictionary)
 var _road_checker: Node = null
@@ -691,7 +702,10 @@ func _physics_process(delta: float) -> void:
 
 	# Check for red light violations (player must code stoplight handling!)
 	if _is_moving:
-		_check_red_light_violation()
+		_red_light_check_timer += delta
+		if _red_light_check_timer >= RED_LIGHT_CHECK_INTERVAL:
+			_red_light_check_timer = 0.0
+			_check_red_light_violation()
 
 	# Auto-navigate: check road and turn if needed
 	if auto_navigate and _is_moving and not _is_turning:
@@ -711,7 +725,11 @@ func _physics_process(delta: float) -> void:
 			if queued_turn != "":
 				_check_intersection_for_turn()
 			_move(delta)
-		_check_destination()
+		# Throttled destination check
+		_dest_check_timer += delta
+		if _dest_check_timer >= DEST_CHECK_INTERVAL:
+			_dest_check_timer = 0.0
+			_check_destination()
 		# Check if we've moved enough tiles (for move(N) or move(-N) command)
 		if _tiles_to_move > 0:
 			var distance_moved = global_position.distance_to(_move_start_position)
@@ -1018,14 +1036,16 @@ func _on_crash() -> void:
 
 
 func _on_off_road_crash() -> void:
-	print("[Vehicle] %s crashed off-road at position %v, visible: %s" % [vehicle_id, global_position, visible])
+	if DEBUG_VEHICLE:
+		print("[Vehicle] %s crashed off-road at position %v, visible: %s" % [vehicle_id, global_position, visible])
 	stop()
 	vehicle_state = 0  # Mark as crashed
 	_switch_to_crashed_sprite()
 	_update_stats_state()  # Update state label
 	# Stop the interpreter for this vehicle
 	_stop_vehicle_interpreter()
-	print("[Vehicle] %s now in crashed state, visible: %s, modulate: %s" % [vehicle_id, visible, modulate])
+	if DEBUG_VEHICLE:
+		print("[Vehicle] %s now in crashed state, visible: %s, modulate: %s" % [vehicle_id, visible, modulate])
 	off_road_crash.emit(vehicle_id)
 
 
@@ -1876,10 +1896,10 @@ func _vector_to_direction_name(vec: Vector2) -> String:
 
 ## Check if there's a red light nearby (short name)
 func at_red() -> bool:
+	# Cache direction name once instead of calculating in loop
+	var direction_name = _vector_to_direction_name(direction)
 	for stoplight in _nearby_stoplights:
 		if global_position.distance_to(stoplight.global_position) < STOPLIGHT_STOP_DISTANCE:
-			# Use the car's FACING direction, not the direction to the stoplight
-			var direction_name = _vector_to_direction_name(direction)
 			if stoplight.is_red(direction_name):
 				return true
 	return false
@@ -1887,10 +1907,10 @@ func at_red() -> bool:
 
 ## Check if there's a green light nearby (short name)
 func at_green() -> bool:
+	# Cache direction name once instead of calculating in loop
+	var direction_name = _vector_to_direction_name(direction)
 	for stoplight in _nearby_stoplights:
 		if global_position.distance_to(stoplight.global_position) < STOPLIGHT_STOP_DISTANCE:
-			# Use the car's FACING direction, not the direction to the stoplight
-			var direction_name = _vector_to_direction_name(direction)
 			if stoplight.is_green(direction_name):
 				return true
 	return false
@@ -1898,10 +1918,10 @@ func at_green() -> bool:
 
 ## Check if there's a yellow light nearby (short name)
 func at_yellow() -> bool:
+	# Cache direction name once instead of calculating in loop
+	var direction_name = _vector_to_direction_name(direction)
 	for stoplight in _nearby_stoplights:
 		if global_position.distance_to(stoplight.global_position) < STOPLIGHT_STOP_DISTANCE:
-			# Use the car's FACING direction, not the direction to the stoplight
-			var direction_name = _vector_to_direction_name(direction)
 			if stoplight.is_yellow(direction_name):
 				return true
 	return false

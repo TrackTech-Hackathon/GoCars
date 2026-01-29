@@ -101,8 +101,10 @@ func _ready() -> void:
 
 	_collect_map_pins()
 	_setup_map_pins()
-	_cache_all_levels()
 	_hide_all_panels()
+
+	# Defer level caching to prevent freezing during scene load
+	call_deferred("_cache_all_levels")
 
 	# Connect level selector back button
 	if level_selector_back:
@@ -210,6 +212,7 @@ func _setup_map_pins() -> void:
 
 ## Cache levels from all map folders
 func _cache_all_levels() -> void:
+	# Load all levels (deferred after _ready to prevent initial freeze)
 	for folder in MAP_FOLDERS:
 		var folder_path = levels_base_path + folder + "/"
 		var levels = _scan_folder_for_levels(folder_path)
@@ -439,6 +442,11 @@ func _open_level_selector(map_index: int) -> void:
 
 	var folder = MAP_FOLDERS[map_index]
 	var display_name = MAP_DISPLAY_NAMES.get(folder, folder)
+
+	# Wait for cache to be populated if it's still loading
+	while not map_levels_cache.has(folder) or map_levels_cache[folder].is_empty():
+		await get_tree().process_frame
+
 	var levels = map_levels_cache.get(folder, [])
 
 	# Hide hover panel
@@ -604,7 +612,7 @@ func _on_level_hover_play_pressed() -> void:
 
 	# Last resort: still go to the game scene (may not have a level selected).
 	push_warning("No level selected/hovered; loading game scene anyway.")
-	get_tree().change_scene_to_file(game_scene_path)
+	SceneLoader.load_scene_async(game_scene_path)
 
 
 ## Play a level
@@ -622,8 +630,8 @@ func _play_level(level_data: Dictionary) -> void:
 	GameState.selected_level_id = level_id
 	GameState.selected_level_path = level_path
 
-	# Change to game scene
-	get_tree().change_scene_to_file(game_scene_path)
+	# Change to game scene (async to prevent freezing)
+	SceneLoader.load_scene_async(game_scene_path)
 
 
 ## Back button from level selector

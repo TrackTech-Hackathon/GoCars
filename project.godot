@@ -21,6 +21,7 @@ GameState="*res://scripts/systems/game_state.gd"
 MusicManager="*res://scripts/systems/music_manager.gd"
 GameData="*res://scripts/core/game_data.gd"
 TutorialManager="*res://scripts/core/tutorial_manager.gd"
+SceneLoader="*res://scripts/core/scene_loader.gd"
 
 [display]
 

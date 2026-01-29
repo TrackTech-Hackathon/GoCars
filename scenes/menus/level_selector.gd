@@ -135,8 +135,8 @@ func _on_level_pressed(level_id: String) -> void:
 	# Store selected level in GameState autoload
 	GameState.selected_level_id = level_id
 
-	# All levels in levelmaps folder use the TileMap system
-	get_tree().change_scene_to_file(game_scene_path)
+	# All levels in levelmaps folder use the TileMap system (async to prevent freezing)
+	SceneLoader.load_scene_async(game_scene_path)
 
 
 # ============================================
