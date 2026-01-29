@@ -336,7 +336,7 @@ STEP 3B: EXPLAIN VIOLATION
 "If there's only 1 car, you only get 1 life—so every decision counts!"
 
 STEP 3C: PRESS RESET AFTER VIOLATION
-"Now click the RESET button in the failure window to try again."
+"Now click R to try again."
 [WAIT: Player presses reset]
 
 STEP 4: Why Loops Are Important
