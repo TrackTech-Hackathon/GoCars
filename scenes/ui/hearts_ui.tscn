@@ -1,63 +1,13 @@
-[gd_scene load_steps=7 format=3 uid="uid://boi6cme0m6s7g"]
-
-[ext_resource type="Texture2D" uid="uid://bmrllcbhg5bg1" path="res://assets/UI/Heart.png" id="2_heart_texture"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_t3165"]
-atlas = ExtResource("2_heart_texture")
-region = Rect2(0, 0, 1280, 1280)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_8mrfq"]
-atlas = ExtResource("2_heart_texture")
-region = Rect2(1280, 0, 1280, 1280)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_su6gi"]
-atlas = ExtResource("2_heart_texture")
-region = Rect2(2560, 0, 1280, 1280)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_kk01g"]
-atlas = ExtResource("2_heart_texture")
-region = Rect2(3840, 0, 1280, 1280)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_hearts"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_t3165")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_8mrfq")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_su6gi")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_kk01g")
-}],
-"loop": false,
-"name": &"break",
-"speed": 6.666667
-}]
+[gd_scene format=3 uid="uid://bu7fv3bcvk1x6"]
 
 [node name="HeartsUI" type="Control"]
-custom_minimum_size = Vector2(400, 40)
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 3
-anchors_preset = 0
-offset_left = 768.0
-offset_top = 386.0
-offset_right = 1168.0
-offset_bottom = 426.0
-scale = Vector2(0.09193658, 0.09193658)
-
-[node name="HeartContainer" type="HBoxContainer" parent="."]
-layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 4
-
-[node name="Heart1" type="AnimatedSprite2D" parent="HeartContainer"]
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
+scale = Vector2(0.09193658, 0.09193658)
+size_flags_horizontal = 4
+size_flags_vertical = 4
