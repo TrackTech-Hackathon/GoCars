@@ -36,6 +36,11 @@ script/source = "extends Control
 
 # Fallback music start in case logo animation doesn't trigger it
 func _ready() -> void:
+	# Hide loading screen after scene loads
+	await get_tree().create_timer(0.1).timeout
+	if SceneLoader:
+		SceneLoader._hide_loading_screen()
+
 	await get_tree().create_timer(6.0).timeout
 	# Only play if music isn't already playing
 	if MusicManager and not MusicManager.music_player.playing:

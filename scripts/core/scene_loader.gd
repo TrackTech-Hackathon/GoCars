@@ -86,9 +86,8 @@ func _process(_delta: float) -> void:
 		# Change to the loaded scene (deferred to avoid blocking)
 		get_tree().call_deferred("change_scene_to_packed", scene)
 
-		# Hide loading screen after a short delay (let scene start loading)
-		await get_tree().create_timer(0.1).timeout
-		_hide_loading_screen()
+		# Note: Loading screen stays visible - new scene is responsible for hiding it
+		# This prevents flashing between scene transitions
 	elif status == ResourceLoader.THREAD_LOAD_FAILED:
 		# Loading failed
 		push_error("SceneLoader: Failed to load scene: %s" % _loading_path)

@@ -360,8 +360,8 @@ func _load_level(index: int) -> void:
 		current_level_node = null
 		road_layer = null
 
-	# Load new level
-	current_level_node = level_loader.load_level(index)
+	# Load new level (async to prevent freezing)
+	current_level_node = await level_loader.load_level_async(index)
 	if current_level_node == null:
 		_update_status("Failed to load level %d" % index)
 		return
@@ -427,25 +427,34 @@ func _load_level_by_name(level_name: String) -> void:
 	for i in range(paths.size()):
 		# Match by filename (level_01, level_02, etc.)
 		if level_loader.get_level_filename(i) == level_name:
-			_load_level(i)
+			await _load_level(i)
 			return
 
 	# Fallback to first level
-	_load_level(0)
+	await _load_level(0)
 
 
 ## Deferred level loading to prevent freezing during scene transition
 func _deferred_load_level() -> void:
+	# Show loading screen while level loads
+	if SceneLoader:
+		SceneLoader._show_loading_screen()
+
 	# Load level from GameState or default to first level
 	if GameState.selected_level_path != "":
 		# Load by full path (preferred - from new campaign menu)
-		_load_level_by_path(GameState.selected_level_path)
+		await _load_level_by_path(GameState.selected_level_path)
 	elif GameState.selected_level_id != "":
 		# Try to find level by name (legacy support)
-		_load_level_by_name(GameState.selected_level_id)
+		await _load_level_by_name(GameState.selected_level_id)
 	else:
 		# Load first available level
-		_load_level(0)
+		await _load_level(0)
+
+	# Hide loading screen after level loads
+	await get_tree().create_timer(0.1).timeout
+	if SceneLoader:
+		SceneLoader._hide_loading_screen()
 
 
 func _load_level_by_path(level_path: String) -> void:
@@ -459,14 +468,36 @@ func _load_level_by_path(level_path: String) -> void:
 
 	# If we found the index, use _load_level for consistent behavior
 	if found_index >= 0:
-		_load_level(found_index)
+		await _load_level(found_index)
 		return
 
-	# Fallback: try to load directly if path not in cache
-	var scene = load(level_path)
+	# Fallback: try to load directly if path not in cache (async)
+	var status = ResourceLoader.load_threaded_request(level_path)
+	if status != OK:
+		push_error("Failed to start loading level scene: %s" % level_path)
+		await _load_level(0)
+		return
+
+	# Wait for load to complete
+	while true:
+		var load_status = ResourceLoader.load_threaded_get_status(level_path)
+		if load_status == ResourceLoader.THREAD_LOAD_LOADED:
+			var scene = ResourceLoader.load_threaded_get(level_path)
+			if scene == null:
+				push_error("Failed to get loaded scene: %s" % level_path)
+				await _load_level(0)
+				return
+			break
+		elif load_status == ResourceLoader.THREAD_LOAD_FAILED or load_status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			push_error("Failed to load level scene: %s" % level_path)
+			await _load_level(0)
+			return
+		await get_tree().process_frame
+
+	var scene = ResourceLoader.load_threaded_get(level_path)
 	if scene == null:
-		push_error("Failed to load level scene: %s" % level_path)
-		_load_level(0)
+		push_error("Failed to get scene after loading: %s" % level_path)
+		await _load_level(0)
 		return
 
 	# Clear all existing cars first

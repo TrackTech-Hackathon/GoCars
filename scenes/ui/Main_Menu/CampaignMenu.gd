@@ -106,6 +106,9 @@ func _ready() -> void:
 	# Defer level caching to prevent freezing during scene load
 	call_deferred("_cache_all_levels")
 
+	# Hide loading screen after scene is ready
+	call_deferred("_hide_loading_screen_delayed")
+
 	# Connect level selector back button
 	if level_selector_back:
 		# Trigger on click (mouse-down), not only on release.
@@ -219,6 +222,13 @@ func _cache_all_levels() -> void:
 		map_levels_cache[folder] = levels
 
 
+## Hide loading screen with a small delay
+func _hide_loading_screen_delayed() -> void:
+	await get_tree().create_timer(0.1).timeout
+	if SceneLoader:
+		SceneLoader._hide_loading_screen()
+
+
 ## Scan a folder for level files
 ## Uses DirAccess in editor, LevelManifest for exported builds
 func _scan_folder_for_levels(folder_path: String) -> Array:
@@ -286,26 +296,8 @@ func _scan_folder_for_levels(folder_path: String) -> Array:
 
 ## Get level display name from scene or format from id
 func _get_level_display_name(level_path: String, level_id: String) -> String:
-	# Try to load scene and read LevelSettings
-	var scene = load(level_path)
-	if scene:
-		var instance = scene.instantiate()
-		var display_name = ""
-
-		# Try new LevelSettings system
-		var settings_node = instance.get_node_or_null("LevelSettings")
-		if settings_node:
-			# Check for LevelName label (backward compat)
-			var name_label = settings_node.get_node_or_null("LevelName")
-			if name_label and name_label is Label:
-				display_name = name_label.text.strip_edges()
-
-		instance.queue_free()
-
-		if not display_name.is_empty():
-			return display_name
-
-	# Fallback: format level_id nicely
+	# Format the level ID nicely without loading the scene (prevents freezing)
+	# Display names from LevelSettings will be read when the level is actually played
 	return _format_level_name(level_id)
 
 
