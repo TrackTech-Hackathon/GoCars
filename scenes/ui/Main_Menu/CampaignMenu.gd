@@ -85,6 +85,7 @@ var current_selected_map: int = -1
 
 var map_levels_cache: Dictionary = {}  # map_folder -> Array of level data
 var current_selected_level: Dictionary = {}
+var current_selected_level_unlocked: bool = false  # Track unlock status for hover restoration
 var current_hovered_level: Dictionary = {}
 var level_buttons: Array[Button] = []
 
@@ -332,11 +333,8 @@ func _on_map_pin_pressed(map_index: int) -> void:
 	if map_index < 0 or map_index >= MAP_FOLDERS.size():
 		return
 
-	# If same pin clicked twice, open level selector
-	if current_selected_map == map_index and hover_panel and hover_panel.visible:
-		_open_level_selector(map_index)
-		return
-
+	# Always just show hover panel, never open selector directly
+	# PlayButton in HoverPanel will open the selector
 	current_selected_map = map_index
 	_show_map_hover(map_index)
 
@@ -508,7 +506,7 @@ func _create_level_button(level_data: Dictionary, index: int, map_folder: String
 	_apply_level_item_style_to_button(btn)
 
 	# Connect signals
-	btn.pressed.connect(_on_level_button_pressed.bind(level_data))
+	btn.pressed.connect(_on_level_button_pressed.bind(level_data, is_unlocked))
 	btn.mouse_entered.connect(_on_level_button_hover.bind(level_data, is_unlocked))
 	btn.mouse_exited.connect(_on_level_button_hover_end)
 
@@ -531,14 +529,12 @@ func _is_level_unlocked(map_folder: String, level_index: int) -> bool:
 	return false
 
 
-## Level button pressed - show level hover or play if already selected
-func _on_level_button_pressed(level_data: Dictionary) -> void:
-	if current_selected_level.get("id", "") == level_data.get("id", ""):
-		# Same level clicked twice, play it
-		_play_level(level_data)
-	else:
-		current_selected_level = level_data
-		_show_level_hover(level_data, true)
+## Level button pressed - always show level hover, never play directly
+## PlayButton in LevelHoverPanel will launch the level
+func _on_level_button_pressed(level_data: Dictionary, is_unlocked: bool) -> void:
+	current_selected_level = level_data
+	current_selected_level_unlocked = is_unlocked  # Store unlock status for restoration on hover end
+	_show_level_hover(level_data, is_unlocked)
 
 
 ## Show level hover panel
@@ -548,8 +544,11 @@ func _on_level_button_hover(level_data: Dictionary, is_unlocked: bool) -> void:
 
 ## Hide level hover panel
 func _on_level_button_hover_end() -> void:
-	# Don't hide if we have a selected level
-	if current_selected_level.is_empty():
+	# If a level is selected, restore its info instead of hiding the panel
+	if not current_selected_level.is_empty():
+		_show_level_hover(current_selected_level, current_selected_level_unlocked)
+	else:
+		# No level selected, hide the panel
 		if level_hover_panel:
 			level_hover_panel.visible = false
 
