@@ -112,10 +112,11 @@ func start_tutorial(level_name: String, parent_node: Node) -> bool:
 		print("TutorialManager: Tutorial %s already completed, showing skip option" % level_name)
 		# Show skip option will be handled by dialogue box
 
-	# Create dialogue box if not exists
-	if not dialogue_box and dialogue_box_scene:
+	# Create dialogue box if not exists or is invalid
+	if (not dialogue_box or not is_instance_valid(dialogue_box)) and dialogue_box_scene:
 		dialogue_box = dialogue_box_scene.instantiate()
 		parent_node.add_child(dialogue_box)
+		print("TutorialManager: Created new dialogue box")
 
 		# Connect dialogue box signals
 		if dialogue_box.has_signal("continue_pressed"):
@@ -191,6 +192,33 @@ func advance_step() -> void:
 func hide_dialogue_box() -> void:
 	if dialogue_box and dialogue_box.has_method("hide_dialogue"):
 		dialogue_box.hide_dialogue()
+
+## Cleanup tutorial references when level is unloaded
+func cleanup() -> void:
+	print("TutorialManager: Cleaning up tutorial references")
+
+	# Clear dialogue box reference (will be invalid when level unloads)
+	dialogue_box = null
+
+	# Clear main scene reference
+	_main_scene = null
+
+	# Clear highlight overlay if it exists
+	if highlight_overlay and is_instance_valid(highlight_overlay):
+		highlight_overlay.queue_free()
+	highlight_overlay = null
+
+	# Clear tutorial state
+	current_tutorial = null
+	current_step_index = -1
+	current_dialogue_index = 0
+	is_tutorial_active = false
+	is_waiting_for_action = false
+	is_awaiting_forced_crash = false
+	_is_forced_failure = false
+	pending_wait_action = ""
+
+	print("TutorialManager: Cleanup complete")
 
 ## Called when reset/retry is pressed - allows tutorial to continue to next step
 func on_reset_pressed() -> void:

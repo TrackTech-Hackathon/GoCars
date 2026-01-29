@@ -350,6 +350,9 @@ func _load_level(index: int) -> void:
 	next_car_id = 1
 	is_spawning_cars = false
 
+	# Clean up tutorial references BEFORE loading new level
+	TutorialManager.cleanup()
+
 	# Clear previous level
 	if current_level_node:
 		current_level_node.queue_free()
@@ -2175,6 +2178,10 @@ func _on_window_manager_speed_changed(speed_val: float) -> void:
 
 
 func _exit_tree() -> void:
+	# Clean up tutorial references
+	TutorialManager.cleanup()
+
+	# Clean up audio
 	if background_audio:
 		background_audio.stop()
 		background_audio.queue_free()

@@ -17,9 +17,6 @@ extends TextureButton
 
 @export var hover_z_index: int = 50
 
-# 🔹 Drag your LevelSelectorPanel here in the Inspector
-@export var level_selector_panel: Control
-@export var level_hover_panel: Control
 
 var _tween: Tween
 var _base_scale: Vector2
@@ -111,12 +108,6 @@ func _gui_input(event: InputEvent) -> void:
 		else:
 			_is_pressed = false
 
-			# ✅ HIDE THE LEVEL SELECTOR PANEL ON CLICK RELEASE
-			if level_selector_panel:
-				level_selector_panel.visible = false
-
-			if level_hover_panel:
-				level_hover_panel.visible = false
 			if _is_hovered:
 				_tween_to(
 					_base_scale * hover_scale,
@@ -127,4 +118,5 @@ func _gui_input(event: InputEvent) -> void:
 			else:
 				_apply_hover_state()
 
-		accept_event()
+	# Don't consume the event - let parent TextureButton handle signal emission
+	# This allows the pressed signal to be emitted normally
