@@ -133,6 +133,9 @@ var last_heart_loss_cause: String = "crash"  # crash, red_light, off_road
 # Stats UI Panel (follows mouse, shows hovered car stats)
 var stats_ui_panel: Node = null
 
+# Hearts UI instance
+var hearts_ui_instance: Node2D = null
+
 
 func _ready() -> void:
 	# Set music volume
@@ -1286,6 +1289,10 @@ func _do_fast_retry() -> void:
 	hearts = initial_hearts
 	_update_hearts_label()
 
+	# Reset HeartsUI animation
+	if hearts_ui_instance and hearts_ui_instance.has_method("reset_hearts"):
+		hearts_ui_instance.reset_hearts()
+
 	# DO NOT reset timer on R key / restart button
 	# Timer only resets from game over screen buttons (Retry/Next Level)
 	# Timer keeps running (was started on level load)
@@ -2321,20 +2328,38 @@ func _on_menu_close() -> void:
 
 ## Load hearts configuration from level
 func _load_level_hearts() -> void:
-	if current_level_node == null:
-		return
+	# Try to get hearts from level settings first
+	var settings = null
+	if current_level_node:
+		settings = LevelSettings.from_node(current_level_node)
 
-	# Heart count depends on number of cars in the level
-	# Each car is one heart
-	var heart_count = spawn_data.size()
+	if settings:
+		initial_hearts = settings.starting_hearts
+		hearts = settings.starting_hearts
+		print("[Main] Hearts loaded: %d (from LevelSettings)" % hearts)
+	else:
+		# Fallback to spawn point count
+		var heart_count = spawn_data.size() if spawn_data else 3
+		heart_count = max(1, heart_count)
+		initial_hearts = heart_count
+		hearts = heart_count
+		print("[Main] Hearts loaded: %d (based on spawn points)" % hearts)
 
-	# Minimum of 1 heart
-	heart_count = max(1, heart_count)
-
-	initial_hearts = heart_count
-	hearts = heart_count
-
-	print("[Main] Hearts loaded: %d (based on %d spawn points)" % [hearts, spawn_data.size()])
+	# Load and instantiate HeartsUI scene
+	var hearts_ui_scene = load("res://scenes/ui/hearts_ui.tscn")
+	if hearts_ui_scene:
+		hearts_ui_instance = hearts_ui_scene.instantiate()
+		# Add to UI layer so it displays as UI
+		var ui_layer = get_node_or_null("UI")
+		if ui_layer:
+			ui_layer.add_child(hearts_ui_instance)
+		else:
+			add_child(hearts_ui_instance)
+		print("[Main] HeartsUI created, setting max hearts to %d" % initial_hearts)
+		if hearts_ui_instance.has_method("set_max_hearts"):
+			hearts_ui_instance.set_max_hearts(initial_hearts)
+	else:
+		print("[Main] Error: Could not load hearts_ui.tscn")
 
 	if hearts_label:
 		hearts_label.visible = true
@@ -2347,6 +2372,10 @@ func _lose_heart() -> void:
 	hearts -= 1
 	print("[Main] Heart lost! Remaining hearts: %d" % hearts)
 	_update_hearts_label()
+
+	# Play animation on HeartsUI if available
+	if hearts_ui_instance and hearts_ui_instance.has_method("lose_heart"):
+		hearts_ui_instance.lose_heart()
 
 	if hearts <= 0:
 		print("[Main] HEARTS DEPLETED! Triggering failure sequence...")

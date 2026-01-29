@@ -2493,7 +2493,7 @@ position = Vector2(2659, 7662)
 [node name="LevelSettings" type="Node" parent="."]
 script = ExtResource("6_vackf")
 level_name = "Tutorial 1"
-starting_hearts = 2
+starting_hearts = 1
 auto_spawn_enabled = false
 
 [node name="LevelCars" type="Label" parent="LevelSettings"]
@@ -2515,10 +2515,6 @@ text = "Tutorial 1
 
 [node name="HeartsUI" parent="." instance=ExtResource("3_1su6t")]
 visible = false
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 400.0
-offset_bottom = 40.0
 metadata/_edit_use_custom_anchors = true
 
 [node name="Camera Border" type="CollisionShape2D" parent="."]
