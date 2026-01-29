@@ -1,6 +1,5 @@
-[gd_scene load_steps=8 format=3 uid="uid://boi6cme0m6s7g"]
+[gd_scene load_steps=7 format=3 uid="uid://boi6cme0m6s7g"]
 
-[ext_resource type="Script" uid="uid://blnr5q3v04f8i" path="res://scenes/ui/hearts_ui.gd" id="1_hearts_script"]
 [ext_resource type="Texture2D" uid="uid://bmrllcbhg5bg1" path="res://assets/UI/Heart.png" id="2_heart_texture"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_t3165"]
@@ -48,7 +47,6 @@ offset_top = 386.0
 offset_right = 1168.0
 offset_bottom = 426.0
 scale = Vector2(0.09193658, 0.09193658)
-script = ExtResource("1_hearts_script")
 
 [node name="HeartContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -63,63 +61,3 @@ theme_override_constants/separation = 4
 sprite_frames = SubResource("SpriteFrames_hearts")
 animation = &"break"
 offset = Vector2(16, 16)
-
-[node name="Heart2" type="AnimatedSprite2D" parent="HeartContainer"]
-position = Vector2(1000.6899, 0)
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
-
-[node name="Heart3" type="AnimatedSprite2D" parent="HeartContainer"]
-position = Vector2(2044.888, 0)
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
-
-[node name="Heart4" type="AnimatedSprite2D" parent="HeartContainer"]
-position = Vector2(3089.0862, 0)
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
-
-[node name="Heart5" type="AnimatedSprite2D" parent="HeartContainer"]
-position = Vector2(4133.284, 0)
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
-
-[node name="Heart6" type="AnimatedSprite2D" parent="HeartContainer"]
-position = Vector2(5253.622, 0)
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
-
-[node name="Heart7" type="AnimatedSprite2D" parent="HeartContainer"]
-position = Vector2(6308.697, 0)
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
-
-[node name="Heart8" type="AnimatedSprite2D" parent="HeartContainer"]
-position = Vector2(7385.5264, 0)
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
-
-[node name="Heart9" type="AnimatedSprite2D" parent="HeartContainer"]
-position = Vector2(8527.618, 0)
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
-
-[node name="Heart10" type="AnimatedSprite2D" parent="HeartContainer"]
-position = Vector2(9593.57, 0)
-sprite_frames = SubResource("SpriteFrames_hearts")
-animation = &"break"
-offset = Vector2(16, 16)
-
-[node name="HeartCount" type="Label" parent="."]
-layout_mode = 0
-offset_right = 40.0
-offset_bottom = 23.0
-text = "3"
