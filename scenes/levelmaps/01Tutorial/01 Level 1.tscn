@@ -2310,6 +2310,7 @@ offset_bottom = 40.0
 metadata/_edit_use_custom_anchors = true
 
 [node name="Camera Border" type="CollisionShape2D" parent="."]
+visible = false
 position = Vector2(6556.25, 4891.25)
 shape = SubResource("RectangleShape2D_1su6t")
 
