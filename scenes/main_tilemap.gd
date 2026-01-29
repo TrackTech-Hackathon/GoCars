@@ -8,6 +8,26 @@ const RoadTileMapLayerScript = preload("res://scripts/map_editor/road_tilemap_la
 const LevelLoaderScript = preload("res://scripts/core/level_loader.gd")
 const RoadTileProxy = preload("res://scripts/map_editor/road_tile_proxy.gd")
 
+# Preload vehicle scenes (prevents memory leak from repeated load() calls)
+const VEHICLE_SCENES = {
+	"sedan": preload("res://scenes/entities/car_sedan.tscn"),
+	"estate": preload("res://scenes/entities/car_estate.tscn"),
+	"sport": preload("res://scenes/entities/car_sport.tscn"),
+	"micro": preload("res://scenes/entities/car_micro.tscn"),
+	"pickup": preload("res://scenes/entities/car_pickup.tscn"),
+	"jeepney": preload("res://scenes/entities/car_jeepney.tscn"),
+	"jeepney_2": preload("res://scenes/entities/car_jeepney_2.tscn"),
+	"bus": preload("res://scenes/entities/car_bus.tscn")
+}
+
+# Preload UI scenes (prevents memory buildup from repeated load() calls)
+const STOPLIGHT_SCENE = preload("res://scenes/entities/stoplight.tscn")
+const STATS_PANEL_SCENE = preload("res://scenes/ui/stats_ui_panel.tscn")
+const COMPLETION_SUMMARY_SCENE = preload("res://scenes/ui/completion_summary.tscn")
+const MENU_PANEL_SCENE = preload("res://scenes/ui/menu_panel.tscn")
+const HEARTS_UI_SCENE = preload("res://scenes/ui/hearts_ui.tscn")
+const STOPLIGHT_CODE_POPUP_SCENE = preload("res://scenes/ui/stoplight_code_popup.tscn")
+
 @onready var simulation_engine: SimulationEngine = $SimulationEngine
 @onready var code_editor: TextEdit = $UI/CodeEditor
 @onready var run_button: Button = $UI/RunButton
@@ -713,27 +733,17 @@ func _spawn_car_at(spawn: Dictionary) -> Vehicle:
 	var car_type = car_config.get("type", "Random")
 	var car_color = car_config.get("color", "Random")
 
-	# Determine which scene to load
+	# Determine which scene to use (using preloaded scenes to prevent memory leak)
 	var vehicle_scene: Resource = null
-	var scene_path = _get_scene_path_for_type(car_type)
 
-	if scene_path != "":
-		# Specific type requested
-		vehicle_scene = load(scene_path)
+	if car_type.to_lower() != "random":
+		# Specific type requested - use preloaded scene
+		vehicle_scene = _get_preloaded_vehicle_scene(car_type)
 	else:
-		# Random type - pick from all available
-		var car_scenes = [
-			"res://scenes/entities/car_sedan.tscn",
-			"res://scenes/entities/car_estate.tscn",
-			"res://scenes/entities/car_sport.tscn",
-			"res://scenes/entities/car_micro.tscn",
-			"res://scenes/entities/car_pickup.tscn",
-			"res://scenes/entities/car_jeepney.tscn",
-			"res://scenes/entities/car_jeepney_2.tscn",
-			"res://scenes/entities/car_bus.tscn"
-		]
-		var random_index = randi() % car_scenes.size()
-		vehicle_scene = load(car_scenes[random_index])
+		# Random type - pick from preloaded scenes
+		var scene_keys = VEHICLE_SCENES.keys()
+		var random_key = scene_keys[randi() % scene_keys.size()]
+		vehicle_scene = VEHICLE_SCENES[random_key]
 
 	if vehicle_scene == null:
 		_update_status("Error: Could not load vehicle scene")
@@ -854,6 +864,17 @@ func _clear_all_cars() -> void:
 	print("[Main] _clear_all_cars() called, clearing %d vehicles" % vehicles.size())
 	for vehicle in vehicles:
 		print("[Main] Clearing vehicle: %s" % vehicle.vehicle_id)
+
+		# Disconnect signals to prevent memory leak
+		if vehicle.reached_destination.is_connected(_on_car_reached_destination):
+			vehicle.reached_destination.disconnect(_on_car_reached_destination)
+		if vehicle.crashed.is_connected(_on_car_crashed):
+			vehicle.crashed.disconnect(_on_car_crashed)
+		if vehicle.off_road_crash.is_connected(_on_car_off_road):
+			vehicle.off_road_crash.disconnect(_on_car_off_road)
+		if vehicle.ran_red_light.is_connected(_on_car_ran_red_light):
+			vehicle.ran_red_light.disconnect(_on_car_ran_red_light)
+
 		simulation_engine.unregister_vehicle(vehicle.vehicle_id)
 		vehicle.queue_free()
 
@@ -879,8 +900,8 @@ func _spawn_stoplights_from_tiles() -> void:
 	if stoplight_data.is_empty():
 		return
 
-	# Load stoplight scene
-	var stoplight_scene = load("res://scenes/entities/stoplight.tscn")
+	# Use preloaded stoplight scene (prevents memory leak)
+	var stoplight_scene = STOPLIGHT_SCENE
 	if stoplight_scene == null:
 		_update_status("Error: Could not load stoplight scene")
 		return
@@ -2114,7 +2135,7 @@ func _update_neighbors_after_removal(removed_pos: Vector2i) -> void:
 # ============================================
 
 func _setup_stats_ui_panel() -> void:
-	var stats_panel_scene = load("res://scenes/ui/stats_ui_panel.tscn")
+	var stats_panel_scene = STATS_PANEL_SCENE
 	if stats_panel_scene:
 		stats_ui_panel = stats_panel_scene.instantiate()
 		add_child(stats_ui_panel)
@@ -2123,7 +2144,7 @@ func _setup_stats_ui_panel() -> void:
 
 
 func _init_completion_summary() -> void:
-	var summary_scene = load("res://scenes/ui/completion_summary.tscn")
+	var summary_scene = COMPLETION_SUMMARY_SCENE
 	if summary_scene:
 		completion_summary = summary_scene.instantiate()
 		if completion_summary:
@@ -2311,8 +2332,8 @@ func _on_menu_pressed() -> void:
 # ============================================
 
 func _create_menu_panel() -> void:
-	# Load and instantiate the menu panel scene
-	var menu_panel_scene = load("res://scenes/ui/menu_panel.tscn")
+	# Use preloaded menu panel scene (prevents memory leak)
+	var menu_panel_scene = MENU_PANEL_SCENE
 	if menu_panel_scene:
 		menu_panel = menu_panel_scene.instantiate()
 		$UI.add_child(menu_panel)
@@ -2388,8 +2409,8 @@ func _load_level_hearts() -> void:
 		hearts = heart_count
 		print("[Main] Hearts loaded: %d (based on spawn points)" % hearts)
 
-	# Load and instantiate HeartsUI scene
-	var hearts_ui_scene = load("res://scenes/ui/hearts_ui.tscn")
+	# Use preloaded HeartsUI scene (prevents memory leak)
+	var hearts_ui_scene = HEARTS_UI_SCENE
 	if hearts_ui_scene:
 		hearts_ui_instance = hearts_ui_scene.instantiate()
 		# Add to UI layer so it displays as UI
@@ -2596,7 +2617,7 @@ func _get_car_config_for_group(group_name: String) -> Dictionary:
 	return options[randi() % options.size()]
 
 
-## Convert type string to scene path
+## Convert type string to scene path (DEPRECATED - use _get_preloaded_vehicle_scene instead)
 func _get_scene_path_for_type(type_name: String) -> String:
 	match type_name.to_lower():
 		"sedan": return "res://scenes/entities/car_sedan.tscn"
@@ -2608,6 +2629,20 @@ func _get_scene_path_for_type(type_name: String) -> String:
 		"jeepney2", "jeepney_2": return "res://scenes/entities/car_jeepney_2.tscn"
 		"bus": return "res://scenes/entities/car_bus.tscn"
 		_: return ""  # Random or unknown
+
+
+## Get preloaded vehicle scene by type name (prevents memory leak)
+func _get_preloaded_vehicle_scene(type_name: String) -> Resource:
+	match type_name.to_lower():
+		"sedan": return VEHICLE_SCENES["sedan"]
+		"estate": return VEHICLE_SCENES["estate"]
+		"sport": return VEHICLE_SCENES["sport"]
+		"micro": return VEHICLE_SCENES["micro"]
+		"pickup": return VEHICLE_SCENES["pickup"]
+		"jeepney": return VEHICLE_SCENES["jeepney"]
+		"jeepney2", "jeepney_2": return VEHICLE_SCENES["jeepney_2"]
+		"bus": return VEHICLE_SCENES["bus"]
+		_: return null  # Random or unknown
 
 
 ## Convert color string to VehicleColor enum index
@@ -2762,8 +2797,8 @@ func _force_auto_run_player_car() -> void:
 func _setup_stoplight_popup() -> void:
 	if stoplight_code_popup != null:
 		return  # Already setup
-	
-	var popup_scene = load("res://scenes/ui/stoplight_code_popup.tscn")
+
+	var popup_scene = STOPLIGHT_CODE_POPUP_SCENE
 	if popup_scene == null:
 		push_error("Could not load stoplight_code_popup.tscn")
 		return
