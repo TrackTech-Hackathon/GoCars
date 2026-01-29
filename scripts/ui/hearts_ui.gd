@@ -12,7 +12,7 @@ signal hearts_changed(current: int, max_hearts: int)
 signal hearts_depleted
 
 # Heart configuration
-@export var heart_spacing: float = 20.0
+@export var heart_spacing: float = 8
 
 # Internal state
 var max_hearts: int = 3
@@ -52,6 +52,9 @@ func _initialize_heart_display() -> void:
 		print("[HeartsUI] Error: Heart1 not found")
 		return
 
+	# Get Heart1 position for reference
+	var heart1_pos = heart1.position if heart1 else Vector2(4, 4)
+
 	# Create additional hearts beyond the first one
 	for i in range(1, max_hearts):
 		var new_heart = AnimatedSprite2D.new()
@@ -59,8 +62,8 @@ func _initialize_heart_display() -> void:
 		new_heart.animation = "default"
 		new_heart.frame = 0  # Start with full heart
 
-		# Position hearts horizontally and scale down
-		new_heart.position = Vector2(i * heart_spacing, 0)
+		# Position hearts horizontally next to first heart, same Y position
+		new_heart.position = Vector2(heart1_pos.x + (i * heart_spacing), heart1_pos.y)
 		new_heart.scale = Vector2(0.006464851, 0.006464851)
 
 		add_child(new_heart)
