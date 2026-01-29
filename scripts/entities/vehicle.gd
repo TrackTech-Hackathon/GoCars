@@ -1053,23 +1053,24 @@ func _check_area_collisions() -> void:
 						other_vehicle._on_crash()
 						return
 
-	# Check RoadBuildingCollision Area - detect road boundaries/buildings
+	# Check RoadBuildingCollision Area - detect road boundaries/buildings (collision layer 2)
+	# Use simple Area2D overlap detection - works at ANY distance!
 	if _road_building_area:
-		var road_overlaps = _road_building_area.get_overlapping_bodies()
-		for body in road_overlaps:
-			if body.is_in_group("Road") or body.is_in_group("Building"):
+		# Check for overlapping areas on layer 2 (RoadBorderArea nodes)
+		var overlapping_areas = _road_building_area.get_overlapping_areas()
+		for area in overlapping_areas:
+			# Check if it's a road border or building
+			if area.is_in_group("RoadBorder") or area.is_in_group("Building"):
+				# Crashed! Hit a road border
 				_on_off_road_crash()
 				return
-		# Also check areas in case roads use Area2D
-		var road_area_overlaps = _road_building_area.get_overlapping_areas()
-		for area in road_area_overlaps:
-			if area.is_in_group("Road") or area.is_in_group("Building"):
-				_on_off_road_crash()
-				return
-			var parent = area.get_parent()
-			if parent and (parent.is_in_group("Road") or parent.is_in_group("Building")):
-				_on_off_road_crash()
-				return
+
+		# Also check for overlapping bodies (TileMapLayer physics shapes)
+		var overlapping_bodies = _road_building_area.get_overlapping_bodies()
+		if overlapping_bodies.size() > 0:
+			# Crashed! Hit a TileMapLayer collision shape
+			_on_off_road_crash()
+			return
 
 
 ## Switch to the crashed sprite from row 2 of the spritesheet
