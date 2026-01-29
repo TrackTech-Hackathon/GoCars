@@ -2230,7 +2230,7 @@ tile_size = Vector2i(144, 144)
 sources/0 = SubResource("TileSetAtlasSource_1su6t")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1su6t"]
-size = Vector2(11850.5, 9218.5)
+size = Vector2(8831, 5237.5)
 
 [node name="Level01" type="Node2D"]
 
@@ -2283,6 +2283,42 @@ tile_map_data = PackedByteArray("AAA4ADAAAAAAAAIAAABAADAAAAAAAAIAAABJACwAAAACAAI
 tile_set = ExtResource("1_x6tcf")
 physics_quadrant_size = 1
 script = ExtResource("2_nrr6o")
+
+[node name="LevelSettings" type="Node" parent="."]
+script = ExtResource("6_vackf")
+level_name = "Tutorial 1"
+starting_hearts = 1
+auto_spawn_enabled = false
+
+[node name="LevelCars" type="Label" parent="LevelSettings"]
+visible = false
+text = "Group A - Random, Random
+Group B - Random, Random
+Group C - Random, Random
+Group D - Random, Random"
+
+[node name="LevelName" type="Label" parent="LevelSettings"]
+visible = false
+text = "Tutorial 1
+"
+
+[node name="LevelBuildRoads" type="Label" parent="LevelSettings"]
+visible = false
+text = "Tutorial 1
+"
+
+[node name="HeartsUI" parent="." instance=ExtResource("3_1su6t")]
+visible = false
+metadata/_edit_use_custom_anchors = true
+
+[node name="Camera Border" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(4437.5, 6881.75)
+shape = SubResource("RectangleShape2D_1su6t")
+
+[node name="Camera" type="Camera2D" parent="."]
+position = Vector2(1956, 7578)
+zoom = Vector2(0.8, 0.8)
 
 [node name="Buildings" type="Node" parent="."]
 
@@ -2348,6 +2384,9 @@ position = Vector2(6218, 5897)
 [node name="House294" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(5576, 5568)
 
+[node name="House369" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(5222, 5722)
+
 [node name="House285" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(6390, 5310)
 
@@ -2377,6 +2416,15 @@ position = Vector2(6112, 4754)
 
 [node name="House314" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(5561, 4764)
+
+[node name="House400" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(5009, 4532)
+
+[node name="House403" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4749, 4767)
+
+[node name="House401" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4990, 4987)
 
 [node name="House146" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(8305, 4886)
@@ -2446,6 +2494,9 @@ position = Vector2(11711, 3683)
 
 [node name="House243" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(11714, 3857)
+
+[node name="House328" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(11946, 3884)
 
 [node name="House230" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(10561, 3877)
@@ -2546,11 +2597,17 @@ position = Vector2(12923, 6976)
 [node name="House267" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(12353, 6531)
 
+[node name="House337" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(11509, 6757)
+
 [node name="House268" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(11994, 6528)
 
 [node name="House269" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(11790, 6977)
+
+[node name="House333" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(11774, 7263)
 
 [node name="House270" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(12556, 6791)
@@ -2603,6 +2660,54 @@ position = Vector2(3387, 6977)
 [node name="House91" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(3176, 6536)
 
+[node name="House343" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3069, 5527)
+
+[node name="House389" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(2854, 5039)
+
+[node name="House397" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3109, 4789)
+
+[node name="House394" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3503, 4757)
+
+[node name="House395" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3286, 5064)
+
+[node name="House390" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3289, 5242)
+
+[node name="House347" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3304, 5527)
+
+[node name="House383" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3302, 5893)
+
+[node name="House348" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3896, 5527)
+
+[node name="House375" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4936, 5777)
+
+[node name="House376" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4467, 5853)
+
+[node name="House360" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4421, 4955)
+
+[node name="House344" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4919, 6112)
+
+[node name="House339" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3081, 6102)
+
+[node name="House363" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4507, 4555)
+
+[node name="House354" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4110, 6095)
+
 [node name="House96" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(2993, 6961)
 
@@ -2620,6 +2725,22 @@ position = Vector2(3135, 7452)
 
 [node name="House3" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(5539, 6557)
+rotation = -1.5707964
+
+[node name="House345" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(5221, 5556)
+rotation = -1.5707964
+
+[node name="House368" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(5230, 5004)
+rotation = -1.5707964
+
+[node name="House365" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(3502, 5225)
+rotation = -1.5707964
+
+[node name="House393" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(3356, 4883)
 rotation = -1.5707964
 
 [node name="House18" parent="Buildings" instance=ExtResource("5_nqbft")]
@@ -2710,6 +2831,18 @@ rotation = -1.5707964
 position = Vector2(4401, 6557)
 rotation = 1.5707964
 
+[node name="House341" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(2847, 5238)
+rotation = 1.5707964
+
+[node name="House388" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(2861, 4840)
+rotation = 1.5707964
+
+[node name="House342" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(2847, 4559)
+rotation = 1.5707964
+
 [node name="House8" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(5702, 5401)
 rotation = 1.5707964
@@ -2794,6 +2927,14 @@ rotation = 1.5707964
 position = Vector2(2678, 6719)
 rotation = 1.5707964
 
+[node name="House338" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(2845, 5852)
+rotation = 1.5707964
+
+[node name="House362" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(4500, 4762)
+rotation = 1.5707964
+
 [node name="House63" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(759, 6744)
 rotation = 1.5707964
@@ -2816,6 +2957,10 @@ rotation = 1.5707964
 
 [node name="House263" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(12339, 6719)
+rotation = 1.5707964
+
+[node name="House336" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(11495, 6590)
 rotation = 1.5707964
 
 [node name="House38" parent="Buildings" instance=ExtResource("5_nqbft")]
@@ -2872,6 +3017,38 @@ rotation = 3.1415927
 position = Vector2(3541, 6589)
 rotation = 3.1415927
 
+[node name="House346" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(3676, 5580)
+rotation = 3.1415927
+
+[node name="House382" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(3084, 5909)
+rotation = 3.1415927
+
+[node name="House386" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(3089, 4576)
+rotation = 3.1415927
+
+[node name="House387" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(3489, 4576)
+rotation = 3.1415927
+
+[node name="House357" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(4107, 5567)
+rotation = 3.1415927
+
+[node name="House373" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(4527, 5567)
+rotation = 3.1415927
+
+[node name="House374" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(4674, 5734)
+rotation = 3.1415927
+
+[node name="House370" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(4998, 5599)
+rotation = 3.1415927
+
 [node name="House79" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(2840, 5578)
 rotation = 3.1415927
@@ -2924,8 +3101,16 @@ rotation = 3.1415927
 position = Vector2(12415, 7315)
 rotation = 3.1415927
 
+[node name="House332" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(11994, 7318)
+rotation = 3.1415927
+
 [node name="House280" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(12878, 6575)
+rotation = 3.1415927
+
+[node name="House335" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(11751, 6588)
 rotation = 3.1415927
 
 [node name="House257" parent="Buildings" instance=ExtResource("5_nqbft")]
@@ -2964,6 +3149,14 @@ rotation = 3.1415927
 position = Vector2(5882, 4569)
 rotation = 3.1415927
 
+[node name="House366" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(5225, 4574)
+rotation = 3.1415927
+
+[node name="House398" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(4747, 4579)
+rotation = 3.1415927
+
 [node name="House13" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(7911, 3572)
 
@@ -2981,6 +3174,27 @@ position = Vector2(2776, 6952)
 
 [node name="House87" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(3594, 6955)
+
+[node name="House331" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(2840, 6077)
+
+[node name="House350" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(3513, 6070)
+
+[node name="House385" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(3066, 5228)
+
+[node name="House379" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(3897, 5731)
+
+[node name="House353" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(4327, 6064)
+
+[node name="House355" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(4704, 6070)
+
+[node name="House367" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(5237, 5225)
 
 [node name="House98" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(6409, 6952)
@@ -3060,6 +3274,9 @@ position = Vector2(12341, 6945)
 [node name="House265" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(11998, 6937)
 
+[node name="House334" parent="Buildings" instance=ExtResource("5_nqbft")]
+position = Vector2(11559, 6953)
+
 [node name="House259" parent="Buildings" instance=ExtResource("5_nqbft")]
 position = Vector2(13118, 7946)
 
@@ -3124,6 +3341,74 @@ rotation = -1.5707964
 position = Vector2(3191, 6731)
 rotation = -1.5707964
 
+[node name="House351" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3722, 6099)
+rotation = -1.5707964
+
+[node name="House359" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3722, 6099)
+rotation = -1.5707964
+
+[node name="House352" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3890, 6092)
+rotation = -1.5707964
+
+[node name="House361" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3890, 6092)
+rotation = -1.5707964
+
+[node name="House356" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4502, 6085)
+rotation = -1.5707964
+
+[node name="House371" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4805, 5580)
+rotation = -1.5707964
+
+[node name="House372" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4315, 5565)
+rotation = -1.5707964
+
+[node name="House377" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4113, 5909)
+rotation = -1.5707964
+
+[node name="House380" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3727, 5890)
+rotation = -1.5707964
+
+[node name="House381" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3557, 5802)
+rotation = -1.5707964
+
+[node name="House378" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4273, 5785)
+rotation = -1.5707964
+
+[node name="House340" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3287, 6101)
+rotation = -1.5707964
+
+[node name="House384" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3295, 5717)
+rotation = -1.5707964
+
+[node name="House391" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3506, 5023)
+rotation = -1.5707964
+
+[node name="House396" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3062, 5013)
+rotation = -1.5707964
+
+[node name="House392" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3287, 4567)
+rotation = -1.5707964
+
+[node name="House349" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(3489, 5583)
+rotation = -1.5707964
+
 [node name="House100" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(7982, 6571)
 rotation = -1.5707964
@@ -3180,6 +3465,10 @@ rotation = -1.5707964
 position = Vector2(9854, 2636)
 rotation = -1.5707964
 
+[node name="House327" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(9846, 2195)
+rotation = -1.5707964
+
 [node name="House201" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(9863, 2852)
 rotation = -1.5707964
@@ -3230,6 +3519,14 @@ rotation = -1.5707964
 
 [node name="House245" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(12075, 4087)
+rotation = -1.5707964
+
+[node name="House330" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(12075, 3702)
+rotation = -1.5707964
+
+[node name="House329" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(11904, 3684)
 rotation = -1.5707964
 
 [node name="House224" parent="Buildings" instance=ExtResource("6_70v8j")]
@@ -3356,6 +3653,18 @@ rotation = -1.5707964
 position = Vector2(5953, 5187)
 rotation = -1.5707964
 
+[node name="House364" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4938, 5205)
+rotation = -1.5707964
+
+[node name="House399" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(5217, 4797)
+rotation = -1.5707964
+
+[node name="House402" parent="Buildings" instance=ExtResource("6_70v8j")]
+position = Vector2(4975, 4769)
+rotation = -1.5707964
+
 [node name="House305" parent="Buildings" instance=ExtResource("6_70v8j")]
 position = Vector2(5897, 4919)
 rotation = -1.5707964
@@ -3398,6 +3707,9 @@ rotation = -1.5707964
 
 [node name="House2" parent="Buildings" instance=ExtResource("9_dgik1")]
 position = Vector2(470, 5258)
+
+[node name="House358" parent="Buildings" instance=ExtResource("9_dgik1")]
+position = Vector2(4652, 5195)
 
 [node name="House159" parent="Buildings" instance=ExtResource("9_dgik1")]
 position = Vector2(16002, 7910)
@@ -3452,7 +3764,7 @@ position = Vector2(1692, 5589)
 rotation = -1.5707964
 
 [node name="House161" parent="Buildings" instance=ExtResource("9_dgik1")]
-position = Vector2(5193, 5983)
+position = Vector2(5202, 6001)
 rotation = -1.5707964
 
 [node name="Tree" type="Node" parent="."]
@@ -3799,6 +4111,27 @@ position = Vector2(8518, 6723)
 [node name="Tree143" parent="Tree" instance=ExtResource("9_yuc3q")]
 position = Vector2(12549, 7233)
 
+[node name="Tree215" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(12314, 7230)
+
+[node name="Tree216" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(12248, 7443)
+
+[node name="Tree217" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(12025, 7503)
+
+[node name="Tree218" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(12025, 7503)
+
+[node name="Tree219" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(12147, 7450)
+
+[node name="Tree220" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(12696, 6631)
+
+[node name="Tree221" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(12727, 6521)
+
 [node name="Tree126" parent="Tree" instance=ExtResource("9_yuc3q")]
 position = Vector2(7636, 6509)
 
@@ -3850,6 +4183,45 @@ position = Vector2(2499, 6518)
 [node name="Tree120" parent="Tree" instance=ExtResource("9_yuc3q")]
 position = Vector2(2899, 6511)
 
+[node name="Tree144" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(9521, 3330)
+
+[node name="Tree146" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(9515, 3148)
+
+[node name="Tree147" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(10513, 3333)
+
+[node name="Tree148" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(10946, 3810)
+
+[node name="Tree149" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(11203, 3346)
+
+[node name="Tree150" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(11423, 3393)
+
+[node name="Tree151" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(10949, 2775)
+
+[node name="Tree152" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(11071, 2788)
+
+[node name="Tree153" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(9734, 2722)
+
+[node name="Tree180" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(9295, 2728)
+
+[node name="Tree181" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(9066, 2703)
+
+[node name="Tree182" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(9515, 2803)
+
+[node name="Tree183" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(9590, 2178)
+
 [node name="Tree121" parent="Tree" instance=ExtResource("9_yuc3q")]
 position = Vector2(3438, 6846)
 
@@ -3858,6 +4230,45 @@ position = Vector2(3338, 6846)
 
 [node name="Tree123" parent="Tree" instance=ExtResource("9_yuc3q")]
 position = Vector2(3438, 6504)
+
+[node name="Tree229" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(4646, 5896)
+
+[node name="Tree230" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(4783, 5904)
+
+[node name="Tree231" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(4426, 5726)
+
+[node name="Tree232" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(4525, 5726)
+
+[node name="Tree233" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(4157, 5715)
+
+[node name="Tree234" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(4062, 5757)
+
+[node name="Tree235" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(3435, 5753)
+
+[node name="Tree236" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(3177, 5764)
+
+[node name="Tree237" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(4700, 5023)
+
+[node name="Tree238" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(3318, 4719)
+
+[node name="Tree239" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(2775, 4696)
+
+[node name="Tree240" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(3192, 4928)
+
+[node name="Tree241" parent="Tree" instance=ExtResource("9_yuc3q")]
+position = Vector2(3781, 4503)
 
 [node name="Tree124" parent="Tree" instance=ExtResource("9_yuc3q")]
 position = Vector2(2989, 6832)
@@ -3883,38 +4294,200 @@ position = Vector2(2659, 7662)
 [node name="Tree" parent="Tree" instance=ExtResource("11_nsios")]
 position = Vector2(1368, 5395)
 
-[node name="LevelSettings" type="Node" parent="."]
-script = ExtResource("6_vackf")
-level_name = "Tutorial 1"
-starting_hearts = 1
-auto_spawn_enabled = false
+[node name="Tree223" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(3079, 5699)
 
-[node name="LevelCars" type="Label" parent="LevelSettings"]
-visible = false
-text = "Group A - Random, Random
-Group B - Random, Random
-Group C - Random, Random
-Group D - Random, Random"
+[node name="Tree224" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(3919, 5916)
 
-[node name="LevelName" type="Label" parent="LevelSettings"]
-visible = false
-text = "Tutorial 1
-"
+[node name="Tree225" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(4792, 4951)
 
-[node name="LevelBuildRoads" type="Label" parent="LevelSettings"]
-visible = false
-text = "Tutorial 1
-"
+[node name="Tree227" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(4948, 5948)
 
-[node name="HeartsUI" parent="." instance=ExtResource("3_1su6t")]
-visible = false
-metadata/_edit_use_custom_anchors = true
+[node name="Tree228" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(4948, 5948)
 
-[node name="Camera Border" type="CollisionShape2D" parent="."]
-visible = false
-position = Vector2(6556.25, 4891.25)
-shape = SubResource("RectangleShape2D_1su6t")
+[node name="Tree226" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(4617, 4943)
 
-[node name="Camera" type="Camera2D" parent="."]
-position = Vector2(1956, 7578)
-zoom = Vector2(0.8, 0.8)
+[node name="Tree2" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9221, 3640)
+
+[node name="Tree145" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9475, 3869)
+
+[node name="Tree222" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11761, 6780)
+
+[node name="Tree154" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9582, 2695)
+
+[node name="Tree155" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9699, 2599)
+
+[node name="Tree184" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11403, 2799)
+
+[node name="Tree185" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11432, 2903)
+
+[node name="Tree186" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11528, 2811)
+
+[node name="Tree187" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11561, 2911)
+
+[node name="Tree188" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11607, 2986)
+
+[node name="Tree189" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11674, 2915)
+
+[node name="Tree190" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11620, 2819)
+
+[node name="Tree191" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11708, 2786)
+
+[node name="Tree192" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11771, 2874)
+
+[node name="Tree193" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11758, 2987)
+
+[node name="Tree194" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11812, 3075)
+
+[node name="Tree195" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11741, 3296)
+
+[node name="Tree196" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11820, 3192)
+
+[node name="Tree197" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11782, 3355)
+
+[node name="Tree198" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11849, 3426)
+
+[node name="Tree206" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11911, 3499)
+
+[node name="Tree207" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11958, 3387)
+
+[node name="Tree208" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(12028, 3514)
+
+[node name="Tree209" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(12036, 3423)
+
+[node name="Tree210" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(12013, 3288)
+
+[node name="Tree211" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(12044, 3174)
+
+[node name="Tree212" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(12053, 3063)
+
+[node name="Tree213" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(12047, 2929)
+
+[node name="Tree214" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(12044, 2810)
+
+[node name="Tree199" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11874, 3297)
+
+[node name="Tree200" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11945, 3205)
+
+[node name="Tree201" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11924, 3109)
+
+[node name="Tree202" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11941, 3005)
+
+[node name="Tree203" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11857, 2942)
+
+[node name="Tree204" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11836, 2800)
+
+[node name="Tree205" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(11945, 2867)
+
+[node name="Tree156" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9419, 2730)
+
+[node name="Tree157" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9485, 2620)
+
+[node name="Tree158" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9585, 2507)
+
+[node name="Tree159" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9641, 2410)
+
+[node name="Tree160" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9428, 2501)
+
+[node name="Tree161" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9321, 2614)
+
+[node name="Tree162" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(8954, 2523)
+
+[node name="Tree163" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(8957, 2645)
+
+[node name="Tree164" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9086, 2582)
+
+[node name="Tree165" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9186, 2676)
+
+[node name="Tree166" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9324, 2510)
+
+[node name="Tree168" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9092, 2472)
+
+[node name="Tree169" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9233, 2409)
+
+[node name="Tree170" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9384, 2393)
+
+[node name="Tree171" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9528, 2418)
+
+[node name="Tree172" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9509, 2292)
+
+[node name="Tree173" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9641, 2292)
+
+[node name="Tree174" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9362, 2283)
+
+[node name="Tree175" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(8819, 2494)
+
+[node name="Tree176" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(8907, 2412)
+
+[node name="Tree177" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9020, 2381)
+
+[node name="Tree178" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9136, 2359)
+
+[node name="Tree179" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9236, 2287)
+
+[node name="Tree167" parent="Tree" instance=ExtResource("11_nsios")]
+position = Vector2(9221, 2522)
