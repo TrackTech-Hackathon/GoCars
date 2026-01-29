@@ -1018,12 +1018,14 @@ func _on_crash() -> void:
 
 
 func _on_off_road_crash() -> void:
+	print("[Vehicle] %s crashed off-road at position %v, visible: %s" % [vehicle_id, global_position, visible])
 	stop()
 	vehicle_state = 0  # Mark as crashed
 	_switch_to_crashed_sprite()
 	_update_stats_state()  # Update state label
 	# Stop the interpreter for this vehicle
 	_stop_vehicle_interpreter()
+	print("[Vehicle] %s now in crashed state, visible: %s, modulate: %s" % [vehicle_id, visible, modulate])
 	off_road_crash.emit(vehicle_id)
 
 

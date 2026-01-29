@@ -26,7 +26,22 @@ STEP 1: Welcome
 STEP 2: Point at Car
 [Arrow points to car on screen]
 "See that car? That's YOUR car!"
+"In your code, you'll control it using the name: car"
 "It won't move on its own - YOU have to tell it what to do with code."
+
+STEP 2.5: Explain Spawn and Destination
+[Arrow points to spawn parking spot with green outline]
+"See that green parking spot with the letter? That's where your car starts."
+[Arrow points to destination parking spot with red outline]
+"And see that red parking spot with the same letter? That's your DESTINATION!"
+"Cars must park at the destination with the MATCHING letter."
+"Green A goes to Red A, Green B goes to Red B, and so on."
+"If a car parks at the wrong letter, you lose a life but the car still counts as parked."
+
+STEP 2.6: Your Car's Name
+[Arrow points to car]
+"In your code, you'll control this car using the name: car"
+"Every command you write starts with 'car.' - like car.go() or car.stop()"
 
 STEP 3: Point at Code Editor Button
 [Arrow points to code_editor_button]
@@ -125,9 +140,12 @@ STEP 3: Introduce car.turn()
 
 STEP 4: Challenge Setup
 "Look at this zigzag road. You need to:"
-"1. Move forward"
-"2. Turn at corners"
-"3. Reach the destination!"
+"1. Move 3 tiles forward"
+"2. Turn RIGHT"
+"3. Move 2 more tiles"
+"4. Turn RIGHT again"
+"5. Move forward and turn until you reach the red parking spot!"
+"Try to plan out all the moves and turns before you run the code."
 
 STEP 5: Open Code Editor First
 [Arrow points to code_editor_button]
@@ -218,7 +236,8 @@ STEP 3: Show the Problem
 "car.turn('right')"
 "car.move(2)"
 "car.turn('left')"
-"...and on and on! There's a better way."
+"...and on and on for 20+ lines! There's a better way."
+"Loops let you write ONCE and run MANY times - that's the power of programming!"
 
 STEP 4: Introduce Road Detection
 "Your car can DETECT roads around it!"
@@ -230,18 +249,22 @@ STEP 4: Introduce Road Detection
 STEP 5: The Magic Loop
 "Here's the magic code that handles ANY road:"
 
-while not car.at_end():
-	if car.front_road():
-		car.go()
-	elif car.left_road():
-		car.turn("left")
-	elif car.right_road():
-		car.turn("right")
+  while not car.at_end():
+      if car.front_road():
+          car.go()
+      elif car.left_road():
+          car.turn("left")
+      elif car.right_road():
+          car.turn("right")
+
+"Don't worry if it looks complex - we'll break it down!"
 
 STEP 6: Explain the Loop
 "Let me break this down:"
 "while not car.at_end(): - Keep going until destination"
-"if car.front_road(): car.go() - If road ahead, go!"
+"  The 'not' means 'while the car is NOT at the end yet'"
+"  So the loop runs UNTIL the car reaches the red parking spot"
+"if car.front_road(): car.go() - If road ahead, go straight!"
 "elif car.left_road(): car.turn('left') - Otherwise turn left"
 "elif car.right_road(): car.turn('right') - Or turn right"
 
@@ -261,6 +284,8 @@ STEP 9: Observe
 STEP 10: Success
 "You've learned the most powerful technique in GoCars!"
 "This loop pattern works on almost any road."
+"You just wrote code that can solve HUNDREDS of different roads!"
+"That's the magic of loops - write once, solve many. You're a real programmer now!"
 
 [LEVEL COMPLETE]
 ```
@@ -285,7 +310,15 @@ STEP 1: Introduction
 
 STEP 2: Show the Stoplight
 [Arrow points to red stoplight]
-"See that red light? Your car needs to check it!"
+"See that stoplight? It's a special 4-WAY directional stoplight!"
+"It has arrows pointing in each direction: North, South, East, West."
+"Each arrow can be RED, YELLOW, or GREEN independently."
+"Your car only cares about the arrow pointing in ITS direction!"
+
+"If your car is facing EAST and the EAST arrow is RED, you must stop!"
+"But if the WEST arrow is GREEN, cars going WEST can go!"
+"This is how real stoplights work - different directions get different signals."
+"That's why we use car.at_red() - it checks YOUR direction's arrow!"
 
 STEP 3: FORCED RED LIGHT VIOLATION
 "First, let me show you what happens if you ignore it..."
@@ -301,22 +334,27 @@ STEP 3B: EXPLAIN VIOLATION
 "If there's only 1 car, you only get 1 life—so every decision counts!"
 
 STEP 3C: PRESS RESET AFTER VIOLATION
-[Arrow points to RetryButton]
 "Now click the RESET button in the failure window to try again."
 [WAIT: Player presses reset]
 
 STEP 4: Why Loops Are Important
 "Remember loops from the last tutorial?"
 "We need a loop here too - to CONTINUOUSLY check the stoplight!"
-"The light can change while the car is moving."
+"The light can change from RED to GREEN while the car is moving."
+"If you only check once at the start, you might miss the change and crash!"
+"The loop checks EVERY frame - constantly asking 'Is it red NOW?'"
 
 STEP 5: Show Correct Pattern
 "Here's the pattern that works:"
-"while not car.at_end():"
-"    if car.at_red():"
-"        car.stop()"
-"    else:"
-"        car.go()"
+
+  while not car.at_end():
+      if car.at_red():
+          car.stop()
+      else:
+          car.go()
+
+"Notice the loop checks the stoplight EVERY time it runs!"
+"This catches the moment the light turns green."
 
 STEP 6: Explain the Code
 "This loop CONTINUOUSLY checks the stoplight."
@@ -395,6 +433,12 @@ STEP 3: Hint at Solution
 "2. Check the stoplight inside the loop"
 "3. Use road detection for turns"
 
+"Ask yourself: What if..."
+"- The car reaches a red light?"
+"- The road turns left or right?"
+"- There's a straight path ahead?"
+"Your code needs to handle ALL these cases!"
+
 STEP 4: Challenge
 "I won't give you the code this time."
 "Use what you've learned to write it yourself!"
@@ -426,8 +470,14 @@ STEP 7: Graduation
 
 STEP 8: Send Off
 "You're ready for the REAL challenges!"
-"The Campaign levels will test your skills."
-"Good luck, and remember: Think like a programmer!"
+"The Campaign levels will test your skills with:"
+"- Multiple cars to control at once"
+"- Complex road networks"
+"- More stoplights and obstacles"
+"- Spawn groups - making sure each car reaches its matching destination!"
+
+"Remember: Think like a programmer! Break problems into steps."
+"Good luck - you've got this!"
 
 [LEVEL COMPLETE - TUTORIALS FINISHED]
 ```

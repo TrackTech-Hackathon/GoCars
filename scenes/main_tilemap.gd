@@ -79,6 +79,9 @@ const ZOOM_STEP: float = 0.1  # How much to zoom per scroll
 var camera_bounds_min: Vector2 = Vector2.ZERO
 var camera_bounds_max: Vector2 = Vector2(1440, 1008)  # Default 10x7 tiles
 
+# Camera following for forced failure scenes
+var _camera_follow_target: Variant = null  # Set to a vehicle to follow it
+
 # Car spawning
 var car_spawn_timer: float = 0.0
 const CAR_SPAWN_INTERVAL: float = 15.0
@@ -223,6 +226,14 @@ func _process(delta: float) -> void:
 	if engine_audio and engine_audio.playing:
 		if engine_audio.get_playback_position() >= engine_loop_end:
 			engine_audio.play(engine_loop_start)
+
+	# Handle camera following for forced failure scenes
+	if camera and _camera_follow_target and is_instance_valid(_camera_follow_target):
+		camera.global_position = _camera_follow_target.global_position
+		_clamp_camera_to_bounds()
+	# If follow target crashed/failed, stop following
+	elif _camera_follow_target and not is_instance_valid(_camera_follow_target):
+		_camera_follow_target = null
 
 	# Handle camera movement (WASD or Arrow keys, Shift for 2x speed)
 	# Skip if code editor is focused (player is typing)
@@ -791,7 +802,9 @@ func _get_opposite_direction(dir: String) -> String:
 
 func _clear_all_cars() -> void:
 	var vehicles = get_tree().get_nodes_in_group("vehicles")
+	print("[Main] _clear_all_cars() called, clearing %d vehicles" % vehicles.size())
 	for vehicle in vehicles:
+		print("[Main] Clearing vehicle: %s" % vehicle.vehicle_id)
 		simulation_engine.unregister_vehicle(vehicle.vehicle_id)
 		vehicle.queue_free()
 
@@ -970,9 +983,17 @@ func _on_car_off_road(car_id: String) -> void:
 
 
 func _on_car_ran_red_light(vehicle_id: String, _stoplight_id: String) -> void:
+	# Stop camera following when a red light violation is detected
+	_camera_follow_target = null
+
 	last_heart_loss_cause = "red_light"
 	_lose_heart()
 	_update_status("%s ran a red light! (-1 heart)" % vehicle_id)
+
+	# If tutorial is awaiting a forced crash (red light violation), signal completion
+	if TutorialManager and TutorialManager.is_awaiting_forced_crash:
+		print("[Tutorial] Red light violation detected, signaling forced crash completion")
+		TutorialManager.emit_signal("forced_crash_completed")
 
 
 func _on_level_completed(stars: int) -> void:
@@ -985,6 +1006,9 @@ func _on_level_completed(stars: int) -> void:
 
 
 func _on_level_failed(reason: String) -> void:
+	# Stop camera following when level fails
+	_camera_follow_target = null
+
 	# If a tutorial is active, let it handle the failure sequence
 	if TutorialManager and TutorialManager.is_active():
 		# Notify the tutorial manager that the crash was detected
@@ -1165,6 +1189,11 @@ func _on_completion_summary_retry() -> void:
 		stats_ui_panel.show_panel()
 	if completion_summary:
 		completion_summary.hide()
+
+	# Notify tutorial manager that reset was pressed
+	if TutorialManager:
+		TutorialManager.on_reset_pressed()
+
 	# Reset timer when pressing Retry from game over screen
 	level_timer = 0.0
 	timer_running = true
@@ -1178,6 +1207,11 @@ func _on_completion_summary_menu() -> void:
 		stats_ui_panel.show_panel()
 	if completion_summary:
 		completion_summary.hide()
+
+	# Hide tutorial dialogue
+	if TutorialManager:
+		TutorialManager.hide_dialogue_box()
+
 	# Return to main menu
 	get_tree().change_scene_to_file("res://scenes/ui/Main_Menu/MainMenu.tscn")
 
@@ -1188,6 +1222,11 @@ func _on_completion_summary_next() -> void:
 		stats_ui_panel.show_panel()
 	if completion_summary:
 		completion_summary.hide()
+
+	# Hide tutorial dialogue
+	if TutorialManager:
+		TutorialManager.hide_dialogue_box()
+
 	_load_next_level()
 
 
@@ -1209,6 +1248,15 @@ func _update_road_cards_label() -> void:
 
 func _do_fast_retry() -> void:
 	_hide_result_popup()
+
+	# Hide completion summary (failure/victory screen)
+	if completion_summary:
+		completion_summary.hide()
+
+	# Notify tutorial manager that reset was pressed (R key)
+	if TutorialManager:
+		TutorialManager.on_reset_pressed()
+
 	simulation_engine.reset()
 	is_spawning_cars = false
 	_current_executing_line = -1
@@ -2037,6 +2085,10 @@ func _init_completion_summary() -> void:
 			completion_summary.retry_pressed.connect(_on_completion_summary_retry)
 			completion_summary.menu_pressed.connect(_on_completion_summary_menu)
 			completion_summary.next_level_pressed.connect(_on_completion_summary_next)
+
+			# Pass reference to tutorial manager so it can find it
+			if TutorialManager:
+				TutorialManager.failure_popup = completion_summary
 	else:
 		push_warning("Could not load CompletionSummary scene")
 
@@ -2275,6 +2327,8 @@ func _load_level_hearts() -> void:
 	initial_hearts = heart_count
 	hearts = heart_count
 
+	print("[Main] Hearts loaded: %d (based on %d spawn points)" % [hearts, spawn_data.size()])
+
 	if hearts_label:
 		hearts_label.visible = true
 		_update_hearts_label()
@@ -2284,9 +2338,11 @@ func _load_level_hearts() -> void:
 ## Decrease hearts by one and check for game over
 func _lose_heart() -> void:
 	hearts -= 1
+	print("[Main] Heart lost! Remaining hearts: %d" % hearts)
 	_update_hearts_label()
 
 	if hearts <= 0:
+		print("[Main] HEARTS DEPLETED! Triggering failure sequence...")
 		# Mark level as failed to prevent victory logic from running
 		level_failed = true
 		timer_running = false
@@ -2552,14 +2608,31 @@ func _force_spawn_crashing_car() -> void:
 		push_warning("MainTilemap: Player car instance invalid for forced crash. Skipping.")
 		return
 
-	# Define crash position and direction
-	var crash_spawn_pos = Vector2(0 * TILE_SIZE + TILE_SIZE/2, 1 * TILE_SIZE + TILE_SIZE/2)
+	# Define crash position based on which tutorial is running
+	# Each tutorial has a different map layout
+	var crash_spawn_pos = Vector2(0, 0)  # Default fallback
 	var crash_spawn_dir = Vector2.RIGHT # Make it face right (EAST) to drive off road
+
+	# Map tutorial IDs to crash coordinates (only T2 and T4 have forced failures)
+	var crash_coords = {
+		"01 Level 2": Vector2(47, 40),  # Tutorial 2 - Crash demo
+		"01 Level 4": Vector2(64, 22),  # Tutorial 4 - Red light demo
+	}
+
+	if current_level_display_name in crash_coords:
+		var tile_coords = crash_coords[current_level_display_name]
+		crash_spawn_pos = Vector2(tile_coords.x * TILE_SIZE + TILE_SIZE/2, tile_coords.y * TILE_SIZE + TILE_SIZE/2)
+	else:
+		push_warning("MainTilemap: Unknown tutorial level for crash coordinates: %s" % current_level_display_name)
+		crash_spawn_pos = Vector2(47 * TILE_SIZE + TILE_SIZE/2, 40 * TILE_SIZE + TILE_SIZE/2)  # Default to T2 coords
 
 	# Reposition and re-orient the player car for the crash
 	player_car.global_position = crash_spawn_pos
 	player_car.direction = crash_spawn_dir
 	player_car.rotation = crash_spawn_dir.angle() + PI/2 # Adjust for car sprite facing UP
+
+	# Enable camera following for the forced failure scene
+	_camera_follow_target = player_car
 
 	# Directly command the car to go, which will cause it to crash
 	player_car.go()
@@ -2568,27 +2641,35 @@ func _force_spawn_crashing_car() -> void:
 
 ## Force player car to run without checking stoplight (Tutorial 4)
 func _force_auto_run_player_car() -> void:
-	# Ensure stoplight is red and stays red long enough for a clear violation
-	if not _spawned_stoplights.is_empty():
-		var stoplight = _spawned_stoplights[0]
+	# Ensure ALL stoplights are red and stay red long enough for a clear violation
+	print("[Tutorial4] Forcing red light violation demo...")
+	print("[Tutorial4] Found %d stoplights" % _spawned_stoplights.size())
+
+	# Force ALL stoplights to red (there may be multiple in the level)
+	for stoplight in _spawned_stoplights:
 		if is_instance_valid(stoplight):
-			if stoplight.has_method("force_red_for_seconds"):
-				# Hold the light red for a few seconds so it can't
-				# turn green while the player car is approaching.
-				stoplight.force_red_for_seconds(5.0)
-			elif stoplight.has_method("set_red"):
-				# Fallback for safety if API changes.
+			# First, explicitly set the light to red
+			if stoplight.has_method("set_red"):
 				stoplight.set_red()
-		else:
-			push_warning("MainTilemap: Could not set stoplight to red for forced violation.")
-	else:
-		push_warning("MainTilemap: No stoplights found for forced violation.")
+				print("[Tutorial4] Set %s to red" % stoplight.name)
+
+			# Then force it to stay red for 3-4 seconds, pausing its interpreter
+			if stoplight.has_method("force_red_for_seconds"):
+				# This halts the stoplight's interpreter during this time
+				stoplight.force_red_for_seconds(3.5)
+				print("[Tutorial4] Forced %s red for 3.5 seconds" % stoplight.name)
+
+	# Wait one frame to let stoplight visuals update before car starts moving
+	await get_tree().process_frame
 
 	# Get the player's car (assume the first one)
 	if not simulation_engine._vehicles.is_empty():
 		var player_car_id = simulation_engine._vehicles.keys()[0]
 		var player_car = simulation_engine._vehicles[player_car_id]
 		if is_instance_valid(player_car):
+			# Enable camera following for the forced failure scene
+			_camera_follow_target = player_car
+
 			# Directly command the car to go, which will cause the violation.
 			player_car.go()
 	else:
