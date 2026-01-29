@@ -8,7 +8,7 @@ An educational coding-puzzle game built with Godot Engine where players write **
 
 ## Project Overview
 
-GoCars! bridges the gap between beginner-friendly coding games and real programming. Players write actual Python syntax (not visual blocks) to control vehicles, manage traffic lights, and edit road layouts in real-time. Each puzzle teaches core programming concepts: variables, conditionals, loops, and functions. The immediate feedback from live code execution makes learning intuitive and engaging.
+GoCars! bridges the gap between beginner-friendly coding games and real programming. Players write actual Python syntax to control vehicles, manage traffic lights, and edit road layouts in real-time. Each puzzle teaches core programming concepts: variables, conditionals, loops, and functions. The immediate feedback from live code execution makes learning intuitive and engaging.
 
 ### Core Concept
 
@@ -21,8 +21,8 @@ Write actual Python code to program vehicles, control traffic lights, and manage
 ### Core Gameplay
 - **Real Python Syntax** – Write valid Python code
 - **Live Execution** – See cars instantly react to your code changes
-- **Traffic Simulation** – Dynamic vehicle physics, collisions, and traffic light logic
-- **Hearts System** – Risk-based gameplay with livesmanagement
+- **Traffic Simulation** – Collisions, and traffic light logic
+- **Hearts System** – Gameplay with lives management
 
 ### Interactive Features
 - **Real-time Code Editor** – Write and run code without recompilation
@@ -36,7 +36,7 @@ Write actual Python code to program vehicles, control traffic lights, and manage
 ## Game Modes
 
 ### Campaign Mode
-Three progressive level sets teaching Python fundamentals:
+Progressive level sets teaching Python fundamentals:
 
 - **Tutorial (T1-T5)**
 
@@ -56,12 +56,12 @@ Three progressive level sets teaching Python fundamentals:
 **Option A: Using Godot Project Manager**
 1. Open Godot Engine
 2. Click "Open Project"
-3. Navigate to `c:\Users\roman\Desktop\go-cars!`
+3. Navigate to `your/project/path`
 4. Click "Open"
 
 **Option B: Command Line**
 ```bash
-cd c:\Users\roman\Desktop\go-cars!
+cd your/project/path
 godot --path . --editor
 ```
 
@@ -131,11 +131,10 @@ To export as a standalone executable:
 
 ### How to Play a Level
 
-1. **Read the objective** at the top of the screen
-2. **Write Python code** in the code editor (left side)
-3. **Press F5 or "Run Code"** to execute
-4. **Watch cars respond** in real-time
-5. **Refine your code** and run again until all cars reach destinations
+1. **Write Python code** in the code editor (left side)
+2. **Press F5 or "Run Code"** to execute
+3. **Watch cars respond** in real-time
+4. **Refine your code** and run again until all cars reach destinations
 
 ### Example: Level 1 (First Drive)
 
@@ -147,16 +146,6 @@ car.go()
 ```
 
 That's it! The car moves forward automatically until it reaches the destination.
-
-### Example: Level 4 (Red Light, Green Light)
-
-**Objective:** Control a traffic light to let the car pass safely
-
-**Python Code:**
-```python
-stoplight.set_green()
-car.go()
-```
 
 ### Common Commands
 
@@ -207,74 +196,7 @@ while not car.at_end():
 ### Character Dialogue
 ![Character](assets/Pictures/maki%20talking.png)
 
----
 
-## Project Structure
-
-```
-GoCars/
-├── README.md                      # This file
-├── CLAUDE.md                      # Development guide
-├── project.godot                  # Godot project config
-├── run_tests.sh                   # Test runner script
-│
-├── scenes/                        # Game scenes
-│   ├── main_tilemap.tscn         # Main game scene
-│   ├── levelmaps/                # Level scenes (auto-loaded)
-│   │   ├── 01Tutorial/
-│   │   │   ├── 01 Level 1.tscn
-│   │   │   ├── 01 Level 2.tscn
-│   │   │   └── ... (15 levels total)
-│   ├── ui/                       # UI components
-│   │   ├── hearts_ui.tscn       # Lives/hearts display
-│   │   ├── completion_summary.tscn
-│   │   └── Main_Menu/
-│   └── entities/                 # Entity scenes
-│
-├── scripts/                       # GDScript code
-│   ├── core/                     # Core systems
-│   │   ├── python_parser.gd     # Python tokenizer & AST
-│   │   ├── python_interpreter.gd # Code executor
-│   │   ├── simulation_engine.gd  # Physics & collisions
-│   │   ├── level_loader.gd      # Level management
-│   │   └── level_settings.gd    # Per-level config
-│   ├── entities/                 # Game logic
-│   │   ├── vehicle.gd           # Car behavior
-│   │   ├── stoplight.gd         # Traffic light control
-│   │   └── boat.gd              # Boat logic
-│   ├── ui/                       # UI logic
-│   │   ├── completion_summary.gd
-│   │   ├── hearts_ui.gd
-│   │   └── toolbar.gd
-│   └── map_editor/              # Road building
-│       ├── road_tilemap_layer.gd
-│       └── road_tile_proxy.gd
-│
-├── assets/                        # Media files
-│   ├── sprites/                 # Vehicle & NPC sprites
-│   ├── UI/                      # UI graphics
-│   ├── fonts/                   # Custom fonts
-│   ├── tiles/                   # Tileset images
-│   │   ├── gocarstilesSheet.png (18×12 grid)
-│   │   └── road_tileset.tres
-│   └── audio/                   # Music & SFX
-│
-├── data/                         # Data files
-│   └── levels/                   # Level configs (JSON)
-│       ├── t1.json
-│       ├── c1.json
-│       └── w1.json
-│
-├── tests/                        # Test files
-│   ├── python_parser.test.gd
-│   ├── python_interpreter.test.gd
-│   └── simulation_engine.test.gd
-│
-└── docs/                         # Documentation
-    └── PRD.md                   # Product requirements
-```
-
----
 
 ## Level Editing Guide
 
@@ -310,18 +232,12 @@ The game uses an 18×12 grid tileset with:
 ### Current Version (Hackathon)
 1. **Python Subset** – Not full Python (no classes, imports, list comprehensions)
 2. **Single Player** – No multiplayer or competitive modes
-3. **Fixed Difficulty** – No difficulty settings or tutorials
+3. **Fixed Difficulty** – No difficulty settings
 4. **Limited Vehicles** – Only 8 vehicle types
-5. **No Persistent Save** – Progress resets on game exit (can be added)
-6. **Performance** – Max ~20 simultaneous vehicles before slowdown
-7. **Audio** – Placeholder sounds only (no professional OST)
-8. **Mobile** – Keyboard & mouse only (no touch controls)
+5. **Mobile** – Keyboard & mouse only (no touch controls)
 
 ### Technical Limitations
 - Python parser doesn't support advanced syntax (decorators, async/await)
-- Vehicle AI follows pre-calculated paths (limited emergent behavior)
-- Stoplight logic is basic (no adaptive traffic control)
-- Road tiles must be contiguous (no floating roads)
 
 ---
 
@@ -333,14 +249,12 @@ The game uses an 18×12 grid tileset with:
 - [ ] **Better Error Messages** – Line-by-line debugging with highlights
 - [ ] **Sound & Music** – Professional OST and sound effects
 - [ ] **Leaderboards** – Track best times and star ratings
-- [ ] **Tutorial System** – In-game hints and guided walkthroughs
 
 ### Medium Priority
 - [ ] **Mobile Support** – Touch controls and responsive UI
 - [ ] **Advanced Vehicles** – Trucks, buses with different behaviors
 - [ ] **Multi-lane Roads** – Parallel roads for more complexity
 - [ ] **Parking Lot Puzzles** – Advanced vehicle management scenarios
-- [ ] **Save/Load System** – Persistent progress across sessions
 - [ ] **Level Editor UI** – Point-and-click level creation in-game
 
 ### Lower Priority
@@ -353,21 +267,76 @@ The game uses an 18×12 grid tileset with:
 
 ---
 
+---
+
+## Project Structure
+
+```
+GoCars/
+├── README.md
+├── CLAUDE.md
+├── project.godot
+├── run_tests.sh
+│
+├── scenes/
+│   ├── main.tscn
+│   ├── main_tilemap.tscn
+│   ├── levelmaps/
+│   │   ├── 01Tutorial/
+│   │   └── 02Iloilo/
+│   ├── entities/
+│   ├── menus/
+│   └── ui/
+│
+├── scripts/
+│   ├── core/
+│   │   ├── python_parser.gd
+│   │   ├── python_interpreter.gd
+│   │   └── simulation_engine.gd
+│   ├── entities/
+│   │   ├── vehicle.gd
+│   │   └── stoplight.gd
+│   ├── ui/
+│   │   ├── code_editor_window.gd
+│   │   └── completion_summary.gd
+│   └── systems/
+│
+├── assets/
+│   ├── audio/
+│   ├── cars/
+│   ├── fonts/
+│   ├── sprites/
+│   └── tiles/
+│
+├── data/
+│   └── levels/
+│
+├── tests/
+│   ├── python_parser.test.gd
+│   ├── python_interpreter.test.gd
+│   └── integration.test.gd
+│
+└── docs/
+    └── PRD.md
+```
+
+---
+
 ## Documentation
 
 ### Primary Locations
 - **README.md** (this file)
-  - Location: `c:\Users\roman\Desktop\go-cars!\README.md`
+  - Location: `README.md`
   - Purpose: Quick overview and setup instructions
   - Audience: New players, developers, judges
 
 - **CLAUDE.md**
-  - Location: `c:\Users\roman\Desktop\go-cars!\CLAUDE.md`
+  - Location: `CLAUDE.md`
   - Purpose: Development guide and API reference
   - Audience: Developers, contributors
 
 - **docs/PRD.md** (Product Requirements Document)
-  - Location: `c:\Users\roman\Desktop\go-cars!\docs\PRD.md`
+  - Location: `docs/PRD.md`
   - Purpose: Complete specification and design doc
   - Audience: Game designers, architects
 
@@ -410,7 +379,7 @@ The game uses an 18×12 grid tileset with:
 ### Development Team
 
 **Programmers:**
-- Jake Occeña
+- Jorge Maverick Acidre
 - Francis Gabriel Austria
 - Carlos John Aristoki
 
@@ -434,15 +403,6 @@ Built with [Godot Engine 4.5.1](https://godotengine.org)
 **GoCars!** is a private submission for **TrackTech: CSS Hackathon 2026**
 
 All rights reserved. © 2026 Development Team
-
----
-
-## Support & Contact
-
-For questions or issues:
-1. Check [CLAUDE.md](CLAUDE.md) for development details
-2. Review [docs/PRD.md](docs/PRD.md) for specifications
-3. Read level comments for gameplay hints
 
 ---
 
