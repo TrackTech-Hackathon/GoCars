@@ -274,7 +274,6 @@ The game uses an 18×12 grid tileset with:
 ```
 GoCars/
 ├── README.md
-├── CLAUDE.md
 ├── project.godot
 ├── run_tests.sh
 │
@@ -330,11 +329,6 @@ GoCars/
   - Purpose: Quick overview and setup instructions
   - Audience: New players, developers, judges
 
-- **CLAUDE.md**
-  - Location: `CLAUDE.md`
-  - Purpose: Development guide and API reference
-  - Audience: Developers, contributors
-
 - **docs/PRD.md** (Product Requirements Document)
   - Location: `docs/PRD.md`
   - Purpose: Complete specification and design doc
@@ -347,7 +341,6 @@ GoCars/
 
 ### Submission Package Contents
 - README.md (quick start)
-- CLAUDE.md (development notes)
 - Source code (all scripts)
 - Executable (when built)
 - Screenshots (main menu, level selector, gameplay, characters)

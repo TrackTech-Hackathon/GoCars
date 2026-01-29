@@ -1,6 +1,23 @@
-[gd_scene load_steps=2 format=3 uid="uid://uukcre15wplo"]
+[gd_scene load_steps=5 format=3 uid="uid://uukcre15wplo"]
 
 [ext_resource type="Script" uid="uid://da1rciyrfke4o" path="res://scenes/ui/loading_screen.gd" id="1_loading"]
+[ext_resource type="FontFile" uid="uid://bg6pof5832ljm" path="res://assets/fonts/pixel.ttf" id="2_q4fso"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.2, 0.15, 0.1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.31764707, 0.18039216, 0.105882354, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fill"]
+bg_color = Color(0.8, 0.6, 0.3, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.31764707, 0.18039216, 0.105882354, 1)
 
 [node name="LoadingScreen" type="CanvasLayer"]
 layer = 100
@@ -26,6 +43,8 @@ layout_mode = 2
 
 [node name="LoadingLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("2_q4fso")
 theme_override_font_sizes/font_size = 48
 text = "Loading..."
 horizontal_alignment = 1
@@ -33,5 +52,7 @@ horizontal_alignment = 1
 [node name="ProgressBar" type="ProgressBar" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(400, 40)
 layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_fill")
 max_value = 1.0
 show_percentage = false

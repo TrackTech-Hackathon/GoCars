@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://bpqhh0b4t8ipb" path="res://assets/UI/Sprite sheets/buttons/Normal Maximize.png" id="3_0v0sx"]
 [ext_resource type="PackedScene" uid="uid://cdsh2e12boepr" path="res://scenes/ui/code_editor/terminal_panel.tscn" id="3_terminal_panel"]
 [ext_resource type="Texture2D" uid="uid://cmhpkgys7cirg" path="res://assets/UI/Pause Button.png" id="3_ypdp2"]
-[ext_resource type="Texture2D" uid="uid://ust86fnsqddb" path="res://Untitled21_20260121003628.png" id="4_qly7m"]
+[ext_resource type="Texture2D" uid="uid://ust86fnsqddb" path="res://assets/UI/Restart.png" id="4_qly7m"]
 [ext_resource type="Texture2D" uid="uid://cpl8yxbmdcyc4" path="res://assets/UI/Sprite sheets/buttons/Maximize Button.png" id="4_uo274"]
 [ext_resource type="Texture2D" uid="uid://cj1kjs52xbb4s" path="res://assets/UI/Sprite sheets/buttons/Normal Minimize.png" id="5_0v0sx"]
 [ext_resource type="Texture2D" uid="uid://dl33j1x5drn4f" path="res://assets/UI/Sprite sheets/buttons/Close Button.png" id="6_0ejjt"]
