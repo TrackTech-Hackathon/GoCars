@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3 uid="uid://b3vrlykt4flv8"]
+
+[ext_resource type="Texture2D" uid="uid://b1y1d5en5lf6d" path="res://assets/houses/Store.png" id="1_dtj44"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_s820b"]
+size = Vector2(196, 147.5)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_xot53"]
+size = Vector2(71, 212)
+
+[node name="Store" type="StaticBody2D"]
+
+[node name="Store" type="Sprite2D" parent="."]
+texture_filter = 1
+texture = ExtResource("1_dtj44")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(0, -30.25)
+shape = SubResource("RectangleShape2D_s820b")
+
+[node name="CollisionShape" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(0.5, 2)
+shape = SubResource("RectangleShape2D_xot53")

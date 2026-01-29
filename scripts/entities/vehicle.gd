@@ -1378,8 +1378,58 @@ func _get_opposite_direction(dir: String) -> String:
 	return ""
 
 
+## Convert facing direction vector to tile connection direction string
+## Car facing north (Vector2.UP) -> "top" connection
+## Car facing south (Vector2.DOWN) -> "bottom" connection
+## Car facing east (Vector2.RIGHT) -> "right" connection
+## Car facing west (Vector2.LEFT) -> "left" connection
+func _facing_to_connection_direction(facing: Vector2) -> String:
+	var x = round(facing.normalized().x)
+	var y = round(facing.normalized().y)
+
+	# Facing north (up on screen) -> check top connection
+	if x == 0 and y == -1: return "top"
+	# Facing south (down on screen) -> check bottom connection
+	if x == 0 and y == 1: return "bottom"
+	# Facing west (left on screen) -> check left connection
+	if x == -1 and y == 0: return "left"
+	# Facing east (right on screen) -> check right connection
+	if x == 1 and y == 0: return "right"
+	return ""
+
+
+## Get the connection direction to the LEFT of the car's facing direction
+## Car facing north -> left is west -> "left" connection
+## Car facing south -> left is east -> "right" connection
+## Car facing east -> left is north -> "top" connection
+## Car facing west -> left is south -> "bottom" connection
+func _get_left_connection_direction(facing: Vector2) -> String:
+	var front = _facing_to_connection_direction(facing)
+	match front:
+		"top": return "left"      # Facing north, left is west
+		"bottom": return "right"  # Facing south, left is east
+		"left": return "bottom"   # Facing west, left is south
+		"right": return "top"     # Facing east, left is north
+	return ""
+
+
+## Get the connection direction to the RIGHT of the car's facing direction
+## Car facing north -> right is east -> "right" connection
+## Car facing south -> right is west -> "left" connection
+## Car facing east -> right is south -> "bottom" connection
+## Car facing west -> right is north -> "top" connection
+func _get_right_connection_direction(facing: Vector2) -> String:
+	var front = _facing_to_connection_direction(facing)
+	match front:
+		"top": return "right"     # Facing north, right is east
+		"bottom": return "left"   # Facing south, right is west
+		"left": return "top"      # Facing west, right is north
+		"right": return "bottom"  # Facing east, right is south
+	return ""
+
+
 ## Check if there's a road in front of the car (short name)
-## Uses LOCKED entry direction for consistent results within a tile
+## Checks if the CURRENT tile has a connection in the car's facing direction
 func front_road() -> bool:
 	# Can't evaluate roads while turning - prevents multiple turn queuing
 	if _is_turning:
@@ -1391,30 +1441,20 @@ func front_road() -> bool:
 	if _road_checker == null:
 		return false
 
-	# Use LOCKED entry direction for consistent road detection (if available)
-	# If not yet initialized, use fallback detection below
-	if _locked_entry_direction != "":
-		# Check available exits using locked entry direction
-		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
-		if tile != null:
-			var exits = tile.get_available_exits(_locked_entry_direction)
-			# "Front" means continuing straight (opposite of entry)
-			var straight_exit = RoadTile.get_opposite_direction(_locked_entry_direction)
-			return straight_exit in exits
+	# Get the current tile
+	var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
+	if tile == null:
+		return false
 
-	# Fallback: check adjacent tile based on facing direction
-	var grid_pos = _get_raw_grid_pos()
-	var conn_dir = _vector_to_connection_direction(direction)
+	# Convert facing direction to connection direction
+	# Car facing north -> check "top" connection
+	# Car facing south -> check "bottom" connection
+	# Car facing east -> check "right" connection
+	# Car facing west -> check "left" connection
+	var front_connection = _facing_to_connection_direction(direction)
 
-	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
-		var adjacent_offset = _get_grid_offset_from_direction(conn_dir)
-		var adjacent_grid = grid_pos + adjacent_offset
-		var opposite_dir = _get_opposite_direction(conn_dir)
-		return _road_checker.is_road_connected(adjacent_grid, opposite_dir)
-
-	var front_offset = direction.normalized() * TILE_SIZE
-	var front_pos = global_position + front_offset
-	return _is_road_at_position(front_pos)
+	# Check if current tile has a connection in that direction
+	return tile.has_connection(front_connection)
 
 
 ## Check if car is close enough to tile center for turn detection
@@ -1432,7 +1472,7 @@ func _is_near_turn_point() -> bool:
 
 
 ## Check if there's a road to the left of the car (short name)
-## Uses LOCKED entry direction for consistent results within a tile
+## Checks if the CURRENT tile has a connection to the car's left
 func left_road() -> bool:
 	# Can't evaluate roads while turning - prevents multiple turn queuing
 	if _is_turning:
@@ -1447,42 +1487,24 @@ func left_road() -> bool:
 	if _road_checker == null:
 		return false
 
-	# Use LOCKED entry direction for consistent road detection (if available)
-	# If not yet initialized, use fallback detection below
-	if _locked_entry_direction != "":
-		# Check available exits using locked entry direction
-		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
-		if tile != null:
-			var exits = tile.get_available_exits(_locked_entry_direction)
-			# Check cardinal left direction
-			var left_exit = RoadTile.get_left_of(_locked_entry_direction)
-			return left_exit in exits
+	# Get the current tile
+	var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
+	if tile == null:
+		return false
 
-	# Fallback: check adjacent tile based on facing direction
-	var grid_pos = _get_raw_grid_pos()
-	var left_dir = direction.rotated(-PI / 2)
-	var conn_dir = _vector_to_connection_direction(left_dir)
+	# Get the left direction relative to facing
+	# Car facing north -> left is "left" (west)
+	# Car facing south -> left is "right" (east)
+	# Car facing east -> left is "top" (north)
+	# Car facing west -> left is "bottom" (south)
+	var left_connection = _get_left_connection_direction(direction)
 
-	# Don't detect the road we came from
-	if _last_move_direction != Vector2.ZERO:
-		var came_from_dir = -_last_move_direction
-		var came_from_conn = _vector_to_connection_direction(came_from_dir)
-		if conn_dir == came_from_conn:
-			return false
-
-	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
-		var adjacent_offset = _get_grid_offset_from_direction(conn_dir)
-		var adjacent_grid = grid_pos + adjacent_offset
-		var opposite_dir = _get_opposite_direction(conn_dir)
-		return _road_checker.is_road_connected(adjacent_grid, opposite_dir)
-
-	var left_offset = left_dir.normalized() * TILE_SIZE
-	var left_pos = global_position + left_offset
-	return _is_road_at_position(left_pos)
+	# Check if current tile has a connection in that direction
+	return tile.has_connection(left_connection)
 
 
 ## Check if there's a road to the right of the car (short name)
-## Uses LOCKED entry direction for consistent results within a tile
+## Checks if the CURRENT tile has a connection to the car's right
 func right_road() -> bool:
 	# Can't evaluate roads while turning - prevents multiple turn queuing
 	if _is_turning:
@@ -1497,38 +1519,20 @@ func right_road() -> bool:
 	if _road_checker == null:
 		return false
 
-	# Use LOCKED entry direction for consistent road detection (if available)
-	# If not yet initialized, use fallback detection below
-	if _locked_entry_direction != "":
-		# Check available exits using locked entry direction
-		var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
-		if tile != null:
-			var exits = tile.get_available_exits(_locked_entry_direction)
-			# Check cardinal right direction
-			var right_exit = RoadTile.get_right_of(_locked_entry_direction)
-			return right_exit in exits
+	# Get the current tile
+	var tile = _road_checker.get_road_tile(_current_tile) if _road_checker.has_method("get_road_tile") else null
+	if tile == null:
+		return false
 
-	# Fallback: check adjacent tile based on facing direction
-	var grid_pos = _get_raw_grid_pos()
-	var right_dir = direction.rotated(PI / 2)
-	var conn_dir = _vector_to_connection_direction(right_dir)
+	# Get the right direction relative to facing
+	# Car facing north -> right is "right" (east)
+	# Car facing south -> right is "left" (west)
+	# Car facing east -> right is "bottom" (south)
+	# Car facing west -> right is "top" (north)
+	var right_connection = _get_right_connection_direction(direction)
 
-	# Don't detect the road we came from
-	if _last_move_direction != Vector2.ZERO:
-		var came_from_dir = -_last_move_direction
-		var came_from_conn = _vector_to_connection_direction(came_from_dir)
-		if conn_dir == came_from_conn:
-			return false
-
-	if conn_dir != "" and _road_checker.has_method("is_road_connected"):
-		var adjacent_offset = _get_grid_offset_from_direction(conn_dir)
-		var adjacent_grid = grid_pos + adjacent_offset
-		var opposite_dir = _get_opposite_direction(conn_dir)
-		return _road_checker.is_road_connected(adjacent_grid, opposite_dir)
-
-	var right_offset = right_dir.normalized() * TILE_SIZE
-	var right_pos = global_position + right_offset
-	return _is_road_at_position(right_pos)
+	# Check if current tile has a connection in that direction
+	return tile.has_connection(right_connection)
 
 
 ## Check if there's ANY car (crashed or active) in front using FrontChecker Area2D
